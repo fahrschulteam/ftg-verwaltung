@@ -3999,7 +3999,7 @@ function buildRows(s,sv){
       +'</td>'
       +'<td style="padding:5px 7px;text-align:right;">'+m.h+' UE</td>'
       +'<td style="padding:5px 7px;text-align:right;">'+(m.bp>0?m.bp+' Std.':"–")+'</td>'
-      +'<td style="padding:5px 7px;text-align:right;font-weight:600;">'+fmt(m.c)+'</td>'
+      +'<td style="padding:5px 7px;text-align:right;font-weight:600;white-space:nowrap;">'+fmt(m.c)+'</td>'
       +'</tr>';
   });
   return {rows:rows,tH:tH,tC:tC,tBP:tBP,endD:endD};
@@ -4074,7 +4074,7 @@ function renderPlan(){
   d+='<th style="min-width:50mm;width:auto;">Maßnahme / Ausbildungsort</th>';
   d+='<th style="width:14mm;text-align:right;">UStd.</th>';
   d+='<th style="width:18mm;text-align:right;">Betr.Std.</th>';
-  d+='<th style="width:24mm;text-align:right;">Kosten/TN</th>';
+  d+='<th style="width:30mm;text-align:right;">Kosten/TN</th>';
   d+='</tr></thead>';
   d+='<tbody>'+r.rows+'</tbody>';
 
@@ -4085,7 +4085,7 @@ function renderPlan(){
   d+='<td style="text-align:right;padding:6px 7px;font-size:9pt;white-space:nowrap;">'+r.tH+' UE</td>';
   d+='<td style="text-align:right;padding:6px 7px;font-size:9pt;">'
    +(r.tBP>0?r.tBP+' Std.':'–')+'</td>';
-  d+='<td style="text-align:right;padding:6px 7px;font-size:10pt;font-weight:700;color:#CC0000;">'+fmt(r.tC)+'</td>';
+  d+='<td style="text-align:right;padding:6px 7px;font-size:10pt;font-weight:700;color:#CC0000;white-space:nowrap;">'+fmt(r.tC)+'</td>';
   d+='</tr></tfoot>';
   d+='</table>';
 
