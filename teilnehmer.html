@@ -1049,7 +1049,7 @@ function isWorkday(d){
   return !h[d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate()];
 }
 function addWD(d,n){ var r=new Date(d),a=0; while(a<n){r.setDate(r.getDate()+1);if(isWorkday(r))a++;} return r; }
-function gf(){ return {an:gv("f-an"),ti:gv("f-ti"),vn:gv("f-vn"),nn:gv("f-nn"),gb:gv("f-gb"),go:gv("f-go"),gl:gv("f-gl"),gn:gv("f-gn"),nat:gv("f-nat"),fs:gv("f-fs"),tel:gv("f-tel"),hy:gv("f-hy"),em:gv("f-em"),br:gv("f-br"),sh:gv("f-sh"),kk:gv("f-kk"),vn2:gv("f-vn2"),fsk:gv("f-fsk"),fsb:gv("f-fsb"),fsd:gv("f-fsd"),gs:gv("f-gs"),st:gv("f-st"),ot:gv("f-ot"),ag:gv("f-ag"),ap:gv("f-ap"),vm:gv("f-vm"),pb:gv("f-pb"),ps:gv("f-ps"),po:gv("f-po")}; }
+function gf(){ return {an:gv("f-an"),gschl:gv("f-gschl"),ti:gv("f-ti"),vn:gv("f-vn"),nn:gv("f-nn"),gb:gv("f-gb"),go:gv("f-go"),gl:gv("f-gl"),gn:gv("f-gn"),nat:gv("f-nat"),fs:gv("f-fs"),tel:gv("f-tel"),hy:gv("f-hy"),em:gv("f-em"),br:gv("f-br"),sh:gv("f-sh"),kk:gv("f-kk"),vn2:gv("f-vn2"),fsk:gv("f-fsk"),fsb:gv("f-fsb"),fsd:gv("f-fsd"),gs:gv("f-gs"),st:gv("f-st"),ot:gv("f-ot"),ag:gv("f-ag"),ap:gv("f-ap"),vm:gv("f-vm"),pb:gv("f-pb"),ps:gv("f-ps"),po:gv("f-po")}; }
 function fmtName(tn){ return ((tn.anrede?tn.anrede+" ":"")+(tn.titel?tn.titel+" ":"")+tn.vorname+" "+tn.nachname).trim(); }
 function fmtInitials(tn){ return ((tn.vorname?tn.vorname[0]:"")+(tn.nachname?tn.nachname[0]:"")).toUpperCase()||"?"; }
 function getTn(id){ id=typeof id==="string"?parseInt(id):id; return TEILNEHMER.find(function(t){return t.id===id||t.id===String(id);}); }
@@ -1141,7 +1141,7 @@ function addTeilnehmer(){
 
 function clearTnForm(){
   // Formfelder leeren
-  ['f-an','f-ti','f-vn','f-nn','f-gb','f-go','f-gl','f-gn','f-nat','f-fs','f-tel','f-hy','f-em','f-br','f-sh','f-kk','f-vn2','f-fsk','f-fsb','f-fsd','f-gs','f-st','f-ot','f-ap','f-vm','f-pb','f-ps','f-po'].forEach(function(id){
+  ['f-an','f-gschl','f-ti','f-vn','f-nn','f-gb','f-go','f-gl','f-gn','f-nat','f-fs','f-tel','f-hy','f-em','f-br','f-sh','f-kk','f-vn2','f-fsk','f-fsb','f-fsd','f-gs','f-st','f-ot','f-ap','f-vm','f-pb','f-ps','f-po'].forEach(function(id){
     var el=document.getElementById(id); if(el) el.value='';
   });
   var ag=document.getElementById('f-ag'); if(ag) ag.value='';
