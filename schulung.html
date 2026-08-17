@@ -6436,6 +6436,15 @@ function openParticipant(id, presetCoId){
     <div class="grid grid-2">
       <div class="field"><label>Geburtsdatum</label><input type="date" id="m_birth" value="${p.birth||''}"></div>
       <div class="field"><label>Geburtsort</label><input id="m_bp" value="${_esc(p.birthplace||'')}"></div>
+    <div class="field">
+      <label>Geschlecht <span style="color:var(--danger,#C0001A);font-size:11px">(KBA-Meldung BKrFQG)</span></label>
+      <select id="ext_GESCHLECHT">
+        <option value="">&#8211; bitte w&#228;hlen &#8211;</option>
+        <option value="m" ${(p.extDates||{}).GESCHLECHT==='m'?'selected':''}>m&#228;nnlich</option>
+        <option value="w" ${(p.extDates||{}).GESCHLECHT==='w'?'selected':''}>weiblich</option>
+        <option value="d" ${(p.extDates||{}).GESCHLECHT==='d'?'selected':''}>divers</option>
+      </select>
+    </div>
     </div>
     <div class="grid grid-2">
       <div class="field"><label>Straße / Hausnummer</label><input id="m_street" value="${_esc(p.street||'')}" placeholder="Musterstraße 12"></div>
@@ -6535,7 +6544,7 @@ async function saveParticipant(id){
   // Staatsangehörigkeit, Führerscheinnummer) erhalten – nur die Formularfelder
   // werden überschrieben bzw. bei leerer Eingabe entfernt.
   const extDates=Object.assign({},(id?(state.participants.find(x=>x.id===id)||{}).extDates:null)||{});
-  ['GS','LK','FT','ADR','BM','AB','AT','AF','SZ95','FE'].forEach(k=>{const el=document.getElementById('ext_'+k);if(!el)return;if(el.value)extDates[k]=el.value;else delete extDates[k];});
+  ['GS','LK','FT','ADR','BM','AB','AT','AF','SZ95','FE','GESCHLECHT'].forEach(k=>{const el=document.getElementById('ext_'+k);if(!el)return;if(el.value)extDates[k]=el.value;else delete extDates[k];});
   const obj={firstName,lastName,name,birth:document.getElementById('m_birth').value,birthplace:document.getElementById('m_bp').value,
     street,zip,city,
     companyId,company:co?co.name:document.getElementById('m_company').value,
