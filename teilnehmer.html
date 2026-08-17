@@ -122,6 +122,8 @@ input[type="checkbox"]:checked::after{
 .btn.green{background:var(--green);border-color:var(--green);color:#fff;}
 .btn.green:hover{opacity:.88;}
 .btn.sm{padding:6px 13px;font-size:12px;}
+.btn:disabled{opacity:.35;cursor:default;}
+.btn:disabled:hover{background:var(--bg);}
 
 /* ── Form-Felder ── */
 .fg{display:grid;grid-template-columns:repeat(3,1fr);gap:10px 14px;}
@@ -1004,6 +1006,9 @@ async function sbLogout(){
 
 var sel = {};
 var locOvr = {};
+var ordOvr = [];        // manuelle Reihenfolge der Maßnahmen-IDs
+var zkpBeginnOvr = "";  // manueller Beginn (YYYY-MM-DD), leer = automatisch
+var zkpEndeOvr = "";    // manuelles Ende (YYYY-MM-DD), leer = automatisch
 var TEILNEHMER = [];
 var ACTIVE_TN = null;
 var LAST_PLAN_HTML = "";
@@ -1094,7 +1099,16 @@ function renderCards(){
 }
 function mkToggle(top){ var id=top.parentElement.id.replace("mk-",""); if(sel[id])delete sel[id]; else sel[id]=true; renderCards(); updateSummary(); }
 function mkSaveLoc(ta){ locOvr[ta.closest(".mk").id.replace("mk-","")]=ta.value; }
-function clearAll(){ sel={}; locOvr={}; renderCards(); updateSummary(); document.getElementById("plan-area").innerHTML=""; }
+// Gewählte Maßnahmen in der manuell festgelegten Reihenfolge (ordOvr).
+// Nicht in ordOvr enthaltene Maßnahmen hängen in MS-Reihenfolge hinten an.
+function orderedSel(){
+  var s=MS.filter(function(m){return !!sel[m.id];});
+  return s.map(function(m,i){
+    var o=ordOvr.indexOf(m.id);
+    return {m:m,k:o<0?ordOvr.length+i:o};
+  }).sort(function(a,b){return a.k-b.k;}).map(function(x){return x.m;});
+}
+function clearAll(){ sel={}; locOvr={}; ordOvr=[]; zkpBeginnOvr=""; zkpEndeOvr=""; renderCards(); updateSummary(); document.getElementById("plan-area").innerHTML=""; }
 function updateSummary(){
   var s=MS.filter(function(m){return !!sel[m.id];});
   document.getElementById("sc").textContent=s.length;
@@ -1106,7 +1120,7 @@ function updateSummary(){
 function addTeilnehmer(){
   var f=gf();
   if(!f.vn||!f.nn){fstAlert("Bitte Vor- und Nachname eingeben.");return;}
-  var s=MS.filter(function(m){return !!sel[m.id];});
+  var s=orderedSel();
   if(!s.length){fstAlert("Bitte mindestens eine Maßnahme auswählen.");return;}
   var sv=gv("sd");
   var cur=sv?new Date(sv):new Date();
@@ -1147,7 +1161,7 @@ function clearTnForm(){
   var ag=document.getElementById('f-ag'); if(ag) ag.value='';
   var sd=document.getElementById('sd');   if(sd) sd.value='';
   // Maßnahmen-Auswahl zurücksetzen
-  sel={}; locOvr={};
+  sel={}; locOvr={}; ordOvr=[]; zkpBeginnOvr=""; zkpEndeOvr="";
   renderCards(); updateSummary();
   // Plan-Vorschau leeren
   var pa=document.getElementById('plan-area'); if(pa) pa.innerHTML='';
@@ -1627,7 +1641,48 @@ function renderAkte(){
   } else {
     html+='<span style="font-size:11px;color:var(--tx2);">Noch nicht erstellt</span>';
   }
-  html+='</div></div>';
+  html+='</div>';
+
+  // Reihenfolge der Maßnahmen-Blöcke
+  var zMs=tn.massnahmen||[];
+  if(zMs.length){
+    html+='<div style="display:flex;flex-direction:column;gap:6px;margin-top:8px;">';
+    zMs.forEach(function(m,i){
+      var upIdx=_cbs.length; _cbs.push({a:"zkp-move",tnId:tn.id,idx:i,dir:-1});
+      var dnIdx=_cbs.length; _cbs.push({a:"zkp-move",tnId:tn.id,idx:i,dir:1});
+      html+='<div style="display:flex;align-items:center;gap:8px;background:var(--bg3);border:1px solid var(--bd);border-radius:8px;padding:6px 9px;">';
+      html+='<span style="font-size:11px;font-weight:700;color:var(--tx2);min-width:16px;">'+(i+1)+'.</span>';
+      html+='<div style="flex:1;min-width:0;">';
+      html+='<div style="font-size:12px;font-weight:600;">'+(m.title||m.id)+'</div>';
+      html+='<div style="font-size:10px;color:var(--tx2);">'
+        +(m.start?fD(new Date(m.start)):'–')+' – '+(m.end?fD(new Date(m.end)):'–')
+        +(m.h?' · '+m.h+' UE':'')+'</div>';
+      html+='</div>';
+      html+='<button data-cb="'+upIdx+'" class="btn sm" style="padding:4px 9px;"'+(i===0?' disabled':'')+'>&#9650;</button>';
+      html+='<button data-cb="'+dnIdx+'" class="btn sm" style="padding:4px 9px;"'+(i===zMs.length-1?' disabled':'')+'>&#9660;</button>';
+      html+='</div>';
+    });
+    html+='</div>';
+  }
+
+  // Zeitraum manuell überschreibbar
+  var zEndD=calcTnEndDate(tn);
+  var zBegVal=tn.zkp_beginn||tn.ausbildungsbeginn||'';
+  var zEndVal=tn.zkp_ende||(zEndD?zEndD.toISOString().slice(0,10):'');
+  var zrIdx=_cbs.length; _cbs.push({a:"zkp-reset",tnId:tn.id});
+  html+='<div style="display:flex;flex-wrap:wrap;align-items:flex-end;gap:10px;margin-top:10px;">';
+  html+='<div class="ff" style="flex:1;min-width:130px;"><label>Beginn</label>'
+    +'<input type="date" value="'+zBegVal+'" onchange="zkpSetDate('+tn.id+',\'beginn\',this.value)"></div>';
+  html+='<div class="ff" style="flex:1;min-width:150px;"><label>Voraussichtliches Ende</label>'
+    +'<input type="date" value="'+zEndVal+'" onchange="zkpSetDate('+tn.id+',\'ende\',this.value)"></div>';
+  html+='<button data-cb="'+zrIdx+'" class="btn sm">&#8635; Automatisch</button>';
+  html+='</div>';
+  html+='<div style="font-size:10px;color:var(--tx2);margin-top:6px;">'
+    +((tn.zkp_beginn||tn.zkp_ende)
+      ? '&#9998; Zeitraum manuell &uuml;berschrieben &ndash; &#8222;&#8635; Automatisch&#8220; berechnet ihn wieder aus den Ma&szlig;nahmen.'
+      : '&#9881; Zeitraum automatisch aus Reihenfolge und Unterrichtsstunden berechnet.')
+    +'</div>';
+  html+='</div>';
 
   area.innerHTML=html;
 
@@ -1643,6 +1698,8 @@ function renderAkte(){
     else if(cb.a==='toggle') toggleConfirm(cb.key,cb.tnId);
     else if(cb.a==='plan-view')    openPlan(cb.tnId);
     else if(cb.a==='plan-update')  updatePlan(cb.tnId);
+    else if(cb.a==='zkp-move')     zkpMove(cb.tnId, cb.idx, cb.dir);
+    else if(cb.a==='zkp-reset')    zkpReset(cb.tnId);
     else if(cb.a==='scan-upload')  uploadScan(cb.tnId, cb.scanType);
     else if(cb.a==='scan-view')    viewScan(cb.tnId, cb.scanType);
     else if(cb.a==='scan-delete')  deleteScan(cb.tnId, cb.scanType);
@@ -1660,8 +1717,9 @@ function toggleConfirm(key,tnId){
 // ── Fahrlehrerübersicht ──────────────────────────────────────────────────────
 // ── Geplantes Ende: automatisch aus Beginn + UE (8 UE = 1 Werktag, Mo-Sa, NDS-Feiertage) ──
 function calcTnEndDate(tn){
+  if(tn.zkp_ende) return new Date(tn.zkp_ende);   // manuell überschrieben
   if(!tn.ausbildungsbeginn||!tn.massnahmen||!tn.massnahmen.length) return null;
-  var cur=new Date(tn.ausbildungsbeginn), endD=null;
+  var cur=new Date(tn.zkp_beginn||tn.ausbildungsbeginn), endD=null;
   tn.massnahmen.forEach(function(m){
     if(!m.h) return;
     var ed=addWD(cur, Math.ceil(m.h/8));
@@ -1669,6 +1727,45 @@ function calcTnEndDate(tn){
   });
   return endD;
 }
+
+// ── Zeit- und Kostenplan: Reihenfolge & Zeitraum ─────────────────────────────
+// Rechnet Start/Ende aller Maßnahmen neu durch (8 UE = 1 Werktag).
+function recalcMassnahmenDates(tn){
+  if(!tn.massnahmen||!tn.massnahmen.length) return;
+  var start=tn.zkp_beginn||tn.ausbildungsbeginn;
+  var cur=start?new Date(start):new Date();
+  tn.massnahmen.forEach(function(m){
+    var sd=new Date(cur);
+    var ed=addWD(sd,Math.ceil((m.h||0)/8));
+    cur=addWD(ed,1);
+    m.start=sd.toISOString().slice(0,10);
+    m.end=ed.toISOString().slice(0,10);
+  });
+}
+function zkpMove(tnId,idx,dir){
+  var tn=getTn(tnId); if(!tn||!tn.massnahmen) return;
+  var j=idx+dir;
+  if(j<0||j>=tn.massnahmen.length) return;
+  var tmp=tn.massnahmen[idx]; tn.massnahmen[idx]=tn.massnahmen[j]; tn.massnahmen[j]=tmp;
+  recalcMassnahmenDates(tn);
+  saveTn(tn);
+  updatePlan(tnId);
+}
+function zkpSetDate(tnId,which,val){
+  var tn=getTn(tnId); if(!tn) return;
+  if(which==='beginn'){ tn.zkp_beginn=val||''; recalcMassnahmenDates(tn); }
+  else                { tn.zkp_ende=val||''; }
+  saveTn(tn);
+  updatePlan(tnId);
+}
+function zkpReset(tnId){
+  var tn=getTn(tnId); if(!tn) return;
+  tn.zkp_beginn=''; tn.zkp_ende='';
+  recalcMassnahmenDates(tn);
+  saveTn(tn);
+  updatePlan(tnId);
+}
+
 function countWorkdays(from, to){
   var d=new Date(from); d.setHours(0,0,0,0);
   var end=new Date(to); end.setHours(0,0,0,0);
@@ -3900,8 +3997,6 @@ function buildRows(s,sv){
       +'<td style="padding:5px 7px;"><strong style="font-size:9pt;">'+m.title+'</strong>'
       +(locs.length?'<br><span style="font-size:7.5pt;color:#666;">&#128205;&nbsp;'+locs.join(" / ")+"</span>":"")
       +'</td>'
-      +'<td style="padding:5px 7px;white-space:nowrap;">'+fD(sd)+'</td>'
-      +'<td style="padding:5px 7px;white-space:nowrap;">'+fD(ed)+'</td>'
       +'<td style="padding:5px 7px;text-align:right;">'+m.h+' UE</td>'
       +'<td style="padding:5px 7px;text-align:right;">'+(m.bp>0?m.bp+' Std.':"–")+'</td>'
       +'<td style="padding:5px 7px;text-align:right;font-weight:600;">'+fmt(m.c)+'</td>'
@@ -3915,15 +4010,17 @@ function showPlan(){
   renderPlan();
 }
 function renderPlan(){
-  var s=MS.filter(function(m){return !!sel[m.id];}); if(!s.length) return;
-  var f=gf(), sv=gv("sd"), today=fDL(new Date());
+  var s=orderedSel(); if(!s.length) return;
+  // Manuell gesetzter Beginn hat Vorrang vor dem Formularfeld
+  var f=gf(), sv=zkpBeginnOvr||gv("sd"), today=fDL(new Date());
   var name=((f.an?f.an+" ":"")+(f.ti?f.ti+" ":"")+f.vn+" "+f.nn).trim()||"Teilnehmer/in";
   var gb=f.gb?new Date(f.gb).toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit",year:"numeric"}):"";
   var agArr=AGENTUREN[f.ag]||[];
   var agHtml=agArr.length?agArr[0]+"<br>"+agArr[1]+"<br>"+agArr[2]:"";
   var r=buildRows(s,sv);
   var startStr=sv?fD(new Date(sv)):"–";
-  var endStr=r.endD?fD(r.endD):"–";
+  // Manuell gesetztes Ende hat Vorrang vor dem berechneten Ende
+  var endStr=zkpEndeOvr?fD(new Date(zkpEndeOvr)):(r.endD?fD(r.endD):"–");
 
   var d='<div class="dok" id="pp">';
   d+='<div class="falz falz1"></div><div class="falz falz2"></div><div class="loch"></div>';
@@ -3975,8 +4072,6 @@ function renderPlan(){
   d+='<thead style="display:table-header-group;">';
   d+='<tr style="background:#f0eeea;">';
   d+='<th style="min-width:50mm;width:auto;">Maßnahme / Ausbildungsort</th>';
-  d+='<th style="width:22mm;">Gepl. Beginn</th>';
-  d+='<th style="width:22mm;">Gepl. Ende</th>';
   d+='<th style="width:14mm;text-align:right;">UStd.</th>';
   d+='<th style="width:18mm;text-align:right;">Betr.Std.</th>';
   d+='<th style="width:24mm;text-align:right;">Kosten/TN</th>';
@@ -3986,7 +4081,7 @@ function renderPlan(){
   // ── Summenzeile ──────────────────────────────────────────────────────────
   d+='<tfoot style="display:table-footer-group;">';
   d+='<tr style="font-weight:700;background:#f7f5f2;border-top:1.5px solid #CC0000;">';
-  d+='<td colspan="3" style="padding:6px 7px;font-size:9pt;">Gesamt</td>';
+  d+='<td colspan="1" style="padding:6px 7px;font-size:9pt;">Gesamt</td>';
   d+='<td style="text-align:right;padding:6px 7px;font-size:9pt;white-space:nowrap;">'+r.tH+' UE</td>';
   d+='<td style="text-align:right;padding:6px 7px;font-size:9pt;">'
    +(r.tBP>0?r.tBP+' Std.':'–')+'</td>';
@@ -4238,8 +4333,9 @@ function openPlan(tnId){
 function updatePlan(tnId){
   var tn=getTn(tnId); if(!tn) return;
   // Maßnahmen-Selektion und Formfelder kurz mit TN-Daten befüllen
-  sel={};
-  tn.massnahmen.forEach(function(m){sel[m.id]=true;locOvr[m.id]=m.locs||'';});
+  sel={}; ordOvr=[];
+  tn.massnahmen.forEach(function(m){sel[m.id]=true;locOvr[m.id]=m.locs||'';ordOvr.push(m.id);});
+  zkpBeginnOvr=tn.zkp_beginn||''; zkpEndeOvr=tn.zkp_ende||'';
   var flds={'f-an':tn.anrede||'','f-ti':tn.titel||'','f-vn':tn.vorname||'','f-nn':tn.nachname||'',
             'f-gb':tn.geburt||'','f-go':tn.geburtsort||'','f-gs':tn.gutschein||'',
             'f-st':tn.strasse||'','f-ot':tn.ort||'','f-ag':tn.ag||'',
