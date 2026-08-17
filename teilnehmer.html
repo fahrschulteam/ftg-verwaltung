@@ -372,6 +372,7 @@ input[type="checkbox"]:checked::after{
     <div class="card-sub-title" style="font-size:11px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.5px;margin:0 0 8px;padding:6px 0;border-bottom:1px solid var(--bd);">👤 Persönliche Daten</div>
     <div class="fg" style="margin-bottom:16px;">
       <div class="ff"><label>Anrede</label><select id="f-an"><option value="">–</option><option>Herr</option><option>Frau</option></select></div>
+      <div class="ff"><label>Geschlecht</label><select id="f-gschl"><option value="">–</option><option value="m">männlich</option><option value="w">weiblich</option><option value="d">divers</option></select></div>
       <div class="ff"><label>Titel</label><input id="f-ti" placeholder="z.B. Dr."></div>
       <div class="ff"><label>Vorname</label><input id="f-vn" placeholder="Vorname" oninput="updateSummary()"></div>
       <div class="ff"><label>Nachname</label><input id="f-nn" placeholder="Nachname" oninput="updateSummary()"></div>
@@ -1118,7 +1119,7 @@ function addTeilnehmer(){
             start:sd.toISOString().slice(0,10),end:ed.toISOString().slice(0,10)};
   });
   var tn={
-    id:Date.now(),anrede:f.an,titel:f.ti,vorname:f.vn,nachname:f.nn,geburtsland:f.gl,geburtsname:f.gn,nationalitaet:f.nat,familienstand:f.fs,telefon:f.tel,handy:f.hy,email:f.em,beruf:f.br,sehhilfe:f.sh,krankenkasse:f.kk,versicherungsnr:f.vn2,fs_klasse:f.fsk,fs_behoerde:f.fsb,fs_datum:f.fsd,
+    id:Date.now(),anrede:f.an,geschlecht:f.gschl,titel:f.ti,vorname:f.vn,nachname:f.nn,geburtsland:f.gl,geburtsname:f.gn,nationalitaet:f.nat,familienstand:f.fs,telefon:f.tel,handy:f.hy,email:f.em,beruf:f.br,sehhilfe:f.sh,krankenkasse:f.kk,versicherungsnr:f.vn2,fs_klasse:f.fsk,fs_behoerde:f.fsb,fs_datum:f.fsd,
     geburt:f.gb,geburtsort:f.go,gutschein:f.gs,strasse:f.st,ort:f.ot,
     ag:f.ag,ansprechpartner:f.ap,vermittler:f.vm,
     praktikum_betrieb:f.pb,praktikum_strasse:f.ps,praktikum_ort:f.po,
@@ -1304,6 +1305,7 @@ function editTn(id){
     +'<div style="padding:1.5rem;max-height:80vh;overflow-y:auto;">'
     +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">'
     +'<div class="ff"><label>Anrede</label><select id="e-an"><option value="">–</option><option'+(tn.anrede==="Herr"?" selected":"")+'>Herr</option><option'+(tn.anrede==="Frau"?" selected":"")+'>Frau</option></select></div>'
+    +'<div class="ff"><label>Geschlecht</label><select id="e-gschl"><option value="">–</option><option value="m"'+(tn.geschlecht==="m"?" selected":"")+'>männlich</option><option value="w"'+(tn.geschlecht==="w"?" selected":"")+'>weiblich</option><option value="d"'+(tn.geschlecht==="d"?" selected":"")+'>divers</option></select></div>'
     +'<div class="ff"><label>Titel</label><input id="e-ti" value="'+(tn.titel||"")+'"></div>'
     +'<div class="ff"><label>Vorname</label><input id="e-vn" value="'+tn.vorname+'"></div>'
     +'<div class="ff"><label>Nachname</label><input id="e-nn" value="'+tn.nachname+'"></div>'
@@ -1358,7 +1360,7 @@ function editTn(id){
   modal.querySelector("#ecancel").onclick=function(){modal.remove();};
   modal.querySelector("#esave").onclick=function(){
     var ev=function(id){var e=modal.querySelector("#"+id);return e?e.value.trim():"";};
-    tn.anrede=ev("e-an"); tn.titel=ev("e-ti");
+    tn.anrede=ev("e-an"); tn.geschlecht=ev("e-gschl"); tn.titel=ev("e-ti");
     tn.vorname=ev("e-vn"); tn.nachname=ev("e-nn");
     tn.geburt=ev("e-gb"); tn.geburtsort=ev("e-go"); tn.nationalitaet=ev("e-nat"); tn.familienstand=ev("e-fs"); tn.telefon=ev("e-tel"); tn.handy=ev("e-handy"); tn.email=ev("e-em"); tn.beruf=ev("e-br"); tn.sehhilfe=ev("e-sh"); tn.krankenkasse=ev("e-kk"); tn.versicherungsnr=ev("e-vn2"); tn.geburtsland=ev("e-gl"); tn.geburtsname=ev("e-gn"); tn.fs_klasse=ev("e-fsk"); tn.fs_behoerde=ev("e-fsb"); tn.fs_datum=ev("e-fsd");
     tn.gutschein=ev("e-gs"); tn.strasse=ev("e-st");
