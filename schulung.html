@@ -6429,15 +6429,9 @@ function openParticipant(id, presetCoId){
   const coOpts='<option value="">— keine Firma —</option>'+state.companies.map(c=>`<option value="${c.id}" ${effectiveCoId===c.id?'selected':''}>${c.name}</option>`).join('');
   document.getElementById('modalContent').innerHTML=`
     <h3>${id?'Teilnehmer bearbeiten':'Neuer Teilnehmer'}</h3>
-    <div class="grid grid-2">
-      <div class="field"><label>Nachname *</label><input id="m_lastName" value="${_esc(p.lastName||'')}" placeholder="Mustermann"></div>
-      <div class="field"><label>Vorname *</label><input id="m_firstName" value="${_esc(p.firstName||'')}" placeholder="Max"></div>
-    </div>
-    <div class="grid grid-2">
-      <div class="field"><label>Geburtsdatum</label><input type="date" id="m_birth" value="${p.birth||''}"></div>
-      <div class="field"><label>Geburtsort</label><input id="m_bp" value="${_esc(p.birthplace||'')}"></div>
+
     <div class="field">
-      <label>Geschlecht <span style="color:var(--danger,#C0001A);font-size:11px">(KBA-Meldung BKrFQG)</span></label>
+      <label>Geschlecht</label>
       <select id="ext_GESCHLECHT">
         <option value="">&#8211; bitte w&#228;hlen &#8211;</option>
         <option value="m" ${(p.extDates||{}).GESCHLECHT==='m'?'selected':''}>m&#228;nnlich</option>
@@ -6445,6 +6439,13 @@ function openParticipant(id, presetCoId){
         <option value="d" ${(p.extDates||{}).GESCHLECHT==='d'?'selected':''}>divers</option>
       </select>
     </div>
+    <div class="grid grid-2">
+      <div class="field"><label>Nachname *</label><input id="m_lastName" value="${_esc(p.lastName||'')}" placeholder="Mustermann"></div>
+      <div class="field"><label>Vorname *</label><input id="m_firstName" value="${_esc(p.firstName||'')}" placeholder="Max"></div>
+    </div>
+    <div class="grid grid-2">
+      <div class="field"><label>Geburtsdatum</label><input type="date" id="m_birth" value="${p.birth||''}"></div>
+      <div class="field"><label>Geburtsort</label><input id="m_bp" value="${_esc(p.birthplace||'')}"></div>
     </div>
     <div class="grid grid-2">
       <div class="field"><label>Straße / Hausnummer</label><input id="m_street" value="${_esc(p.street||'')}" placeholder="Musterstraße 12"></div>
