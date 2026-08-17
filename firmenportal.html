@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Firmenportal – Fahrschulteam Thorsten Gels</title>
+<meta name="robots" content="noindex,nofollow" />
+<style>
+  :root{--red:#d71920;--ink:#1c2126;--muted:#5b6570;--line:#e7e9ee;
+    --green:#1f7a3d;--green-bg:#e7f7ec;--amber:#8a6100;--amber-bg:#fff5e0;--red-bg:#fdecec}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,"Segoe UI",Roboto,Arial,sans-serif;color:var(--ink);background:#f6f7f9;line-height:1.5}
+  .wrap{max-width:980px;margin:0 auto;padding:22px 16px 50px}
+  header{display:flex;align-items:center;gap:14px;margin-bottom:14px}
+  header img{height:44px}
+  header h1{font-size:21px;margin:0}
+  header p{margin:2px 0 0;color:var(--muted);font-size:13.5px}
+  .card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:16px}
+  h2{font-size:16px;margin:0 0 10px}
+  label{font-size:13px;font-weight:600;display:block;margin-bottom:4px}
+  input{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:9px;font-size:15px}
+  .btn{display:inline-block;background:var(--red);color:#fff;border:0;border-radius:9px;
+    padding:10px 18px;font-size:14.5px;font-weight:700;cursor:pointer;text-decoration:none}
+  .btn.ghost{background:#fff;color:var(--ink);border:1px solid var(--line)}
+  .btn.sm{padding:6px 12px;font-size:13px}
+  .err{color:var(--red);font-size:13.5px;margin-top:8px}
+  table{width:100%;border-collapse:collapse;font-size:13.5px}
+  th{font-size:11.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);text-align:left;
+    padding:8px 10px;border-bottom:2px solid var(--line)}
+  td{padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:middle}
+  .tag{display:inline-block;font-size:11.5px;font-weight:700;border-radius:999px;padding:3px 9px;white-space:nowrap}
+  .t-ok{background:var(--green-bg);color:var(--green)}
+  .t-warn{background:var(--amber-bg);color:var(--amber)}
+  .t-crit{background:var(--red-bg);color:var(--red)}
+  .t-mut{background:#eef1f5;color:#48525d}
+  .top{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+  .muted{color:var(--muted);font-size:12.5px}
+  .modal-bg{position:fixed;inset:0;background:rgba(20,24,30,.5);display:none;align-items:center;justify-content:center;padding:16px;z-index:50}
+  .modal-bg.open{display:flex}
+  .modal{background:#fff;border-radius:14px;padding:20px;max-width:440px;width:100%}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .terminrow{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;
+    border:1px solid var(--line);border-radius:10px;padding:9px 12px;margin-bottom:8px;font-size:13.5px}
+  @media(max-width:640px){table{font-size:12.5px} td,th{padding:6px 6px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <img src="icons/logo.png" alt="" onerror="this.style.display='none'">
+    <div>
+      <h1>Firmenportal</h1>
+      <p>Fahrschulteam Thorsten Gels · Ihre Fahrer, Fristen und Termine im Überblick</p>
+    </div>
+  </header>
+
+  <!-- Anmeldung -->
+  <div class="card" id="loginCard">
+    <h2>Anmeldung</h2>
+    <p class="muted" style="margin:0 0 12px">Bitte geben Sie den Zugangscode Ihrer Firma ein. Sie haben keinen Code?
+      Rufen Sie uns an: <b>0591 / 51403</b>.</p>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:end">
+      <div style="flex:1;min-width:200px"><label>Zugangscode</label>
+        <input id="code" placeholder="z. B. A1B2C3D4" autocomplete="off" style="text-transform:uppercase"></div>
+      <button class="btn" id="loginBtn" onclick="laden()">Anmelden</button>
+    </div>
+    <div class="err" id="loginErr"></div>
+  </div>
+
+  <div id="app" style="display:none">
+    <div class="top">
+      <h2 style="margin:0" id="firmaName"></h2>
+      <button class="btn ghost sm" onclick="abmelden()">Abmelden</button>
+    </div>
+
+    <div class="card">
+      <h2>Ihre Fahrer</h2>
+      <input id="suche" placeholder="Fahrer suchen …" oninput="renderFahrer()" style="margin-bottom:10px;max-width:320px">
+      <div style="overflow-x:auto">
+      <table>
+        <thead><tr><th>Name</th><th>Kontakt</th><th>BKF-Weiterbildung</th><th>Fahrerlaubnis</th><th></th></tr></thead>
+        <tbody id="fBody"></tbody>
+      </table>
+      </div>
+      <p class="muted" style="margin:10px 0 0">BKF: 5 Tagesmodule (35 Std.) müssen bis zum Stichtag absolviert sein (§ 5 BKrFQG).
+        Adresse, Telefon und E-Mail Ihrer Fahrer können Sie über ✎ selbst aktualisieren.</p>
+    </div>
+
+    <div class="card">
+      <h2>Kommende Kurstermine</h2>
+      <div id="termine"></div>
+      <p class="muted" style="margin:8px 0 0">Anmeldung direkt über den Link – oder telefonisch unter 0591 / 51403.</p>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="mBg">
+  <div class="modal">
+    <h2 style="margin-bottom:12px">Kontaktdaten bearbeiten</h2>
+    <p style="font-weight:700;margin:0 0 12px" id="mName"></p>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <div><label>Straße / Hausnummer</label><input id="m_street"></div>
+      <div class="grid2">
+        <div><label>PLZ</label><input id="m_zip"></div>
+        <div><label>Ort</label><input id="m_city"></div>
+      </div>
+      <div><label>Telefon / Mobil</label><input id="m_phone"></div>
+      <div><label>E-Mail</label><input id="m_email"></div>
+    </div>
+    <div class="err" id="mErr"></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
+      <button class="btn ghost" onclick="schliessen()">Abbrechen</button>
+      <button class="btn" id="mSave" onclick="speichern()">Speichern</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var API="/.netlify/functions/firmenportal";
+  var daten=null, aktCode="", bearbId=null;
+  var ANMELDUNG="https://newslettertool.netlify.app/anmeldung.html";
+
+  function de(iso){ if(!iso) return ""; var p=String(iso).split("-"); return p.length===3?p[2]+"."+p[1]+"."+p[0]:iso; }
+  function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];}); }
+  function tageBis(iso){ if(!iso) return null; return Math.round((new Date(iso)-new Date())/86400000); }
+
+  window.laden=async function(){
+    var code=(document.getElementById("code").value||"").trim().toUpperCase();
+    var err=document.getElementById("loginErr"); err.textContent="";
+    if(!code){ err.textContent="Bitte Zugangscode eingeben."; return; }
+    document.getElementById("loginBtn").disabled=true;
+    try{
+      var r=await fetch(API,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({code:code})});
+      var d=await r.json();
+      if(!d.success){ err.textContent=d.message||"Anmeldung fehlgeschlagen."; return; }
+      daten=d; aktCode=code;
+      try{ sessionStorage.setItem("ftg-portal-code",code); }catch(e){}
+      document.getElementById("loginCard").style.display="none";
+      document.getElementById("app").style.display="";
+      document.getElementById("firmaName").textContent=d.firma.name;
+      renderFahrer(); renderTermine();
+    }catch(e){ err.textContent="Der Dienst ist gerade nicht erreichbar."; }
+    finally{ document.getElementById("loginBtn").disabled=false; }
+  };
+
+  window.abmelden=function(){
+    daten=null; aktCode="";
+    try{ sessionStorage.removeItem("ftg-portal-code"); }catch(e){}
+    document.getElementById("app").style.display="none";
+    document.getElementById("loginCard").style.display="";
+    document.getElementById("code").value="";
+  };
+
+  window.renderFahrer=function(){
+    var q=(document.getElementById("suche").value||"").toLowerCase();
+    var b=document.getElementById("fBody");
+    var rows=(daten.fahrer||[]).filter(function(f){ return (f.name+" "+f.email+" "+f.phone).toLowerCase().indexOf(q)!==-1; });
+    if(!rows.length){ b.innerHTML='<tr><td colspan="5" class="muted">Keine Fahrer gefunden.</td></tr>'; return; }
+    b.innerHTML=rows.map(function(f){
+      var bkf;
+      if(!f.sz95){ bkf='<span class="tag t-mut">kein Stichtag bekannt</span>'; }
+      else{
+        var t=tageBis(f.sz95);
+        var cls=f.module>=5?"t-ok":(t!==null&&t<365&&f.module<5?"t-crit":"t-warn");
+        bkf='<span class="tag '+cls+'">'+f.module+' / 5 Module · Stichtag '+de(f.sz95)+'</span>';
+      }
+      var fe="—";
+      if(f.fe){ var tf=tageBis(f.fe); var fcls=tf===null?"t-mut":(tf<0?"t-crit":(tf<180?"t-warn":"t-ok"));
+        fe='<span class="tag '+fcls+'">'+(tf!==null&&tf<0?"abgelaufen ":"gültig bis ")+de(f.fe)+'</span>'; }
+      var kontakt=[f.street,[f.zip,f.city].filter(Boolean).join(" ")].filter(Boolean).join(", ");
+      return '<tr><td><b>'+esc(f.name)+'</b>'+(f.birth?'<div class="muted">geb. '+de(f.birth)+'</div>':'')+'</td>'
+        +'<td style="font-size:12.5px">'+esc(kontakt||"—")+(f.phone?'<div class="muted">'+esc(f.phone)+'</div>':'')+(f.email?'<div class="muted">'+esc(f.email)+'</div>':'')+'</td>'
+        +'<td>'+bkf+'</td><td>'+fe+'</td>'
+        +'<td><button class="btn ghost sm" onclick="bearbeiten(\''+f.id+'\')" title="Kontaktdaten ändern">✎</button></td></tr>';
+    }).join("");
+  };
+
+  window.renderTermine=function(){
+    var el=document.getElementById("termine");
+    var t=daten.termine||[];
+    if(!t.length){ el.innerHTML='<p class="muted">Zurzeit sind keine kommenden Termine eingetragen.</p>'; return; }
+    el.innerHTML=t.map(function(k){
+      var frei=Math.max(0,(k.capacity||18)-(k.belegt||0));
+      var termin=k.termine?String(k.termine).replace(/^\s*Termine:\s*/i,""):(k.bis&&k.bis!==k.date?de(k.date)+" – "+de(k.bis):de(k.date));
+      var link=ANMELDUNG+"?modul="+encodeURIComponent(k.type||"")+"&termin="+encodeURIComponent(termin);
+      return '<div class="terminrow"><span><b>'+esc(k.type)+'</b> · '+esc(termin)+(k.location?' · '+esc(k.location):'')+'</span>'
+        +'<span style="display:flex;gap:8px;align-items:center"><span class="tag '+(frei>0?"t-ok":"t-crit")+'">'+(frei>0?frei+" Plätze frei":"ausgebucht")+'</span>'
+        +'<a class="btn sm" target="_blank" rel="noopener" href="'+link+'">Fahrer anmelden</a></span></div>';
+    }).join("");
+  };
+
+  window.bearbeiten=function(id){
+    var f=(daten.fahrer||[]).find(function(x){return x.id===id;}); if(!f) return;
+    bearbId=id;
+    document.getElementById("mName").textContent=f.name;
+    document.getElementById("m_street").value=f.street||"";
+    document.getElementById("m_zip").value=f.zip||"";
+    document.getElementById("m_city").value=f.city||"";
+    document.getElementById("m_phone").value=f.phone||"";
+    document.getElementById("m_email").value=f.email||"";
+    document.getElementById("mErr").textContent="";
+    document.getElementById("mBg").classList.add("open");
+  };
+  window.schliessen=function(){ document.getElementById("mBg").classList.remove("open"); bearbId=null; };
+
+  window.speichern=async function(){
+    if(!bearbId) return;
+    var patch={ street:document.getElementById("m_street").value, zip:document.getElementById("m_zip").value,
+      city:document.getElementById("m_city").value, phone:document.getElementById("m_phone").value,
+      email:document.getElementById("m_email").value };
+    var btn=document.getElementById("mSave"); btn.disabled=true;
+    try{
+      var r=await fetch(API,{method:"POST",headers:{"content-type":"application/json"},
+        body:JSON.stringify({code:aktCode,action:"update",id:bearbId,patch:patch})});
+      var d=await r.json();
+      if(!d.success){ document.getElementById("mErr").textContent=d.message||"Speichern fehlgeschlagen."; return; }
+      var f=(daten.fahrer||[]).find(function(x){return x.id===bearbId;});
+      if(f){ f.street=patch.street; f.zip=patch.zip; f.city=patch.city; f.phone=patch.phone; f.email=patch.email; }
+      schliessen(); renderFahrer();
+    }catch(e){ document.getElementById("mErr").textContent="Der Dienst ist gerade nicht erreichbar."; }
+    finally{ btn.disabled=false; }
+  };
+
+  // Automatisch wieder anmelden, wenn der Code in dieser Sitzung schon benutzt wurde.
+  try{
+    var merk=sessionStorage.getItem("ftg-portal-code");
+    if(merk){ document.getElementById("code").value=merk; laden(); }
+  }catch(e){}
+})();
+</script>
+</body>
+</html>

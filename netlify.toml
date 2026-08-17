@@ -1,0 +1,9 @@
+[build]
+  functions = "functions"
+  publish   = "."
+
+[functions]
+  node_bundler = "nft"
+
+[functions.ki]
+  timeout = 26

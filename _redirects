@@ -1,0 +1,18 @@
+# ══════════════════════════════════════════════════════════════════
+#  Fahrschulverwaltung – interne Dateien nicht öffentlich ausliefern
+#
+#  Netlify veröffentlicht bei  publish = "."  ALLE Dateien des Ordners,
+#  also auch die Import-Skripte mit echten Teilnehmer- und Firmendaten.
+#  Diese Regeln liefern für solche Pfade eine Fehlerseite statt der Datei.
+#  Das Rufzeichen (!) sorgt dafür, dass die Regel auch dann greift, wenn
+#  die Datei tatsächlich vorhanden ist.
+#
+#  Zusätzlich empfohlen: den Ordner "import" ganz aus dem Projektordner
+#  herausnehmen – die Skripte sind in Supabase bereits eingespielt.
+# ══════════════════════════════════════════════════════════════════
+
+/import/*      /nicht-oeffentlich   404!
+/import        /nicht-oeffentlich   404!
+/supabase/*    /nicht-oeffentlich   404!
+/functions/*   /nicht-oeffentlich   404!
+/docs/*        /nicht-oeffentlich   404!

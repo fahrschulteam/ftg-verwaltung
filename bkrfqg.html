@@ -1,0 +1,1106 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BKF-Qualifikation – Kursplanung</title>
+<style>
+/* ── App design tokens (matching Fahrschulverwaltung) ── */
+:root{
+  --rot:#C0001A; --blau:#2A6CAE; --blau-bg:#e8f0fb;
+  --grau:#6b7280; --border:#e0e2e6;
+  --bg:#f4f5f7; --card:#ffffff;
+  --text:#111827; --text2:#374151; --text3:#6b7280;
+  --shadow:0 1px 4px rgba(0,0,0,.08);
+  --radius:6px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,-apple-system,sans-serif;font-size:13px;color:var(--text);background:var(--bg);overflow:hidden}
+
+/* ── Layout ── */
+.layout{display:flex;height:100vh;overflow:hidden}
+.sidebar{width:230px;min-width:230px;background:#fff;border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+.sb-head{padding:14px 14px 12px;background:var(--blau);color:#fff;flex-shrink:0}
+.sb-head h2{font-size:14px;font-weight:600;margin:0}
+.sb-head p{font-size:11px;opacity:.8;margin:3px 0 0}
+.sb-list{overflow-y:auto;flex:1;padding:8px 6px}
+.course-item{padding:9px 10px;border-radius:var(--radius);cursor:pointer;margin-bottom:4px;border:1px solid transparent;transition:background .12s,border-color .12s}
+.course-item:hover{background:var(--blau-bg);border-color:#b5d4f4}
+.course-item.active{background:var(--blau-bg);border-color:var(--blau)}
+.ci-badge{display:inline-block;font-size:10px;font-weight:600;padding:2px 6px;border-radius:3px;margin-bottom:4px;letter-spacing:.03em;text-transform:uppercase}
+.ci-title{font-size:12px;font-weight:600;color:var(--text);line-height:1.35}
+.ci-meta{font-size:11px;color:var(--text3);margin-top:2px}
+
+/* ── Main ── */
+.main{flex:1;overflow:hidden;display:flex;flex-direction:column}
+.toolbar{background:#fff;border-bottom:1px solid var(--border);padding:10px 18px;display:flex;align-items:center;gap:10px;flex-shrink:0}
+.toolbar h2{font-size:15px;font-weight:600;color:var(--text);flex:1;margin:0}
+.chip{font-size:11px;font-weight:500;padding:3px 9px;border-radius:12px;background:var(--blau-bg);color:var(--blau);white-space:nowrap}
+.chip-kb{background:#fff8e6;color:#92400e}
+.tabs-bar{display:flex;background:#fff;border-bottom:1px solid var(--border);flex-shrink:0;padding:0 18px}
+.tab{padding:9px 14px;font-size:12px;font-weight:500;color:var(--text3);cursor:pointer;border-bottom:2px solid transparent;transition:all .12s;user-select:none}
+.tab.active{color:var(--blau);border-bottom-color:var(--blau)}
+.tab:hover:not(.active){color:var(--text2)}
+.content{flex:1;overflow-y:auto;padding:16px 18px}
+
+/* ── Cards / bands ── */
+.card{background:#fff;border-radius:8px;border:1px solid var(--border);margin-bottom:10px;overflow:hidden;box-shadow:var(--shadow)}
+.band-hdr{padding:10px 14px;display:flex;align-items:center;gap:9px;cursor:pointer;user-select:none;min-height:42px}
+.band-hdr:hover{background:#f9fafb}
+.band-nr{font-size:10px;font-weight:700;color:#fff;background:var(--blau);padding:3px 8px;border-radius:3px;white-space:nowrap;flex-shrink:0}
+.band-title{font-size:13px;font-weight:600;color:var(--text);flex:1;min-width:0}
+.band-meta{display:flex;gap:6px;align-items:center;flex-shrink:0}
+.chevron{font-size:10px;color:var(--text3);transition:transform .15s;flex-shrink:0;margin-left:2px}
+.chevron.open{transform:rotate(90deg)}
+.band-body{border-top:1px solid var(--border)}
+.thema-row{display:flex;align-items:flex-start;padding:7px 14px;border-bottom:1px solid #f3f4f6;gap:8px}
+.thema-row:last-child{border-bottom:none}
+.t-caret{cursor:pointer;color:var(--text3);font-size:9px;padding-top:3px;flex-shrink:0;width:14px}
+.t-content{flex:1;min-width:0}
+.t-title{font-size:12px;color:var(--text);display:flex;align-items:center;gap:7px}
+.t-inhalt{margin-top:6px;padding:7px 9px;background:#f9fafb;border-radius:4px;font-size:11px;color:var(--text2)}
+.t-inhalt li{margin-left:16px;margin-bottom:2px;list-style:disc}
+
+/* ── Form elements ── */
+.label{font-size:11px;font-weight:600;text-transform:uppercase;color:var(--grau);letter-spacing:.04em;margin-bottom:4px;display:block}
+input[type=text],input[type=date],input[type=number],.select-input{
+  border:1px solid var(--border);border-radius:var(--radius);padding:6px 10px;font-size:13px;font-family:inherit;
+  color:var(--text);background:#fff;width:100%;
+}
+input[type=text]:focus,input[type=date]:focus,input[type=number]:focus,.select-input:focus{outline:none;border-color:var(--blau)}
+.dz-select{padding:5px 8px;border:1px solid var(--border);border-radius:var(--radius);font-size:12px;color:var(--text);background:#fff;min-width:140px;cursor:pointer}
+.dz-select:focus{outline:none;border-color:var(--blau)}
+.btn{padding:7px 14px;border-radius:var(--radius);font-size:13px;font-weight:500;font-family:inherit;border:1px solid var(--border);background:#fff;cursor:pointer;color:var(--text);transition:background .12s}
+.btn:hover{background:#f3f4f6}
+.btn-primary{background:var(--blau);color:#fff;border-color:var(--blau)}
+.btn-primary:hover{background:#1e56a0}
+.btn-primary:disabled{opacity:.5;cursor:default}
+.btn-sm{padding:4px 10px;font-size:12px}
+.btn-del{color:var(--rot);border-color:var(--rot)}
+.btn-del:hover{background:#fff5f5}
+.form-row{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap}
+.form-field{display:flex;flex-direction:column}
+
+/* ── Summary stats ── */
+.stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+.stat{background:#fff;border:1px solid var(--border);border-radius:8px;padding:12px;text-align:center;box-shadow:var(--shadow)}
+.stat-val{font-size:22px;font-weight:600;color:var(--blau)}
+.stat-lbl{font-size:10px;font-weight:600;text-transform:uppercase;color:var(--text3);margin-top:2px;letter-spacing:.03em}
+
+/* ── Instructor cards ── */
+.dz-card{background:#fff;border:1px solid var(--border);border-radius:8px;padding:10px 14px;display:flex;align-items:center;gap:11px;margin-bottom:7px;box-shadow:var(--shadow)}
+.dz-avatar{width:34px;height:34px;border-radius:50%;background:var(--blau);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0}
+.dz-name{font-weight:600;font-size:13px;color:var(--text)}
+.dz-kuerzel{font-size:11px;color:var(--text3)}
+
+/* ── Plan table ── */
+.plan-day{background:#fff;border:1px solid var(--border);border-radius:8px;margin-bottom:10px;overflow:hidden;box-shadow:var(--shadow)}
+.plan-day-hdr{padding:8px 14px;background:#f9fafb;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:9px}
+.plan-tag{font-size:11px;font-weight:700;color:#fff;background:var(--blau);padding:2px 9px;border-radius:3px}
+.plan-date{font-weight:600;font-size:13px;color:var(--text)}
+.plan-tbl{width:100%;border-collapse:collapse}
+.plan-tbl th{padding:6px 12px;text-align:left;background:#f9fafb;font-size:10px;font-weight:700;text-transform:uppercase;color:var(--text3);letter-spacing:.04em;border-bottom:1px solid var(--border)}
+.plan-tbl td{padding:6px 12px;border-bottom:1px solid #f3f4f6;font-size:12px;color:var(--text);vertical-align:middle}
+.plan-tbl tr:last-child td{border-bottom:none}
+.dz-pill{font-size:11px;padding:2px 8px;border-radius:10px;background:var(--blau-bg);color:var(--blau);font-weight:500}
+
+/* ── Plan config card ── */
+.cfg-card{background:#fff;border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:14px;box-shadow:var(--shadow)}
+
+/* ── Empty / no-selection ── */
+.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;height:220px;color:var(--text3);text-align:center;gap:8px}
+.empty-icon{font-size:40px;opacity:.25}
+.empty h3{font-size:14px;font-weight:600;color:var(--text2)}
+.empty p{font-size:12px}
+.no-sel{display:flex;align-items:center;justify-content:center;flex:1;flex-direction:column;gap:10px;color:var(--text3)}
+.no-sel svg{opacity:.2}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-thumb{background:#d1d5db;border-radius:3px}
+::-webkit-scrollbar-track{background:transparent}
+
+/* ── KI-Panel ── */
+.ki-panel{width:0;min-width:0;overflow:hidden;background:#fff;border-left:1px solid var(--border);display:flex;flex-direction:column;transition:width .2s ease,min-width .2s ease;flex-shrink:0}
+.ki-panel.open{width:340px;min-width:340px}
+.ki-head{padding:11px 14px;background:var(--blau);color:#fff;display:flex;align-items:center;gap:8px;flex-shrink:0}
+.ki-head h3{font-size:13px;font-weight:600;flex:1;margin:0}
+.ki-head-badge{font-size:10px;background:rgba(255,255,255,.25);padding:2px 7px;border-radius:10px;white-space:nowrap}
+.ki-close{background:none;border:none;color:#fff;font-size:18px;cursor:pointer;line-height:1;padding:0 2px;opacity:.8}
+.ki-close:hover{opacity:1}
+.ki-apikey-setup{padding:14px;background:#fff8e1;border-bottom:1px solid #ffe082;flex-shrink:0}
+.ki-apikey-setup p{font-size:11px;color:#5f4a00;margin-bottom:8px;line-height:1.5}
+.ki-apikey-row{display:flex;gap:6px}
+.ki-apikey-row input{flex:1;font-size:12px;padding:5px 8px;border:1px solid var(--border);border-radius:var(--radius)}
+.ki-ctx{padding:8px 12px;background:#f9fafb;border-bottom:1px solid var(--border);flex-shrink:0}
+.ki-ctx-label{font-size:10px;font-weight:700;text-transform:uppercase;color:var(--text3);letter-spacing:.04em;margin-bottom:5px}
+.ki-ctx-course{font-size:12px;font-weight:600;color:var(--text);margin-bottom:3px}
+.ki-ctx-band{font-size:11px;color:var(--text3)}
+.ki-quick{padding:8px 10px;border-bottom:1px solid var(--border);display:flex;flex-wrap:wrap;gap:5px;flex-shrink:0}
+.ki-qa{font-size:11px;padding:4px 9px;border-radius:10px;border:1px solid var(--blau);color:var(--blau);background:#fff;cursor:pointer;transition:all .12s;white-space:nowrap}
+.ki-qa:hover{background:var(--blau);color:#fff}
+.ki-messages{flex:1;overflow-y:auto;padding:10px 12px;display:flex;flex-direction:column;gap:8px}
+.ki-msg{max-width:90%;padding:8px 10px;border-radius:8px;font-size:12px;line-height:1.55;word-break:break-word}
+.ki-msg.user{align-self:flex-end;background:var(--blau);color:#fff;border-bottom-right-radius:2px}
+.ki-msg.assistant{align-self:flex-start;background:#f3f4f6;color:var(--text);border-bottom-left-radius:2px}
+.ki-msg.error{align-self:flex-start;background:#fff5f5;color:var(--rot);border:1px solid #fecaca}
+.ki-msg.loading{align-self:flex-start;background:#f3f4f6;color:var(--text3)}
+.ki-dots{display:inline-flex;gap:3px}
+.ki-dots span{width:5px;height:5px;background:var(--text3);border-radius:50%;animation:ki-bounce .9s infinite}
+.ki-dots span:nth-child(2){animation-delay:.15s}
+.ki-dots span:nth-child(3){animation-delay:.3s}
+@keyframes ki-bounce{0%,80%,100%{transform:translateY(0)}40%{transform:translateY(-5px)}}
+.ki-input-area{padding:10px 12px;border-top:1px solid var(--border);flex-shrink:0;display:flex;flex-direction:column;gap:6px}
+.ki-textarea{width:100%;padding:7px 9px;border:1px solid var(--border);border-radius:var(--radius);font-size:12px;font-family:inherit;resize:none;line-height:1.5}
+.ki-textarea:focus{outline:none;border-color:var(--blau)}
+.ki-send-row{display:flex;justify-content:flex-end;gap:6px}
+.ki-empty-msg{padding:20px 12px;text-align:center;color:var(--text3);font-size:12px;line-height:1.6}
+
+/* KI-Button im Band-Header */
+.btn-ki{font-size:10px;padding:2px 7px;border-radius:3px;border:1px solid var(--blau);color:var(--blau);background:#fff;cursor:pointer;font-weight:600;transition:all .12s;white-space:nowrap}
+.btn-ki:hover{background:var(--blau);color:#fff}
+
+/* KI toggle button im Toolbar */
+.btn-ki-toggle{display:flex;align-items:center;gap:5px;padding:6px 12px;border-radius:var(--radius);border:1px solid var(--blau);color:var(--blau);background:#fff;cursor:pointer;font-size:12px;font-weight:500;transition:all .12s}
+.btn-ki-toggle:hover,.btn-ki-toggle.active{background:var(--blau);color:#fff}
+.btn-ki-toggle svg{flex-shrink:0}
+</style>
+</head>
+<body>
+
+<div class="layout">
+  <!-- Sidebar: course list -->
+  <div class="sidebar">
+    <div class="sb-head">
+      <h2>BKF-Qualifikation</h2>
+      <p>Kursplanung &amp; Dozentenzuordnung</p>
+    </div>
+    <div class="sb-list" id="courseList"></div>
+  </div>
+
+  <!-- Main content -->
+  <div class="main" id="mainArea">
+    <div class="no-sel">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/>
+        <rect x="9" y="3" width="6" height="4" rx="1"/>
+        <path d="M9 12h6M9 16h4"/>
+      </svg>
+      <span style="font-size:14px">Lehrgang auswählen</span>
+    </div>
+  </div>
+
+  <!-- KI-Assistent Panel -->
+  <div class="ki-panel" id="kiPanel">
+    <div class="ki-head">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0"><path d="M12 2a2 2 0 0 1 2 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 0 1 7 7h1a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-1H2a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h1a7 7 0 0 1 7-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 0 1 2-2zM9 14a2 2 0 1 0 0 4 2 2 0 0 0 0-4zm6 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4z"/></svg>
+      <h3>KI-Assistent</h3>
+      <span class="ki-head-badge" id="kiModelBadge">claude-sonnet</span>
+      <button class="ki-close" id="kiCloseBtn" title="Schließen">×</button>
+    </div>
+    <div id="kiApikeySetup" class="ki-apikey-setup" style="display:none">
+      <p>Anthropic API-Key eingeben (wird lokal gespeichert, nicht übertragen):</p>
+      <div class="ki-apikey-row">
+        <input type="password" id="kiApiKeyInput" placeholder="sk-ant-…">
+        <button class="btn btn-sm btn-primary" id="kiApiKeySave">Speichern</button>
+      </div>
+    </div>
+    <div class="ki-ctx" id="kiCtx">
+      <div class="ki-ctx-label">Kontext</div>
+      <div class="ki-ctx-course" id="kiCtxCourse">–</div>
+      <div class="ki-ctx-band" id="kiCtxBand">–</div>
+    </div>
+    <div class="ki-quick" id="kiQuickActions"></div>
+    <div class="ki-messages" id="kiMessages">
+      <div class="ki-empty-msg">
+        Fragen zur BKrFQV, Unterrichtshinweise, Prüfungsfragen – ich helfe gerne.<br>
+        Wähle eine Schnellaktion oder stell eine eigene Frage.
+      </div>
+    </div>
+    <div class="ki-input-area">
+      <textarea class="ki-textarea" id="kiInput" rows="2" placeholder="Frage eingeben …"></textarea>
+      <div class="ki-send-row">
+        <button class="btn btn-sm" id="kiClearBtn">Verlauf löschen</button>
+        <button class="btn btn-sm btn-primary" id="kiSendBtn">Senden</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════════════
+// COURSE DATA  (gemäß Anlage 1 BKrFQV / DEGENER Rahmenpläne Stand 2021/2022)
+// ═══════════════════════════════════════════════════════════════════════════
+
+const fmtMin = m => {
+  if (!m || m <= 0) return '—';
+  const h = Math.floor(m / 60), r = m % 60;
+  return h > 0 ? (r > 0 ? `${h}h ${r}min` : `${h}h`) : `${r}min`;
+};
+const fmtDate = d => d.toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric' });
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
+
+// ── Band-Builder-Funktionen ───────────────────────────────────────────────
+
+function mkB1(id, min = 810) {
+  return { id, nr: 'Band 1', title: 'Gesundheit & Fitness', kb: '3.3, 3.4', min, themen: [
+    { title: 'Gesundheitsvorsorge', min: 180, inhalt: ['Besondere Belastungen der Berufskraftfahrer', 'Gesundheitliche Anforderungen an den Fahrer und Maßnahmen des Arbeitsschutzes'] },
+    { title: 'Ergonomie – Gesundheitsgerechte Bewegung und Haltungen', min: 180, inhalt: ['Wirbelsäule', 'Körperhaltung', 'Körperliche Haltung und Ergonomie', 'Umgang mit Lasten'] },
+    { title: 'Physische Kondition und individueller Schutz', min: 90, inhalt: ['Übungen', 'Sportliche Betätigung', 'Individueller Schutz'] },
+    { title: 'Grundsätze einer gesunden und ausgewogenen Ernährung', min: 90, inhalt: ['Ernährung unterwegs', 'Energie aus der Nahrung', 'Wichtige Nährstoffe', 'Zehn Regeln der DGE'] },
+    { title: 'Müdigkeit', min: 90, inhalt: ['Ursachen', 'Symptome und Auswirkungen', 'Zyklus von Aktivität und Ruhezeit'] },
+    { title: 'Stress', min: 180, inhalt: ['Drei Phasen der Stressreaktion', 'Belastungsfaktoren', 'Symptome', 'Stresstreppe', 'Anti-Stress-, Vermeidungs- und Bewältigungsstrategien'] },
+  ]};
+}
+
+function mkB2(id, min, optMin = 300, riskMin = 60) {
+  return { id, nr: 'Band 2', title: 'Kinematische Kette | Energie & Umwelt', kb: '1.1, 1.3, 1.3a', min, themen: [
+    { title: 'Motor / Dieselmotor', min: 270, inhalt: ['Technische Daten eines Dieselmotors', 'Aufbau eines Dieselmotors', 'Arbeitsweise eines Viertakt-Motors', 'Einspritzverfahren', 'Kraftstoffanlage', 'Aufladung der Motoren', 'Luftfilter', 'Motorkühlung', 'Motorschmierung', 'Abgasanlage', 'Motorsteuerung (Motormanagement)'] },
+    { title: 'Alternative Antriebe', min: null, inhalt: ['Erdgasmotor', 'Wasserstoffmotor', 'Brennstoffzellenantrieb', 'Hybridantrieb'] },
+    { title: 'Motorkennlinien', min: null, inhalt: ['Motorkennlinien'] },
+    { title: 'Eigenschaften und Arten von Kraftstoffen', min: 90, inhalt: ['Diesel-Kraftstoffe', 'Benzin-Kraftstoffe', 'Alternative Kraftstoffe'] },
+    { title: 'Emissionen', min: null, inhalt: ['Abgaszusammensetzung', 'Abgas- und Diagnosegesetzgebung', 'Abgasreinigung beim Diesel-Nutzfahrzeugmotor', 'Strategien zur Abgasnachbehandlung'] },
+    { title: 'Antriebskonzeption', min: 270, inhalt: ['Radformel – Antriebskombination'] },
+    { title: 'Kupplung', min: null, inhalt: ['Funktion', 'Störung und Fehler an der Kupplung', 'Wandler'] },
+    { title: 'Getriebe', min: null, inhalt: ['Aufbau eines 4-Gang-Wechsel-Getriebes (Schaltmuffengetriebe)', 'Getriebebauarten', 'Automatisierte Schaltung', 'Automatikgetriebe'] },
+    { title: 'Gelenkwelle, Achsantrieb, Radantrieb', min: null, inhalt: ['Gelenkwelle', 'Achsantrieb', 'Radantrieb'] },
+    { title: 'Fahrwerk', min: 90, inhalt: ['Rahmen im Lkw-Bau', 'Rahmen und Fahrgestelle im Omnibusbau', 'Radaufhängung', 'Rad- und Achsstellung', 'Federung und Dämpfung'] },
+    { title: 'Lenkung', min: null, inhalt: ['Funktion der Hilfskraftlenkung (Servolenkung)', 'Überprüfung und Wartung'] },
+    { title: 'Räder und Reifen', min: null, inhalt: ['Räder', 'Reifen', 'Reifenkennzeichnung', 'Überprüfung von Rädern und Reifen', 'Reifenschäden', 'Radwechsel', 'Radabdeckung', 'Schneeketten'] },
+    { title: 'Optimierung des Kraftstoffverbrauchs', min: optMin, inhalt: ['Kenntnisse über den Drehmomentverlauf des Motors', 'Energiesparende Fahrweise', 'Fahrzeugbedienung', 'Nutzfahrzeuge und Umweltschutz'] },
+    { title: 'Straßenkarten', min: null, inhalt: ['Straßenkarten lesen', 'Spezialkarten', 'Fahrplanung', 'Streckenplanung', 'Zeitplanung'] },
+    { title: 'Risiken im Straßenverkehr', min: riskMin, inhalt: ['Bedingungen vorhersehen', 'Situation bewerten', 'sich anpassen'] },
+  ]};
+}
+
+function mkB3(id, min = 720, druckMin = 360, kwMin = 180) {
+  return { id, nr: 'Band 3', title: 'Bremsanlagen', kb: '1.2', min, themen: [
+    { title: 'Grundbegriffe', min: 180, inhalt: ['Reaktionsweg – Bremsweg – Anhalteweg', 'Aufgaben der Bremsanlage', 'Gesetzliche Vorschriften', 'Grundaufbau einer Bremsanlage'] },
+    { title: 'Arten der Bremsanlagen', min: null, inhalt: ['Mechanische Bremsanlage', 'Hydraulische Bremsanlage', 'Hilfskraft-Bremsanlage', 'Fremdkraft-Bremsanlage'] },
+    { title: 'Druckluftbeschaffungsanlage', min: druckMin, inhalt: ['Kompressor', 'Druckregler', 'Frostschutzeinrichtungen', 'Lufttrockner', 'Mehrkreisschutzventil', 'Luftbehälter', 'Druckmesser', 'Druck-Warneinrichtung'] },
+    { title: 'Feststellbremse', min: null, inhalt: ['Federspeicher-Bremszylinder', 'Feststellbremsventil', 'Hilfsbremse', 'Haltestellenbremse'] },
+    { title: 'Dauerbremsen', min: null, inhalt: ['Motorbremsen', 'Retarder'] },
+    { title: 'Bremsanlage bei Lastzügen und Gelenkomnibussen', min: null, inhalt: ['Bremsanlagen bei Lastzügen', 'Anhänger hinter Lastkraftwagen'] },
+    { title: 'Elektronische Bremsunterstützung', min: null, inhalt: ['Elektronisches Bremssystem (EBS)', 'Antiblockiersystem (ABS)', 'Antriebs-Schlupf-Regelung (ASR)'] },
+    { title: 'Kontrollen, Wartung und Pflege', min: kwMin, inhalt: ['Kontrolle der Druckluftbremsanlage', 'Hydraulische Bremsanlage', 'Erkennen und Beseitigen von Störungen', 'Grenzen des Einsatzes der Bremsanlagen und der Dauerbremse'] },
+  ]};
+}
+
+function mkB4G(id, min = 1440) {
+  return { id, nr: 'Band 4G', title: 'Ladungssicherung', kb: '1.4', min, themen: [
+    { title: 'Rechtliche Grundlagen', min: 135, inhalt: ['StVO, StVZO, OWiG', 'Gefahrgutrecht / GGVSEB', 'CTU-Packrichtlinien', 'StGB, BGB, HGB', 'UVV der BG-Verkehr', 'CMR', 'Überwachung', 'Normen und VDI-Richtlinien', 'Bußgeld'] },
+    { title: 'Physikalische Grundlagen', min: 270, inhalt: ['Masse, Massenkraft, Gewichtskraft', 'Geschwindigkeit, Beschleunigung', 'Fliehkraft, Bewegungsenergie', 'Reibung', 'Standsicherheit des Ladegutes', 'Dynamische Beanspruchung im Straßenverkehr'] },
+    { title: 'Arten der Ladungssicherung', min: 180, inhalt: ['Kraftschlüssige Ladungssicherung', 'Formschlüssige Ladungssicherung'] },
+    { title: 'Berechnung', min: null, inhalt: ['Reibkraft', 'Verbleibende Sicherungskraft', 'Niederzurren / Schrägzurren / Diagonalzurren', 'Berechnung der Nutzlast und der zulässigen Gesamtmasse', 'Auswirkung der Überladung auf die Fahrstabilität'] },
+    { title: 'Fahrzeugaufbauten', min: null, inhalt: ['Festigkeit von Fahrzeugaufbauten', 'Zurrpunkte'] },
+    { title: 'Lastverteilungsplan', min: 90, inhalt: ['Anwendung des Lastverteilungsplans'] },
+    { title: 'Hilfsmittel zur Ladungssicherung', min: 90, inhalt: ['Zurrgurte', 'Zurrketten', 'Zurrdrahtseil', 'Rutschhemmendes Material', 'Staupolster', 'Sperrbalken', 'Kantenschutzwinkel'] },
+    { title: 'Praxisbeispiele Ladungssicherung', min: 135, inhalt: ['Praxisbeispiele Ladungssicherung'] },
+    { title: 'Arbeitssicherheit und Umschlag', min: null, inhalt: ['Arbeitssicherheit beim Beladen'] },
+    { title: 'Praktische Ausbildung', min: 540, inhalt: ['Praktische Übungen zur Ladungssicherung'] },
+  ]};
+}
+
+function mkB4P(id, min = 1440) {
+  return { id, nr: 'Band 4P', title: 'Sicherheit der Fahrgäste', kb: '1.5, 1.6', min, themen: [
+    { title: 'Sicherheit und Komfort', min: 90, inhalt: ['Aktive Sicherheit', 'Passive Sicherheit', 'Maßnahmen zur Gewährleistung der Betriebs- und Verkehrssicherheit', 'Fahrweise und Verhalten'] },
+    { title: 'Pflichten des Fahrzeugführers', min: 135, inhalt: ['Sorgfaltspflicht', 'Nutzung bestimmter Verkehrsflächen', 'Prioritäten setzen', 'Besonderheiten bei der Beförderung bestimmter Fahrgastgruppen', 'Umgang mit Fahrgästen'] },
+    { title: 'Längs- und Seitwärtsbewegungen des Fahrzeugs', min: 90, inhalt: ['Einfluss der Fahrgeschwindigkeit', 'Befahren von Kurven', 'Rücksichtsvolles Verkehrsverhalten', 'Positionierung auf der Fahrbahn', 'Sanftes Abbremsen', 'Beachtung der Überhänge'] },
+    { title: 'Gewährleistung der Sicherheit aller Fahrgäste', min: 45, inhalt: ['Verantwortung des Fahrers', 'Vorbeugende Maßnahmen'] },
+    { title: 'Fahrphysik', min: 360, inhalt: ['Fahrwiderstände', 'Flieh- und Seitenführungskräfte', 'Haft- und Gleitreibung'] },
+    { title: 'Ladungssicherung in Bussen', min: 720, inhalt: ['Rechtliche Grundlagen', 'Physikalische Grundlagen', 'Auswirkung der Überladung auf die Fahrstabilität', 'Arten der Ladungssicherung', 'Lastverteilung', 'Beispiele zur Ladungssicherung'] },
+  ]};
+}
+
+function mkB5(id) {
+  return { id, nr: 'Band 5', title: 'Sozialvorschriften', kb: '2.1', min: 810, themen: [
+    { title: 'Lenk- und Ruhezeiten', min: 360, inhalt: ['Maximale Lenkzeit bis zur ersten Fahrtunterbrechung', 'Tageslenkzeit', 'Wochenlenkzeit', 'Bereitschaftszeit', 'Tägliche Ruhezeit', 'Wöchentliche Ruhezeit', 'Übernahme eines Fahrzeugs nicht an der Betriebsstätte', 'Anordnung der Unterbrechung Fahrtunterbrechung/Ruhezeit', 'Transport auf der Fähre oder Eisenbahn', 'Untersagung der Weiterfahrt', 'Abweichungen', 'Ausnahmen'] },
+    { title: 'Kontrollgeräte', min: 180, inhalt: ['Einbaupflicht Fahrtschreiber in Deutschland (§57a StVZO)', 'Analoge Tachographen (mit Schaublatt)', 'Digitaler Tachograph', 'Prüfung der Fahrtschreiber und Kontrollgeräte (§57b StVZO)', 'Plomben und Einbauschilder', 'Ausdrucke'] },
+    { title: 'Arbeitszeit – 2002/15/EG – ArbZG', min: 180, inhalt: ['Kurzübersichten über die Arbeitszeiten', 'Weitere Pflichten des Unternehmers', 'Bußgeld- und Strafvorschriften (Kurzübersicht)', 'Kontrollrichtlinie', 'Sonntagsfahrverbot', 'Ferienreiseverordnung'] },
+    { title: 'Rechte und Pflichten des Fahrers in der Aus- und Weiterbildung', min: 90, inhalt: ['Grundqualifikation', 'Weiterbildung', 'Befähigungsnachweis'] },
+  ]};
+}
+
+function mkB6G(id, min = 900) {
+  return { id, nr: 'Band 6G', title: 'Vorschriften für den Güterkraftverkehr', kb: '2.2', min, themen: [
+    { title: 'Güterkraftverkehrsgesetz – GüKG (nationale Verkehre)', min: 360, inhalt: ['Geltungsbereich', 'Struktur und Aufgabenbereiche des GüKG', 'Nicht erfasste und ausgenommene Transporte', 'Erteilung/Versagung der Erlaubnis', 'Grenzüberschreitender Gütertransport (Inland)', 'Grenzüberschreitender Gütertransport (Ausland)', 'EWR-Abkommen', 'Werkverkehr', 'BAG'] },
+    { title: 'Handelsgesetzbuch (HGB)', min: null, inhalt: ['Beziehung zwischen GüKG und HGB'] },
+    { title: 'Vertragsbedingungen für den Güterkraftverkehr (VBGL)', min: 360, inhalt: ['Geltungsbereich', 'Wesentliche Rechte und Pflichten der an der Beförderung Beteiligten'] },
+    { title: 'Allgemeine Deutsche Spediteurbedingungen (ADSp)', min: null, inhalt: ['Geltungsbereich', 'Wesentliche Rechte/Pflichten der am Vertrag Beteiligten'] },
+    { title: 'Verkehr innerhalb EU – VO EWG Nr. 881/92', min: null, inhalt: ['Geltungsbereich', 'Begriffsbestimmungen/Definition', 'EG/EU-Gemeinschaftslizenz', 'Fahrerbescheinigung (Vorder- und Rückseite)'] },
+    { title: 'Abkommen EG-Schweiz über den Güterkraftverkehr', min: null, inhalt: ['Ziele des Übereinkommens', 'Große Kabotage für die Schweiz', 'Genehmigungsfreie Beförderungen', 'Obergrenze der Tonnage', 'Sonntags-, Feiertags- und Nachtfahrverbot'] },
+    { title: 'GüKGrKabotageV (internationale Verkehre)', min: null, inhalt: ['EG/EU-Gemeinschaftslizenz – Erteilung und Entziehung', 'CEMT-Genehmigung', 'Bilaterale Genehmigungen', 'Drittstaatengenehmigung', 'Kabotageverkehr', 'Fahrzeugeinsatz', 'Ausschluss von Unternehmen'] },
+    { title: 'Internationale Vereinbarung über Beförderungsverträge (CMR)', min: null, inhalt: ['Regelungsumfang und Bedeutung des Abkommens', 'Frachtvertrag und CMR-Frachtbrief', 'Vordruck: CMR-Frachtbrief (für den internationalen Verkehr)'] },
+    { title: 'TIR-Übereinkommen', min: null, inhalt: ['Grundlagen und organisatorischer Überbau', 'Ablauf des Transports', 'Besonderheiten auf EU-Strecken'] },
+    { title: 'Abfalltransport – VO (EG) 1013/2006', min: null, inhalt: ['Abfallverbringungsgesetz (AbfVerbrG)'] },
+    { title: 'Der Lkw in der StVZO', min: 180, inhalt: ['Regelmäßige Untersuchungen', 'Vorgeschriebene Ausrüstungsteile, Maße und Massen', 'Automatischer Blockierverhinderer', 'Anhängelasten und Leermasse', 'Einrichtungen zur Verbindung von Fahrzeugen', 'Stützeinrichtung und Stützlast', 'Geräuscharme Kraftfahrzeuge', 'Beleuchtungseinrichtung', 'Hupen und Hörner', 'Geschwindigkeitsbegrenzer', 'Betätigungseinrichtungen', 'Geschwindigkeitsschilder'] },
+  ]};
+}
+
+function mkB6P(id, min = 900) {
+  return { id, nr: 'Band 6P', title: 'Vorschriften für den Personenverkehr', kb: '2.3', min, themen: [
+    { title: 'Personenbeförderungsgesetz – PBefG (nationales Recht)', min: 240, inhalt: ['Geltungsbereich und Ausnahmen', 'Der Unternehmer', 'Genehmigung', 'Ordnung der Personenbeförderung im PBefG', 'Die verschiedenen Verkehrsformen im nationalen Bereich', 'Grenzüberschreitende Verkehre', 'Katalog der Ordnungswidrigkeiten (§61)'] },
+    { title: 'EWG/EG-Regelungen (Gemeinschaftsrecht)', min: 360, inhalt: ['Die Mitgliedstaaten der Europäischen Union', 'Verordnung (EWG) Nr. 684/92 zur Einführung gemeinsamer Regeln für den grenzüberschreitenden Personenverkehr mit Kraftomnibussen und weiterführende Vorschriften'] },
+    { title: 'Interbus-Übereinkommen (Internationales Recht)', min: null, inhalt: ['Vertragsparteien des Übereinkommens', 'Ziele des Übereinkommens', 'Geltungsbereich', 'Begriffsbestimmungen', 'Qualifikation des Unternehmers', 'Technik der Fahrzeuge', 'Verkehrsformen – Liberalisierter und nicht liberalisierter Gelegenheitsverkehr', 'Kontrolldokumente'] },
+    { title: 'Abkommen Schweiz/EG, EWR-Abkommen', min: null, inhalt: ['Zulassung von Unternehmen zum Verkehr', 'Zugang zum Markt', 'Genehmigungen', 'Die EWR-Staaten'] },
+    { title: 'EG-Bus-Durchführungsverordnung (EGBusDV)', min: null, inhalt: ['Aufgabe der Verordnung', 'Einzelne Regelungen', 'Bezüge und Fundstellen', 'Grenzüberschreitende Personenbeförderung'] },
+    { title: 'Weiterführende Vorschriften (BOKraft, BefBedV)', min: null, inhalt: ['BOKraft – Betrieb von Kraftfahrunternehmen im Personenverkehr', 'BefBedV – Allgemeine Beförderungsbedingungen', 'Merkblatt für die Schulung von Fahrzeugführern – Auszug'] },
+    { title: 'Der Kraftomnibus in der StVZO', min: 300, inhalt: ['Verantwortung für den Betrieb der Fahrzeuge (§31 und FZV)', 'Regelmäßige Untersuchungen (§29 und 47a)', 'Vorgeschriebene Ausrüstungsteile und ihre Beschaffenheit (§31b)', 'Abmessungen und Gewichte/Massen (§32 und 59a)', 'Mitführen von Anhängern (§32)', 'Wendigkeit und Platzbedarf – der BOKraft-Kreis (§32d)', 'Komfort und Sicherheit für den Fahrer', 'Arbeitsplatz des Fahrers'] },
+  ]};
+}
+
+function mkB7(id, min, themen) {
+  return { id, nr: 'Band 7', title: 'Pannen, Unfälle, Notfälle und Kriminalität', kb: '3.1, 3.2, 3.5', min, themen };
+}
+
+function mkB8G(id, min = 960, themen) {
+  return { id, nr: 'Band 8G', title: 'Unternehmensbild & Marktordnung im Güterkraftverkehr', kb: '3.6, 3.7', min, themen: themen || [
+    { title: 'Unternehmensbild im Güterkraftverkehr', min: 510, inhalt: ['Bedeutung der Qualität der Leistung des Lkw-Fahrers', 'Rollen des Berufskraftfahrers', 'Gesprächspartner des Berufskraftfahrers', 'Arbeitsorganisation'] },
+    { title: 'Marktordnung im Güterkraftverkehr', min: 360, inhalt: ['Kraftverkehr im Verhältnis zu anderen Verkehrsträgern', 'Tätigkeiten im Güterkraftverkehr', 'Organisation von Verkehrsunternehmen', 'Spezialisierung', 'Weiterentwicklung der Branche'] },
+    { title: 'Kommerzielle und finanzielle Konsequenzen eines Rechtsstreits', min: 90, inhalt: ['Zivilrechtliche Rechtsstreite', 'Arbeitsrechtsstreite'] },
+  ]};
+}
+
+function mkB8P(id, min = 960, themen) {
+  return { id, nr: 'Band 8P', title: 'Unternehmensbild & Marktordnung im Personenverkehr', kb: '3.6, 3.8', min, themen: themen || [
+    { title: 'Marktordnung im Personenverkehr', min: 360, inhalt: ['Personenbeförderung im Verhältnis zu den verschiedenen Verkehrsmitteln', 'Tätigkeiten im Personenverkehr', 'Organisation der wichtigsten Arten von Verkehrsunternehmen', 'Produkte im Personenverkehr'] },
+    { title: 'Unternehmensbild im Personenverkehr', min: 510, inhalt: ['Qualität der Leistungen des Busfahrers', 'Unterschiedliche Rollen des Fahrers', 'Konfliktmanagement'] },
+    { title: 'Kommerzielle und finanzielle Konsequenzen eines Rechtsstreits', min: 90, inhalt: ['Zivilrechtliche Rechtsstreite', 'Arbeitsrechtsstreite'] },
+  ]};
+}
+
+function mkB9(id, wmin = 90, pmin = 600) {
+  return { id, nr: 'Band 9', title: 'Fahrpraktische Übungen, Wartung und Pflege', kb: '', min: wmin + pmin, themen: [
+    { title: 'Wartung und Fahrzeugpflege', min: wmin, inhalt: ['Lichttechnische Einrichtungen', 'Batterie', 'Bremse (Betriebsbremse, Feststellbremse, Anhängerbremse)', 'Frostschutzeinrichtungen', 'Reifen', 'Federung und Dämpfung', 'Motor', 'Luftfilteranlage', 'Keilriemen', 'Lenkung', 'Führerhaus (Arbeitsplatz des Fahrers)', 'An- und Aufbauten, Ladungsträger', 'Fahrzeugverbindungen'] },
+    { title: 'Praktische Ausbildung', min: pmin, inhalt: ['Fahrpraktische Übungen'] },
+  ]};
+}
+
+const T7_VOLL = [
+  { title: 'Kriminalität und Schleusung illegaler Einwanderer', min: 90, inhalt: ['Ladungsdiebstahl', 'Diebstahl aus Fahrzeugen', 'Überfälle auf Kraftfahrer', 'Schmuggel von Waren mit Lkw und Bussen', 'Schleusung von Personen', 'Gewalttaten im Personenverkehr'] },
+  { title: 'Bewusstseinsbildung für Risiken des Straßenverkehrs und Arbeitsunfälle', min: 360, inhalt: ['Verkehrsunfälle', 'Arbeits- und Wegeunfälle', 'Berufskrankheiten', 'Menschliche, materielle und finanzielle Auswirkungen eines Arbeitsunfalls', 'Versicherungsschutz'] },
+  { title: 'Verhalten bei Unfällen und Notfällen', min: 540, inhalt: ['Erste-Hilfe-Material und Ausrüstungsgegenstände', 'Einschätzung der Lage', 'Absichern der Unfallstelle', 'Überblick über die Situation verschaffen', 'Verständigung und Kommunikation mit Hilfskräften', 'Sofortmaßnahmen am Unfallort', 'Pflichten der Unfallbeteiligten bei Verkehrsunfällen', 'Wildunfall', 'Unfallbericht', 'Brandklassen', 'Verwendung von Feuerlöschern'] },
+];
+
+const T7_KURZ = [
+  { title: 'Kriminalität und Schleusung illegaler Einwanderer', min: 90, inhalt: ['Ladungsdiebstahl', 'Diebstahl aus Fahrzeugen', 'Überfälle auf Kraftfahrer', 'Schmuggel von Waren mit Lkw und Bussen', 'Schleusung von Personen'] },
+  { title: 'Verhalten bei Unfällen und Notfällen', min: 540, inhalt: ['Erste-Hilfe-Material und Ausrüstungsgegenstände', 'Einschätzung der Lage', 'Absichern der Unfallstelle', 'Überblick über die Situation verschaffen', 'Verständigung und Kommunikation mit Hilfskräften', 'Sofortmaßnahmen am Unfallort', 'Pflichten der Unfallbeteiligten bei Verkehrsunfällen', 'Wildunfall', 'Unfallbericht'] },
+  { title: 'Verhalten bei einem Brand', min: null, inhalt: ['Brandklassen', 'Verwendung von Feuerlöschern'] },
+];
+
+const T7_UMST = [
+  { title: 'Bewusstseinsbildung für Risiken des Straßenverkehrs und Arbeitsunfälle', min: 240, inhalt: ['Verkehrsunfälle', 'Arbeits- und Wegeunfälle', 'Berufskrankheiten', 'Menschliche, materielle und finanzielle Auswirkungen eines Arbeitsunfalls', 'Versicherungsschutz'] },
+  { title: 'Verhalten bei Unfällen und Notfällen', min: 360, inhalt: ['Erste-Hilfe-Material und Ausrüstungsgegenstände', 'Einschätzung der Lage', 'Absichern der Unfallstelle', 'Überblick über die Situation verschaffen', 'Verständigung und Kommunikation mit Hilfskräften', 'Sofortmaßnahmen am Unfallort', 'Pflichten der Unfallbeteiligten bei Verkehrsunfällen', 'Wildunfall', 'Unfallbericht', 'Brandklassen', 'Verwendung von Feuerlöschern'] },
+];
+
+// ── Alle 7 Lehrgänge ──────────────────────────────────────────────────────
+
+const COURSES = [
+  {
+    id: 'bgq_g', short: 'BGQ Güter', typ: 'BGQ', totalStd: 140, totalMin: 8400,
+    title: 'Beschleunigte Grundqualifikation Güterkraftverkehr',
+    baende: [mkB1('b1g1'), mkB2('b1g2', 1080, 300, 60), mkB3('b1g3'), mkB4G('b1g4'), mkB5('b1g5'), mkB6G('b1g6'), mkB7('b1g7', 990, T7_VOLL), mkB8G('b1g8'), mkB9('b1g9')],
+  },
+  {
+    id: 'bgq_p', short: 'BGQ Person', typ: 'BGQ', totalStd: 140, totalMin: 8400,
+    title: 'Beschleunigte Grundqualifikation Personenverkehr',
+    baende: [mkB1('b2p1'), mkB2('b2p2', 1050, 210, 120), mkB3('b2p3'), mkB4P('b2p4'), mkB5('b2p5'), mkB6P('b2p6'), mkB7('b2p7', 990, T7_VOLL), mkB8P('b2p8'), mkB9('b2p9')],
+  },
+  {
+    id: 'qe_g', short: 'QE Güter', typ: 'QE', totalStd: 96, totalMin: 5760,
+    title: 'Grundqualifikation für Quereinsteiger Güterkraftverkehr',
+    baende: [mkB1('b3g1'), mkB2('b3g2', 1050, 210, 120), mkB3('b3g3'), mkB4G('b3g4'), mkB7('b3g7', 630, T7_KURZ),
+      mkB8G('b3g8', 420, [{ title: 'Unternehmensbild im Güterkraftverkehr', min: 420, inhalt: ['Bedeutung der Qualität der Leistung des Lkw-Fahrers', 'Rollen des Berufskraftfahrers', 'Gesprächspartner des Berufskraftfahrers', 'Arbeitsorganisation'] }]),
+      mkB9('b3g9', 60, 600)],
+  },
+  {
+    id: 'qe_p', short: 'QE Person', typ: 'QE', totalStd: 96, totalMin: 5760,
+    title: 'Grundqualifikation für Quereinsteiger Personenverkehr',
+    baende: [mkB1('b4p1'), mkB2('b4p2', 990, 210, 60),
+      mkB3('b4p3', 630, 315, 135),
+      { ...mkB4P('b4p4', 1350), themen: [
+        { title: 'Sicherheit und Komfort', min: 90, inhalt: ['Aktive Sicherheit', 'Passive Sicherheit', 'Maßnahmen zur Gewährleistung der Betriebs- und Verkehrssicherheit', 'Fahrweise und Verhalten'] },
+        { title: 'Pflichten des Fahrzeugführers', min: 135, inhalt: ['Sorgfaltspflicht', 'Nutzung bestimmter Verkehrsflächen', 'Prioritäten setzen', 'Besonderheiten bei der Beförderung bestimmter Fahrgastgruppen', 'Umgang mit Fahrgästen'] },
+        { title: 'Längs- und Seitwärtsbewegungen des Fahrzeugs', min: 90, inhalt: ['Einfluss der Fahrgeschwindigkeit', 'Befahren von Kurven', 'Rücksichtsvolles Verkehrsverhalten', 'Positionierung auf der Fahrbahn', 'Sanftes Abbremsen', 'Beachtung der Überhänge'] },
+        { title: 'Gewährleistung der Sicherheit aller Fahrgäste', min: 45, inhalt: ['Verantwortung des Fahrers', 'Vorbeugende Maßnahmen'] },
+        { title: 'Fahrphysik', min: 315, inhalt: ['Fahrwiderstände', 'Flieh- und Seitenführungskräfte', 'Haft- und Gleitreibung'] },
+        { title: 'Ladungssicherung in Bussen', min: 675, inhalt: ['Rechtliche Grundlagen', 'Physikalische Grundlagen', 'Auswirkung der Überladung auf die Fahrstabilität', 'Arten der Ladungssicherung', 'Lastverteilung', 'Beispiele zur Ladungssicherung'] },
+      ]},
+      mkB7('b4p7', 630, [
+        { title: 'Kriminalität und Schleusung illegaler Einwanderer', min: 90, inhalt: ['Ladungsdiebstahl', 'Diebstahl aus Fahrzeugen', 'Überfälle auf Kraftfahrer', 'Schmuggel von Waren mit Lkw und Bussen', 'Schleusung von Personen'] },
+        { title: 'Verhalten bei Unfällen und Notfällen', min: 540, inhalt: ['Erste-Hilfe-Material und Ausrüstungsgegenstände', 'Einschätzung der Lage', 'Absichern der Unfallstelle', 'Überblick verschaffen', 'Verständigung und Kommunikation mit Hilfskräften', 'Sofortmaßnahmen am Unfallort', 'Pflichten der Unfallbeteiligten', 'Wildunfall', 'Unfallbericht', 'Brandklassen', 'Verwendung von Feuerlöschern'] },
+      ]),
+      mkB8P('b4p8', 720, [{ title: 'Marktordnung im Personenverkehr', min: 45, inhalt: ['Produkte im Personenverkehr (Fahrkarten und Tickets)'] }, { title: 'Unternehmensbild im Personenverkehr', min: 585, inhalt: ['Qualität der Leistungen des Busfahrers', 'Unterschiedliche Rollen des Fahrers', 'Konfliktmanagement'] }]),
+      mkB9('b4p9', 60, 600)],
+  },
+  {
+    id: 'umst_g2p', short: 'Umst. GK→P', typ: 'Umst', totalStd: 35, totalMin: 2100,
+    title: 'Umsteiger: Güterkraftverkehr → Personenverkehr',
+    baende: [
+      { ...mkB4P('b5p4', 240), themen: [
+        { title: 'Sicherheit und Komfort', min: 45, inhalt: ['Aktive Sicherheit', 'Passive Sicherheit', 'Maßnahmen zur Gewährleistung der Betriebs- und Verkehrssicherheit', 'Fahrweise und Verhalten'] },
+        { title: 'Pflichten des Fahrzeugführers', min: 60, inhalt: ['Sorgfaltspflicht', 'Nutzung bestimmter Verkehrsflächen', 'Prioritäten setzen', 'Besonderheiten bei der Beförderung bestimmter Fahrgastgruppen', 'Umgang mit Fahrgästen'] },
+        { title: 'Längs- und Seitwärtsbewegungen des Fahrzeugs', min: 45, inhalt: ['Einfluss der Fahrgeschwindigkeit', 'Befahren von Kurven', 'Rücksichtsvolles Verkehrsverhalten', 'Positionierung auf der Fahrbahn', 'Sanftes Abbremsen', 'Beachtung der Überhänge'] },
+        { title: 'Gewährleistung der Sicherheit aller Fahrgäste', min: 45, inhalt: ['Verantwortung des Fahrers', 'Vorbeugende Maßnahmen'] },
+        { title: 'Fahrphysik', min: 45, inhalt: ['Fahrwiderstände', 'Flieh- und Seitenführungskräfte', 'Haft- und Gleitreibung'] },
+      ]},
+      { ...mkB6P('b5p6', 540), themen: [
+        { title: 'PBefG (nationales Recht)', min: 120, inhalt: ['Geltungsbereich und Ausnahmen', 'Der Unternehmer', 'Genehmigung', 'Ordnung der Personenbeförderung im PBefG', 'Die verschiedenen Verkehrsformen im nationalen Bereich', 'Grenzüberschreitende Verkehre', 'Katalog der Ordnungswidrigkeiten (§61)'] },
+        { title: 'EWG/EG-Regelungen (Gemeinschaftsrecht)', min: 360, inhalt: ['Die Mitgliedstaaten der EU', 'Verordnung (EWG) Nr. 684/92'] },
+        { title: 'Interbus-Übereinkommen, Abkommen Schweiz/EG, EWR, EGBusDV, BOKraft', min: null, inhalt: ['Vertragsparteien', 'Ziele', 'Geltungsbereich', 'Begriffsbestimmungen', 'Qualifikation des Unternehmers', 'Technik der Fahrzeuge', 'Verkehrsformen', 'Kontrolldokumente', 'Zulassung von Unternehmen zum Verkehr', 'Zugang zum Markt', 'Genehmigungen', 'Die EWR-Staaten', 'EGBusDV-Regelungen', 'BOKraft und BefBedV'] },
+        { title: 'Der Kraftomnibus in der StVZO', min: null, inhalt: ['Verantwortung für den Betrieb der Fahrzeuge (§31 und FZV)', 'Regelmäßige Untersuchungen (§29 und 47a)', 'Vorgeschriebene Ausrüstungsteile (§31b)', 'Abmessungen und Gewichte/Massen (§32 und 59a)', 'Mitführen von Anhängern (§32)'] },
+        { title: 'Besondere Formen der Personenbeförderung', min: 60, inhalt: ['Sightseeing-Bahnen', 'Park- und Kurbahnen'] },
+      ]},
+      mkB7('b5p7', 600, T7_UMST),
+      mkB8P('b5p8', 480, [
+        { title: 'Unternehmensbild im Personenverkehr', min: 180, inhalt: ['Qualität der Leistungen des Busfahrers', 'Unterschiedliche Rollen des Fahrers', 'Konfliktmanagement'] },
+        { title: 'Marktordnung im Personenverkehr', min: 180, inhalt: ['Personenbeförderung im Verhältnis zu den verschiedenen Verkehrsmitteln', 'Tätigkeiten im Personenverkehr', 'Organisation der wichtigsten Arten von Verkehrsunternehmen', 'Produkte im Personenverkehr', 'Wartung des Fahrzeugs'] },
+        { title: 'Kommerzielle und finanzielle Konsequenzen eines Rechtsstreits', min: 120, inhalt: ['Zivilrechtliche Rechtsstreite', 'Arbeitsrechtsstreite', 'Gegenstand im Bereich des Straf- und Ordnungswidrigkeitenrechts'] },
+      ]),
+      mkB9('b5p9', 90, 150),
+    ],
+  },
+  {
+    id: 'umst_p2g', short: 'Umst. P→GK', typ: 'Umst', totalStd: 35, totalMin: 2100,
+    title: 'Umsteiger: Personenverkehr → Güterkraftverkehr',
+    baende: [
+      { ...mkB4G('b6g4', 840), themen: [
+        { title: 'Rechtliche Grundlagen', min: 45, inhalt: ['StVO, StVZO, OWiG', 'Gefahrgutrecht / GGVSEB', 'CTU-Packrichtlinien', 'StGB, BGB, HGB', 'UVV der BG-Verkehr', 'CMR', 'Überwachung', 'Normen und VDI-Richtlinien', 'Bußgeld'] },
+        { title: 'Physikalische Grundlagen', min: 90, inhalt: ['Masse, Massenkraft, Gewichtskraft', 'Geschwindigkeit, Beschleunigung', 'Fliehkraft, Bewegungsenergie', 'Reibung', 'Standsicherheit des Ladegutes', 'Dynamische Beanspruchung im Straßenverkehr'] },
+        { title: 'Arten der Ladungssicherung', min: 45, inhalt: ['Kraftschlüssige Ladungssicherung', 'Formschlüssige Ladungssicherung'] },
+        { title: 'Berechnung', min: 45, inhalt: ['Reibkraft', 'Verbleibende Sicherungskraft', 'Niederzurren / Schrägzurren / Diagonalzurren', 'Berechnung der Nutzlast und der zulässigen Gesamtmasse', 'Auswirkung der Überladung auf die Fahrstabilität'] },
+        { title: 'Fahrzeugaufbauten', min: 45, inhalt: ['Festigkeit von Fahrzeugaufbauten', 'Zurrpunkte'] },
+        { title: 'Lastverteilungsplan', min: null, inhalt: ['Anwendung des Lastverteilungsplans'] },
+        { title: 'Hilfsmittel zur Ladungssicherung', min: 90, inhalt: ['Zurrgurte', 'Zurrketten', 'Zurrdrahtseil', 'Rutschhemmendes Material', 'Staupolster', 'Sperrbalken', 'Kantenschutzwinkel'] },
+        { title: 'Praxisbeispiele Ladungssicherung', min: 90, inhalt: ['Praxisbeispiele Ladungssicherung'] },
+        { title: 'Arbeitssicherheit und Umschlag', min: null, inhalt: ['Arbeitssicherheit beim Beladen'] },
+        { title: 'Praktische Ausbildung', min: 390, inhalt: ['Praktische Übungen zur Ladungssicherung'] },
+      ]},
+      { ...mkB6G('b6g6', 240), themen: [
+        { title: 'GüKG (nationale Verkehre)', min: 45, inhalt: ['Geltungsbereich', 'Struktur und Aufgabenbereiche des GüKG', 'Nicht erfasste und ausgenommene Transporte', 'Erteilung/Versagung der Erlaubnis', 'Grenzüberschreitender Gütertransport', 'EWR-Abkommen', 'Werkverkehr', 'BAG'] },
+        { title: 'HGB, VBGL, ADSp, VO EWG Nr. 881/92', min: 45, inhalt: ['Beziehung zwischen GüKG und HGB', 'VBGL Geltungsbereich und Rechte/Pflichten', 'ADSp Geltungsbereich', 'EG/EU-Gemeinschaftslizenz', 'Fahrerbescheinigung (Vorder- und Rückseite)'] },
+        { title: 'Abkommen EG-Schweiz', min: 45, inhalt: ['Ziele des Übereinkommens', 'Große Kabotage für die Schweiz', 'Genehmigungsfreie Beförderungen', 'Obergrenze der Tonnage', 'Sonntags-, Feiertags- und Nachtfahrverbot'] },
+        { title: 'GüKGrKabotageV, CMR, TIR, Abfalltransport', min: 60, inhalt: ['EG/EU-Gemeinschaftslizenz – Erteilung und Entziehung', 'CEMT-Genehmigung', 'Bilaterale Genehmigungen', 'Kabotageverkehr', 'CMR-Frachtbrief', 'TIR-Übereinkommen', 'Abfallverbringungsgesetz (AbfVerbrG)'] },
+        { title: 'Der Lkw in der StVZO', min: 45, inhalt: ['Regelmäßige Untersuchungen', 'Vorgeschriebene Ausrüstungsteile, Maße und Massen', 'Automatischer Blockierverhinderer', 'Anhängelasten und Leermasse', 'Einrichtungen zur Verbindung von Fahrzeugen', 'Stützeinrichtung und Stützlast', 'Geräuscharme Kraftfahrzeuge', 'Beleuchtungseinrichtung', 'Hupen und Hörner', 'Geschwindigkeitsbegrenzer'] },
+      ]},
+      mkB7('b6g7', 540, [
+        { title: 'Bewusstseinsbildung für Risiken des Straßenverkehrs und Arbeitsunfälle', min: 240, inhalt: ['Verkehrsunfälle', 'Arbeits- und Wegeunfälle', 'Berufskrankheiten', 'Menschliche, materielle und finanzielle Auswirkungen eines Arbeitsunfalls', 'Versicherungsschutz'] },
+        { title: 'Verhalten bei Unfällen und Notfällen', min: 300, inhalt: ['Erste-Hilfe-Material und Ausrüstungsgegenstände', 'Einschätzung der Lage', 'Absichern der Unfallstelle', 'Überblick verschaffen', 'Verständigung mit Hilfskräften', 'Sofortmaßnahmen am Unfallort', 'Pflichten der Unfallbeteiligten', 'Wildunfall', 'Unfallbericht', 'Brandklassen', 'Verwendung von Feuerlöschern'] },
+      ]),
+      mkB8G('b6g8', 300, [
+        { title: 'Unternehmensbild im Güterkraftverkehr', min: 90, inhalt: ['Bedeutung der Qualität der Leistung des Lkw-Fahrers', 'Rollen des Berufskraftfahrers', 'Gesprächspartner des Berufskraftfahrers', 'Arbeitsorganisation'] },
+        { title: 'Marktordnung im Güterkraftverkehr', min: 120, inhalt: ['Kraftverkehr im Verhältnis zu anderen Verkehrsträgern', 'Tätigkeiten im Güterkraftverkehr', 'Organisation von Verkehrsunternehmen', 'Spezialisierung', 'Weiterentwicklung der Branche'] },
+        { title: 'Kommerzielle und finanzielle Konsequenzen eines Rechtsstreits', min: 90, inhalt: ['Zivilrechtliche Rechtsstreite', 'Arbeitsrechtsstreite'] },
+      ]),
+      mkB9('b6g9', 30, 150),
+    ],
+  },
+  {
+    id: 'wb_r3_g', short: 'WB Runde 3 Güter', typ: 'WB', totalStd: 35, totalMin: 2100,
+    title: 'Weiterbildung Runde 3 Güterkraftverkehr',
+    baende: [
+      { id: 'wb1', nr: 'Tag 1', title: 'Risikobewusstsein und Verhalten', kb: '1.3, 1.3a, 3.1', min: 420, themen: [
+        { title: 'Bewusstseinsbildung für Risiken (Verkehrs- und Arbeitsunfälle)', min: 45, inhalt: ['Verkehrsunfälle', 'Arbeitsunfälle'] },
+        { title: 'Auswirkungen eines Unfalls', min: 45, inhalt: ['Private und gesellschaftliche Auswirkungen eines Unfalls', 'Finanzielle Auswirkungen eines Unfalls'] },
+        { title: 'Lebenslanges Lernen', min: 30, inhalt: ['Risiken durch Informationsdefizite', 'Vorausdenkende Fahrweise als Risikovermeidungs-Strategie', 'Ältere Kraftfahrer'] },
+        { title: 'Grundsätze zur Teilnahme am Straßenverkehr, Risiken erkennen und ihnen entgegenwirken', min: 90, inhalt: ['Grundregel zur Teilnahme am Straßenverkehr', 'Vertrauensgrundsatz', 'Grundsatz der doppelten Sicherung', 'Grundsatz der ständigen Sorgfalt'] },
+        { title: 'Risikoreiches Verhalten', min: 180, inhalt: ['Ablenkung', 'Überhöhte Geschwindigkeit', 'Unterschied zwischen "unter Mindestabstand" und "kein Sicherheitsabstand"', 'Reaktionsweg', 'Bremsweg', 'Anhalteweg', 'Aggression und Selbstdurchsetzung'] },
+        { title: 'Einstieg und Abschluss (obligatorisch)', min: 30, inhalt: ['Zielstellung der Weiterbildung, Thema, Organisatorisches', 'Zusammenfassung, Beantwortung offener Fragen, Feedback'] },
+      ]},
+      { id: 'wb2', nr: 'Tag 2', title: 'Rahmenbedingungen und Ereignisse', kb: '1.3a, 1.4', min: 420, themen: [
+        { title: 'Gefahrensituationen erkennen', min: 120, inhalt: ['Gefahren erkennen und Risiken bewerten', 'Individuelle Kenntnisse, Fähigkeiten und Fertigkeiten', 'Verkehrswahrnehmung', 'Gefahrenbewusstsein', 'Sicherheitsvorsorge'] },
+        { title: 'Straßenbedingungen', min: 60, inhalt: ['Grundwissen über Straßen und deren Baulichkeiten', 'Autobahnen und Kraftfahrstraßen', 'Sichere Parkplätze', 'Bundes- und Landstraßen', 'Besondere Verkehrssituationen'] },
+        { title: 'Partnerschaftliches Verhalten', min: 60, inhalt: ['Schwerpunktthema Radfahrende', 'Risiken innerstädtischen Fahrens', 'Rechtsvorschriften kontra Aufgabenerfüllung des BKF', 'Das Miteinander unterschiedlicher Verkehrsteilnehmer'] },
+        { title: 'Wahrnehmung und Ablenkung', min: 60, inhalt: ['Ablenkungen am Fahrerarbeitsplatz', 'Sehen und Wahrnehmen', 'Spiegelsysteme', 'Benutzung elektronischer Geräte im Fahrzeug'] },
+        { title: 'Witterungsbedingungen', min: 30, inhalt: ['Außergewöhnliche Witterungsbedingungen', 'Winterliche Fahrbedingungen', 'Starker Wind und Sturm'] },
+        { title: 'Sicherung der Ladung – alternative Kombination KB 1.4', min: 60, inhalt: ['Technische Prüfungen und Prüfnachweise', 'Berechnung der Nutzlast', 'Lastverteilungsplan', 'Offene Hecktüren', 'Transport von Schüttgütern, Sicherung mit Planen', 'Sicherung von Containern mit Netzen'] },
+        { title: 'Einstieg und Abschluss (obligatorisch)', min: 30, inhalt: ['Zielstellung der Weiterbildung, Thema, Organisatorisches', 'Zusammenfassung, Beantwortung offener Fragen, Feedback'] },
+      ]},
+      { id: 'wb3', nr: 'Tag 3', title: 'Gefahrensituationen, Stress und Unfälle', kb: '1.2, 2.1, 3.4, 3.5', min: 420, themen: [
+        { title: 'Gefahrensituationen erkennen', min: 210, inhalt: ['Gefahren erkennen und Risiken bewerten', 'Gefahrenpotentiale', 'Stressfaktoren und Stressbewältigung', 'Fahrassistenzsysteme und physikalische Kräfte', 'Sehen und Wahrnehmen', 'Mensch kontra Technik'] },
+        { title: 'Fahrverhaltenstraining', min: 60, inhalt: ['Unfälle vermeiden', 'Fahrsicherheits- und Fahrverhaltenstraining', 'Einsatz von Fahrsimulatoren'] },
+        { title: 'Unfälle und Katastrophen', min: 60, inhalt: ['Definition Unfall nach VVG', 'Tödlicher Unfall', 'Katastrophe – Supergau', 'Straßentunnel in Deutschland'] },
+        { title: 'Sicherer Umgang mit Elektrofahrzeugen', min: 30, inhalt: ['Alternative Antriebsarten', 'Gefährdungsbeurteilung', 'Gefahrenpotential Wasserstoff', 'Verhalten im Pannenfall', 'Rettungsleitfäden'] },
+        { title: 'Pannenfall und Fahrtenschreiber (KB 2.1)', min: 30, inhalt: ['Nachweise des Fahrers bei Nutzung von Mietfahrzeugen', 'Aufzeichnungen im Fahrtenschreiber nach einem Unfall', 'Dokumentation einer Straßenkontrolle im Fahrtenschreiber und auf der Fahrerkarte'] },
+        { title: 'Einstieg und Abschluss (obligatorisch)', min: 30, inhalt: ['Zielstellung der Weiterbildung, Thema, Organisatorisches', 'Zusammenfassung, Beantwortung offener Fragen, Feedback'] },
+      ]},
+      { id: 'wb4', nr: 'Tag 4', title: 'Firma – Fahrer – Fahrzeug', kb: '2.1, 2.2, 3.6, 3.7, 3.8', min: 420, themen: [
+        { title: 'Kraftverkehrsunternehmen im Markt', min: 45, inhalt: ['Die momentane Rolle des Berufskraftfahrers', 'Die Rolle der Kraftverkehrsunternehmen'] },
+        { title: 'Die Kombination von Rechtsvorschriften', min: 90, inhalt: ['Grundwissen des Berufskraftfahrers – Recht verständlich', 'Einordnung der Sozialvorschriften', 'Der Unterschied zwischen Lenk- und Arbeitszeiten', 'Begrifflichkeiten der Richtlinie 2002/15/EG', 'Definition der Arbeitszeit für Fahrpersonale', 'Definition der Bereitschaftszeit für Fahrpersonale', 'Begrifflichkeiten der VO (EG) Nr. 561/2006', 'Lenkzeit, Ruhezeiten, Arbeitszeiten', 'Güterbeförderung mit Fahrzeugen kleiner 3,5 t zHM'] },
+        { title: 'Anwendung Lenk- und Ruhezeiten in der Praxis', min: 120, inhalt: ['Anwendung von Lenk- und Ruhezeiten im Linienverkehr', 'Schienenersatzverkehr', 'Aufzeichnungen zur Fahrzeugbenutzung', 'Manuelle Nachträge für Einsätze im Linienverkehr', 'Einhaltung von Pausenzeiten prüfen', 'Anwendung von Lenk- und Ruhezeiten im Gelegenheitsverkehr', 'Planung der täglichen Ruhezeiten', 'Wochentliche Ruhezeiten im Gelegenheitsverkehr', 'Gefahrgutbeförderung und Arbeitszeiten', 'Ladungssicherung und Arbeitszeiten'] },
+        { title: 'Digitale Fahrtenschreiber in der Praxis', min: 90, inhalt: ['Begrifflichkeiten zum Tachografensystem', 'Unterweisung von Fahrpersonalen', 'Einstellungen am Fahrtenschreiber', 'Verantwortung von Verkehrsunternehmen', 'Aufzeichnungen im intelligenten Fahrtenschreiber', 'Neuerungen am Fahrtenschreiber der 2. Generation'] },
+        { title: 'Die LKW-Maut auf deutschen Straßen', min: 45, inhalt: ['Grundlagen der Mauterhebung', 'Mautpflichtige Fahrzeuge', 'Ermittlung der Mautsätze', 'Buchung per Smartphone oder Tablet', 'Befreiung von der Mautpflicht', 'Verkehrszeichen mit Verbindung zur LKW-Maut', 'Zusatzinformationen'] },
+        { title: 'Einstieg und Abschluss (obligatorisch)', min: 30, inhalt: ['Zielstellung der Weiterbildung, Thema, Organisatorisches', 'Zusammenfassung, Beantwortung offener Fragen, Feedback'] },
+      ]},
+      { id: 'wb5', nr: 'Tag 5G', title: 'Recht und Dokumente im Güterkraftverkehr', kb: '2.2', min: 420, themen: [
+        { title: 'GüKG (nationale Verkehre)', min: 180, inhalt: ['Geltungsbereich', 'Struktur und Aufgabenbereiche des GüKG', 'Nicht erfasste und ausgenommene Transporte', 'Erteilung/Versagung der Erlaubnis', 'Grenzüberschreitender Gütertransport', 'EWR-Abkommen', 'Werkverkehr', 'BAG'] },
+        { title: 'HGB, VBGL, ADSp, VO EWG Nr. 881/92', min: 210, inhalt: ['Beziehung zwischen GüKG und HGB', 'VBGL Geltungsbereich und Rechte/Pflichten', 'ADSp Geltungsbereich und Rechte/Pflichten', 'VO EWG Nr. 881/92: EG/EU-Gemeinschaftslizenz, Fahrerbescheinigung'] },
+        { title: 'Abkommen EG-Schweiz, GüKGrKabotageV, CMR', min: null, inhalt: ['Ziele des Übereinkommens EG-Schweiz', 'Große Kabotage für die Schweiz', 'Genehmigungsfreie Beförderungen', 'GüKGrKabotageV: EG/EU-Gemeinschaftslizenz, CEMT-Genehmigung, Bilaterale Genehmigungen, Kabotageverkehr, Fahrzeugeinsatz', 'CMR: Regelungsumfang, Frachtvertrag und CMR-Frachtbrief (Vordruck)'] },
+        { title: 'TIR-Übereinkommen, Abfalltransport, Gewerblicher Tiertransport', min: null, inhalt: ['TIR-Übereinkommen: Grundlagen, Ablauf des Transports, Besonderheiten auf EU-Strecken', 'Abfallverbringungsgesetz (AbfVerbrG)', 'Gewerblicher Tiertransport: VO (EG) 1/2005 und TierSchTrV, Transportunternehmer, Begleitpapiere, Umgang mit Tieren, Anforderungen an die Transportfahrzeuge, Kontrollbücher'] },
+        { title: 'Einstieg und Abschluss (obligatorisch)', min: 30, inhalt: ['Zielstellung der Weiterbildung, Thema, Organisatorisches', 'Zusammenfassung, Beantwortung offener Fragen, Feedback'] },
+      ]},
+    ],
+  },
+];
+
+// ══════════════════════════════════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════════════════════════════════
+
+const S = {
+  cid: null,
+  tab: 'plan',
+  exp: {},       // bandId → bool (band expandiert)
+  expT: {},      // themaKey → bool (thema expandiert)
+  instructors: [],
+  asgn: {},      // `${cid}_${bandId}` → instructorId
+  startDate: '',
+  hoursPerDay: '7',
+  skipWE: true,
+  genPlan: null,
+};
+
+const course = () => COURSES.find(c => c.id === S.cid);
+const aKey = bid => `${S.cid}_${bid}`;
+const getInstr = id => S.instructors.find(i => i.id === id);
+
+// ── Storage ───────────────────────────────────────────────────────────────
+function loadStorage() {
+  try { const v = localStorage.getItem('bkrfqg_instructors'); if (v) S.instructors = JSON.parse(v); } catch {}
+  try { const v = localStorage.getItem('bkrfqg_assignments'); if (v) S.asgn = JSON.parse(v); } catch {}
+}
+function saveInstructors() { try { localStorage.setItem('bkrfqg_instructors', JSON.stringify(S.instructors)); } catch {} }
+function saveAssignments() { try { localStorage.setItem('bkrfqg_assignments', JSON.stringify(S.asgn)); } catch {} }
+
+// ── Plan generation ───────────────────────────────────────────────────────
+function generatePlan() {
+  const c = course(); if (!c || !S.startDate) return;
+  const mpd = parseFloat(S.hoursPerDay) * 60;
+  const days = [];
+  let date = new Date(S.startDate + 'T00:00:00');
+  let items = [], dmin = 0;
+  const nxt = d => { const n = new Date(d); n.setDate(n.getDate() + 1); if (S.skipWE) while (n.getDay() === 0 || n.getDay() === 6) n.setDate(n.getDate() + 1); return n; };
+  if (S.skipWE) while (date.getDay() === 0 || date.getDay() === 6) date = nxt(date);
+  const flush = () => { if (items.length > 0) days.push({ date: new Date(date), items: [...items], totalMin: dmin }); };
+  c.baende.forEach(b => {
+    const io = getInstr(S.asgn[aKey(b.id)]);
+    b.themen.forEach(t => {
+      if (!t.min || t.min <= 0) return;
+      let rem = t.min;
+      while (rem > 0) {
+        const avail = mpd - dmin;
+        if (avail <= 0) { flush(); items = []; dmin = 0; date = nxt(date); }
+        const take = Math.min(rem, mpd - dmin);
+        items.push({ bandNr: b.nr, bandTitle: b.title, kb: b.kb, thema: t.title, min: take, instructor: io ? io.name : '', kuerzel: io ? io.kuerzel : '' });
+        dmin += take; rem -= take;
+      }
+    });
+  });
+  flush();
+  S.genPlan = days;
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// RENDER
+// ══════════════════════════════════════════════════════════════════════════
+
+const BADGE_STYLES = {
+  BGQ: 'background:#dbeafe;color:#1e40af',
+  QE:  'background:#dcfce7;color:#166534',
+  Umst:'background:#fef9c3;color:#713f12',
+  WB:  'background:#fce7f3;color:#831843',
+};
+
+function renderAll() { renderCourseList(); renderMain(); }
+
+function renderCourseList() {
+  const el = document.getElementById('courseList');
+  el.innerHTML = COURSES.map(c => `
+    <div class="course-item${S.cid === c.id ? ' active' : ''}" data-cid="${c.id}">
+      <span class="ci-badge" style="${BADGE_STYLES[c.typ]}">${c.typ}</span>
+      <div class="ci-title">${c.short}</div>
+      <div class="ci-meta">${c.totalStd} Std · ${c.totalMin.toLocaleString('de')} Min</div>
+    </div>
+  `).join('');
+  el.querySelectorAll('.course-item').forEach(el => el.addEventListener('click', () => {
+    S.cid = el.dataset.cid; S.tab = 'plan'; S.genPlan = null; renderAll();
+  }));
+}
+
+function renderMain() {
+  const main = document.getElementById('mainArea');
+  const c = course();
+  if (!c) {
+    main.innerHTML = `<div class="no-sel">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/>
+        <rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/>
+      </svg>
+      <span style="font-size:14px">Lehrgang auswählen</span>
+    </div>`;
+    return;
+  }
+  const tabs = [
+    { id: 'plan', label: 'Lehrplan &amp; Dozenten' },
+    { id: 'fahrlehrer', label: `Fahrlehrer (${S.instructors.length})` },
+    ...(S.genPlan ? [{ id: 'kursplan', label: `Kursplan (${S.genPlan.length} Tage)` }] : []),
+  ];
+  main.innerHTML = `
+    <div class="toolbar">
+      <div style="flex:1;min-width:0">
+        <div class="label" style="margin-bottom:2px">${c.typ}</div>
+        <h2>${c.title}</h2>
+      </div>
+      <span class="chip">${c.totalStd} Std</span>
+      <span class="chip">${c.baende.length} Bände / Module</span>
+      <button class="btn-ki-toggle${KI.open ? ' active' : ''}" id="kiToggleBtn" title="KI-Assistent öffnen / schließen">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a2 2 0 0 1 2 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 0 1 7 7h1a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-1H2a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h1a7 7 0 0 1 7-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 0 1 2-2z"/></svg>
+        KI-Assistent
+      </button>
+    </div>
+    <div class="tabs-bar">${tabs.map(t => `<div class="tab${S.tab === t.id ? ' active' : ''}" data-tab="${t.id}">${t.label}</div>`).join('')}</div>
+    <div class="content" id="tabContent"></div>
+  `;
+  main.querySelectorAll('.tab').forEach(el => el.addEventListener('click', () => { S.tab = el.dataset.tab; renderTabContent(); }));
+  const kiToggleBtn = document.getElementById('kiToggleBtn');
+  if (kiToggleBtn) kiToggleBtn.addEventListener('click', toggleKI);
+  renderTabContent();
+}
+
+function renderTabContent() {
+  const el = document.getElementById('tabContent'); if (!el) return;
+  if (S.tab === 'plan') renderPlanTab(el);
+  else if (S.tab === 'fahrlehrer') renderFahrlehrerTab(el);
+  else if (S.tab === 'kursplan') renderKursplanTab(el);
+}
+
+// ── Tab: Lehrplan ─────────────────────────────────────────────────────────
+function renderPlanTab(el) {
+  const c = course();
+  const totalThemen = c.baende.reduce((a, b) => a + b.themen.length, 0);
+  el.innerHTML = `
+    <div class="cfg-card">
+      <div class="label" style="margin-bottom:10px">Planungsparameter für Kursplan-Generierung</div>
+      <div class="form-row">
+        <div class="form-field"><label class="label">Kursbeginn</label>
+          <input type="date" id="startDate" value="${S.startDate}" style="width:160px"></div>
+        <div class="form-field"><label class="label">Stunden / Tag</label>
+          <input type="number" id="hoursPerDay" value="${S.hoursPerDay}" min="1" max="10" style="width:80px"></div>
+        <div class="form-field" style="justify-content:flex-end">
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;padding-bottom:1px">
+            <input type="checkbox" id="skipWE"${S.skipWE ? ' checked' : ''}> Wochenende überspringen
+          </label>
+        </div>
+        <div class="form-field" style="justify-content:flex-end">
+          <button class="btn btn-primary" id="genBtn"${S.startDate ? '' : ' disabled'}>Kursplan generieren</button>
+        </div>
+      </div>
+    </div>
+    <div class="stat-grid">
+      <div class="stat"><div class="stat-val">${c.baende.length}</div><div class="stat-lbl">Bände / Module</div></div>
+      <div class="stat"><div class="stat-val">${totalThemen}</div><div class="stat-lbl">Themen gesamt</div></div>
+      <div class="stat"><div class="stat-val">${c.totalStd}h</div><div class="stat-lbl">Gesamtumfang</div></div>
+    </div>
+    <div id="bandsContainer"></div>
+  `;
+  el.querySelector('#startDate').addEventListener('input', e => { S.startDate = e.target.value; el.querySelector('#genBtn').disabled = !S.startDate; });
+  el.querySelector('#hoursPerDay').addEventListener('input', e => { S.hoursPerDay = e.target.value; });
+  el.querySelector('#skipWE').addEventListener('change', e => { S.skipWE = e.target.checked; });
+  el.querySelector('#genBtn').addEventListener('click', () => { generatePlan(); S.tab = 'kursplan'; renderMain(); });
+  renderBands(el.querySelector('#bandsContainer'), c);
+}
+
+function renderBands(container, c) {
+  container.innerHTML = c.baende.map(b => {
+    const open = !!S.exp[b.id];
+    const asgId = S.asgn[aKey(b.id)] || '';
+    const opts = `<option value="">– Dozent zuordnen –</option>` + S.instructors.map(i => `<option value="${i.id}"${asgId === i.id ? ' selected' : ''}>${i.name}</option>`).join('');
+    const themenHtml = open ? `<div class="band-body">${b.themen.map((t, ti) => {
+      const tk = `${b.id}_${ti}`;
+      const to = !!S.expT[tk];
+      return `<div class="thema-row">
+        <div class="t-caret" data-tk="${tk}">${to ? '▼' : '▶'}</div>
+        <div class="t-content">
+          <div class="t-title">
+            <span>${t.title}</span>
+            ${t.min ? `<span class="chip" style="font-size:10px">${fmtMin(t.min)}</span>` : ''}
+          </div>
+          ${to ? `<div class="t-inhalt"><ul>${t.inhalt.map(i => `<li>${i}</li>`).join('')}</ul></div>` : ''}
+        </div>
+      </div>`;
+    }).join('')}</div>` : '';
+    return `<div class="card">
+      <div class="band-hdr" data-bid="${b.id}">
+        <span class="band-nr">${b.nr}</span>
+        <span class="band-title">${b.title}</span>
+        <div class="band-meta">
+          ${b.kb ? `<span class="chip chip-kb">KB ${b.kb}</span>` : ''}
+          <span class="chip">${fmtMin(b.min)}</span>
+          <select class="dz-select" data-asgn="${b.id}">${opts}</select>
+          <button class="btn-ki" data-ki-band="${b.id}" title="KI-Hinweise zu diesem Band">KI</button>
+          <span class="chevron${open ? ' open' : ''}">▶</span>
+        </div>
+      </div>${themenHtml}
+    </div>`;
+  }).join('');
+  container.querySelectorAll('.band-hdr').forEach(hdr => hdr.addEventListener('click', e => {
+    if (e.target.tagName === 'SELECT' || e.target.closest('select')) return;
+    const bid = hdr.dataset.bid; S.exp[bid] = !S.exp[bid]; renderBands(container, c);
+  }));
+  container.querySelectorAll('.dz-select').forEach(sel => sel.addEventListener('change', e => {
+    e.stopPropagation(); S.asgn[aKey(sel.dataset.asgn)] = sel.value; saveAssignments();
+  }));
+  container.querySelectorAll('.t-caret').forEach(car => car.addEventListener('click', e => {
+    e.stopPropagation(); const tk = car.dataset.tk; S.expT[tk] = !S.expT[tk]; renderBands(container, c);
+  }));
+  container.querySelectorAll('.btn-ki').forEach(btn => btn.addEventListener('click', e => {
+    e.stopPropagation();
+    const band = c.baende.find(b => b.id === btn.dataset.kiBand);
+    if (band) kiAskBand(band);
+  }));
+}
+
+// ── Tab: Fahrlehrer ───────────────────────────────────────────────────────
+function renderFahrlehrerTab(el) {
+  el.innerHTML = `
+    <div class="cfg-card">
+      <div class="label" style="margin-bottom:10px">Fahrlehrer / Dozent hinzufügen</div>
+      <div class="form-row">
+        <div class="form-field"><label class="label">Name</label>
+          <input type="text" id="dzName" placeholder="Vor- und Nachname" style="width:220px"></div>
+        <div class="form-field"><label class="label">Kürzel (opt.)</label>
+          <input type="text" id="dzKuerzel" placeholder="z.B. TG" maxlength="4" style="width:80px;text-transform:uppercase"></div>
+        <div class="form-field" style="justify-content:flex-end">
+          <button class="btn btn-primary" id="addDz">Hinzufügen</button>
+        </div>
+      </div>
+    </div>
+    <div id="dzList"></div>
+  `;
+  el.querySelector('#dzKuerzel').addEventListener('input', e => { e.target.value = e.target.value.toUpperCase(); });
+  const addDz = () => {
+    const name = el.querySelector('#dzName').value.trim(); if (!name) return;
+    const kuerzel = el.querySelector('#dzKuerzel').value.trim() || name.split(/\s+/).map(w => w[0] || '').join('').toUpperCase().slice(0, 3);
+    S.instructors.push({ id: uid(), name, kuerzel }); saveInstructors();
+    el.querySelector('#dzName').value = ''; el.querySelector('#dzKuerzel').value = '';
+    renderDzList(el.querySelector('#dzList'));
+    // Dozent-Dropdowns in Bänden aktualisieren
+    document.querySelectorAll('.dz-select').forEach(sel => {
+      const curVal = S.asgn[aKey(sel.dataset.asgn)] || '';
+      const last = S.instructors[S.instructors.length - 1];
+      sel.insertAdjacentHTML('beforeend', `<option value="${last.id}">${last.name}</option>`);
+    });
+    // Tab-Label aktualisieren
+    document.querySelectorAll('.tab').forEach(t => { if (t.dataset.tab === 'fahrlehrer') t.textContent = `Fahrlehrer (${S.instructors.length})`; });
+  };
+  el.querySelector('#addDz').addEventListener('click', addDz);
+  el.querySelector('#dzName').addEventListener('keydown', e => { if (e.key === 'Enter') addDz(); });
+  renderDzList(el.querySelector('#dzList'));
+}
+
+function renderDzList(container) {
+  if (!S.instructors.length) {
+    container.innerHTML = `<div class="empty"><div class="empty-icon">👨‍🏫</div><h3>Noch keine Fahrlehrer angelegt</h3><p>Dozenten oben hinzufügen</p></div>`;
+    return;
+  }
+  container.innerHTML = S.instructors.map(i => `
+    <div class="dz-card">
+      <div class="dz-avatar">${i.kuerzel}</div>
+      <div style="flex:1">
+        <div class="dz-name">${i.name}</div>
+        <div class="dz-kuerzel">Kürzel: ${i.kuerzel}</div>
+      </div>
+      <button class="btn btn-sm btn-del" data-did="${i.id}">Entfernen</button>
+    </div>
+  `).join('');
+  container.querySelectorAll('[data-did]').forEach(btn => btn.addEventListener('click', () => {
+    S.instructors = S.instructors.filter(i => i.id !== btn.dataset.did);
+    saveInstructors(); renderFahrlehrerTab(document.getElementById('tabContent'));
+    document.querySelectorAll('.tab').forEach(t => { if (t.dataset.tab === 'fahrlehrer') t.textContent = `Fahrlehrer (${S.instructors.length})`; });
+  }));
+}
+
+// ── Tab: Kursplan ─────────────────────────────────────────────────────────
+function renderKursplanTab(el) {
+  if (!S.genPlan) {
+    el.innerHTML = `<div class="empty"><div class="empty-icon">📅</div><h3>Noch kein Kursplan erstellt</h3><p>Im Tab "Lehrplan & Dozenten" Datum setzen und Plan generieren</p></div>`;
+    return;
+  }
+  const totalMin = S.genPlan.reduce((a, d) => a + d.totalMin, 0);
+  const c = course();
+  el.innerHTML = `
+    <div class="stat-grid" style="margin-bottom:14px">
+      <div class="stat"><div class="stat-val">${S.genPlan.length}</div><div class="stat-lbl">Unterrichtstage</div></div>
+      <div class="stat"><div class="stat-val">${Math.round(totalMin / 60)}h</div><div class="stat-lbl">Gesamtstunden</div></div>
+      <div class="stat"><div class="stat-val">${S.hoursPerDay}h</div><div class="stat-lbl">Stunden pro Tag</div></div>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+      <strong style="font-size:13px">${c.title}</strong>
+      <span style="color:var(--text3)">·</span>
+      <span style="font-size:12px;color:var(--text3)">Beginn: ${fmtDate(S.genPlan[0].date)}</span>
+      <span style="color:var(--text3)">·</span>
+      <span style="font-size:12px;color:var(--text3)">Ende: ${fmtDate(S.genPlan[S.genPlan.length - 1].date)}</span>
+      <button class="btn btn-sm" id="resetPlan" style="margin-left:auto">Neu generieren</button>
+    </div>
+    ${S.genPlan.map((d, di) => `
+      <div class="plan-day">
+        <div class="plan-day-hdr">
+          <span class="plan-tag">Tag ${di + 1}</span>
+          <span class="plan-date">${fmtDate(d.date)}</span>
+          <span style="margin-left:auto;font-size:12px;color:var(--text3)">${fmtMin(d.totalMin)}</span>
+        </div>
+        <table class="plan-tbl">
+          <thead><tr><th style="width:80px">Band</th><th>Thema</th><th style="width:90px">KB</th><th style="width:70px">Dauer</th><th style="width:110px">Dozent</th></tr></thead>
+          <tbody>${d.items.map(it => `<tr>
+            <td style="color:var(--text3);font-size:11px">${it.bandNr}</td>
+            <td>${it.thema}</td>
+            <td style="color:#92400e;font-size:11px">${it.kb || '—'}</td>
+            <td style="font-size:11px">${fmtMin(it.min)}</td>
+            <td>${it.instructor ? `<span class="dz-pill">${it.instructor}</span>` : `<span style="color:var(--text3)">—</span>`}</td>
+          </tr>`).join('')}</tbody>
+        </table>
+      </div>
+    `).join('')}
+  `;
+  el.querySelector('#resetPlan').addEventListener('click', () => { S.tab = 'plan'; renderMain(); });
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// KI-ASSISTENT
+// ══════════════════════════════════════════════════════════════════════════
+
+const KI = {
+  open: false,
+  messages: [],    // [{role:'user'|'assistant', content:'...'}]
+  loading: false,
+  activeBandId: null,
+};
+
+// ── API-Key aus localStorage ──────────────────────────────────────────────
+function kiGetKey() { return localStorage.getItem('bkrfqg_apikey') || ''; }
+function kiSaveKey(k) { localStorage.setItem('bkrfqg_apikey', k); }
+
+// ── System-Prompt aufbauen ────────────────────────────────────────────────
+function kiBuildSystem() {
+  const c = course();
+  let sys = `Du bist ein erfahrener Ausbilder und Fachexperte für Berufskraftfahrerqualifikation (BKrFQV). Du unterstützt die Fahrschule Fahrschulteam Lingen (Lingen/Ems) bei der BKF-Kursplanung nach den DEGENER-Rahmenplänen (Stand 2021/2022, gemäß Anlage 1 BKrFQV).
+
+Antworte immer auf Deutsch. Sei präzise, praxisnah und an die tatsächlichen Anforderungen der BKrFQV und der Kenntnisbereiche (KB) der Anlage 1 angelehnt. Strukturiere längere Antworten mit Absätzen oder kurzen Listen.`;
+
+  if (c) {
+    sys += `\n\nAktuell geöffneter Lehrgang: "${c.title}" (${c.totalStd} Std., ${c.totalMin.toLocaleString('de')} Min.)`;
+    if (S.genPlan) {
+      sys += `\nGenerierter Kursplan: ${S.genPlan.length} Unterrichtstage, Beginn: ${fmtDate(S.genPlan[0].date)}, Ende: ${fmtDate(S.genPlan[S.genPlan.length - 1].date)}`;
+    }
+    if (KI.activeBandId) {
+      const band = c.baende.find(b => b.id === KI.activeBandId);
+      if (band) {
+        sys += `\n\nAktiv betrachtetes Modul: ${band.nr} – ${band.title} (KB ${band.kb || '—'}, ${fmtMin(band.min)})`;
+        sys += `\nThemen dieses Moduls:\n${band.themen.map(t => `- ${t.title}${t.min ? ' (' + fmtMin(t.min) + ')' : ''}: ${t.inhalt.join(', ')}`).join('\n')}`;
+      }
+    }
+  }
+  return sys;
+}
+
+// ── API-Call ─────────────────────────────────────────────────────────────
+async function kiCall(userMsg) {
+  const apiKey = kiGetKey();
+  if (!apiKey) { kiShowApiSetup(); return; }
+  KI.messages.push({ role: 'user', content: userMsg });
+  KI.loading = true;
+  kiRenderMessages();
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true',
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 1024,
+        system: kiBuildSystem(),
+        messages: KI.messages,
+      }),
+    });
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({}));
+      throw new Error(err.error?.message || `HTTP ${resp.status}`);
+    }
+    const data = await resp.json();
+    const text = data.content?.map(b => b.text || '').join('') || '(Keine Antwort)';
+    KI.messages.push({ role: 'assistant', content: text });
+  } catch (e) {
+    KI.messages.push({ role: 'assistant', content: `__error__${e.message}` });
+  } finally {
+    KI.loading = false;
+    kiRenderMessages();
+  }
+}
+
+// ── KI panel ein-/ausschalten ─────────────────────────────────────────────
+function toggleKI() {
+  KI.open = !KI.open;
+  const panel = document.getElementById('kiPanel');
+  panel.classList.toggle('open', KI.open);
+  const btn = document.getElementById('kiToggleBtn');
+  if (btn) btn.classList.toggle('active', KI.open);
+  if (KI.open) {
+    kiCheckApiKey();
+    kiUpdateContext();
+    kiRenderQuickActions();
+    kiRenderMessages();
+  }
+}
+
+function kiShowApiSetup() {
+  const el = document.getElementById('kiApikeySetup');
+  if (el) el.style.display = 'block';
+}
+
+function kiCheckApiKey() {
+  const el = document.getElementById('kiApikeySetup');
+  if (el) el.style.display = kiGetKey() ? 'none' : 'block';
+}
+
+// ── Kontext-Anzeige aktualisieren ─────────────────────────────────────────
+function kiUpdateContext() {
+  const c = course();
+  const courseEl = document.getElementById('kiCtxCourse');
+  const bandEl = document.getElementById('kiCtxBand');
+  if (!courseEl || !bandEl) return;
+  if (c) {
+    courseEl.textContent = `${c.short} – ${c.totalStd}h`;
+    if (KI.activeBandId) {
+      const b = c.baende.find(x => x.id === KI.activeBandId);
+      bandEl.textContent = b ? `${b.nr}: ${b.title}` : '–';
+    } else {
+      bandEl.textContent = 'Kein Band ausgewählt';
+    }
+  } else {
+    courseEl.textContent = '–';
+    bandEl.textContent = 'Kein Lehrgang ausgewählt';
+  }
+}
+
+// ── Quick-Actions rendern ──────────────────────────────────────────────────
+function kiRenderQuickActions() {
+  const el = document.getElementById('kiQuickActions');
+  if (!el) return;
+  const c = course();
+  const band = c && KI.activeBandId ? c.baende.find(b => b.id === KI.activeBandId) : null;
+  const actions = [];
+  if (band) {
+    actions.push({ label: `Unterrichtshinweise: ${band.nr}`, msg: `Gib mir konkrete didaktische Unterrichtshinweise und Praxistipps für das Modul "${band.nr} – ${band.title}" (KB ${band.kb || '—'}, ${fmtMin(band.min)}). Worauf sollte der Dozent beim Unterricht besonders achten? Welche häufigen Missverständnisse oder Prüfungsschwerpunkte gibt es?` });
+    actions.push({ label: `5 Prüfungsfragen: ${band.nr}`, msg: `Erstelle 5 Multiple-Choice-Prüfungsfragen für "${band.nr} – ${band.title}" (${band.themen.map(t => t.title).join(', ')}), wie sie bei der BKF-Prüfung vorkommen könnten. Format: Frage, 4 Antwortoptionen (A–D), korrekte Antwort markiert.` });
+    actions.push({ label: 'Lernziele formulieren', msg: `Formuliere die Lernziele für "${band.nr} – ${band.title}" (KB ${band.kb || '—'}) als SMART-Lernziele, wie sie für eine Unterrichtsplanung nach BKrFQV geeignet wären.` });
+  }
+  if (c) {
+    actions.push({ label: 'Überblick Lehrgang', msg: `Gib einen strukturierten Überblick über den Lehrgang "${c.title}" (${c.totalStd}h). Welche Module sind inhaltlich besonders anspruchsvoll? Welche Verknüpfungen zwischen den Modulen sind prüfungsrelevant?` });
+  }
+  if (S.genPlan) {
+    actions.push({ label: 'Tagesplan-Tipps', msg: `Der generierte Kursplan hat ${S.genPlan.length} Unterrichtstage à ${S.hoursPerDay}h. Gib allgemeine Tipps zur Strukturierung eines BKF-Unterrichtstages: Methodenwechsel, Pausen, praktische Übungsanteile, Lernkontrolle.` });
+  }
+  actions.push({ label: 'Rechtliche Grundlagen BKrFQV', msg: 'Erkläre kurz die wichtigsten rechtlichen Grundlagen der Berufskraftfahrerqualifikation in Deutschland: BKrFQV, Anlage 1, Unterschiede zwischen beschleunigter Grundqualifikation, Quereinsteiger, Umsteiger und Weiterbildung.' });
+  el.innerHTML = actions.map(a => `<button class="ki-qa" data-prompt="${encodeURIComponent(a.msg)}">${a.label}</button>`).join('');
+  el.querySelectorAll('.ki-qa').forEach(btn => btn.addEventListener('click', () => {
+    kiCall(decodeURIComponent(btn.dataset.prompt));
+  }));
+}
+
+// ── Nachrichten rendern ────────────────────────────────────────────────────
+function kiRenderMessages() {
+  const el = document.getElementById('kiMessages');
+  if (!el) return;
+  if (KI.messages.length === 0 && !KI.loading) {
+    el.innerHTML = `<div class="ki-empty-msg">Fragen zur BKrFQV, Unterrichtshinweise, Prüfungsfragen – ich helfe gerne.<br>Wähle eine Schnellaktion oder stell eine eigene Frage.</div>`;
+    return;
+  }
+  let html = KI.messages.map(m => {
+    if (m.role === 'user') {
+      return `<div class="ki-msg user">${escHtml(m.content)}</div>`;
+    } else {
+      const isErr = m.content.startsWith('__error__');
+      const text = isErr ? m.content.slice(9) : m.content;
+      return `<div class="ki-msg ${isErr ? 'error' : 'assistant'}">${formatKiText(text)}</div>`;
+    }
+  }).join('');
+  if (KI.loading) {
+    html += `<div class="ki-msg loading"><div class="ki-dots"><span></span><span></span><span></span></div></div>`;
+  }
+  el.innerHTML = html;
+  el.scrollTop = el.scrollHeight;
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+}
+
+function formatKiText(text) {
+  // Bold **text**, bullet lists, line breaks
+  return text
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+    .replace(/^[-–•] (.+)/gm,'<span style="display:block;margin-left:8px">• $1</span>')
+    .replace(/\n/g,'<br>');
+}
+
+// ── KI per-Band aufrufen ───────────────────────────────────────────────────
+function kiAskBand(band) {
+  KI.activeBandId = band.id;
+  if (!KI.open) toggleKI();
+  else { kiUpdateContext(); kiRenderQuickActions(); }
+  const msg = `Gib mir einen kompakten Überblick zu "${band.nr} – ${band.title}" (KB ${band.kb || '—'}, ${fmtMin(band.min)}): Lernziele, Unterrichtsschwerpunkte und praxisrelevante Hinweise für den BKF-Unterricht.`;
+  kiCall(msg);
+}
+
+// ── KI-Initialisierung ────────────────────────────────────────────────────
+function initKI() {
+  // API-Key Setup
+  const saveBtn = document.getElementById('kiApiKeySave');
+  if (saveBtn) saveBtn.addEventListener('click', () => {
+    const k = document.getElementById('kiApiKeyInput')?.value.trim();
+    if (k) { kiSaveKey(k); document.getElementById('kiApikeySetup').style.display = 'none'; }
+  });
+  // Schließen
+  const closeBtn = document.getElementById('kiCloseBtn');
+  if (closeBtn) closeBtn.addEventListener('click', toggleKI);
+  // Senden
+  const sendBtn = document.getElementById('kiSendBtn');
+  const input = document.getElementById('kiInput');
+  const doSend = () => {
+    const msg = input?.value.trim();
+    if (!msg || KI.loading) return;
+    if (input) input.value = '';
+    kiCall(msg);
+  };
+  if (sendBtn) sendBtn.addEventListener('click', doSend);
+  if (input) input.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); doSend(); }
+  });
+  // Verlauf löschen
+  const clearBtn = document.getElementById('kiClearBtn');
+  if (clearBtn) clearBtn.addEventListener('click', () => {
+    KI.messages = []; KI.loading = false; kiRenderMessages();
+  });
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════════════════════════════
+loadStorage();
+renderAll();
+initKI();
+
+// postMessage-Bridge für app.js (pause/resume beim Tab-Wechsel)
+window.addEventListener('message', e => {
+  if (e.data?.type === 'qm-pause' || e.data?.type === 'bkrfqg-pause') {
+    // Modul pausiert – keine Aktion nötig
+  }
+});
+</script>
+</body>
+</html>
