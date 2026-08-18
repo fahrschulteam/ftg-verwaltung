@@ -4525,8 +4525,8 @@ function renderCourses(){
       return '<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #f0f0f0;flex-wrap:wrap;'+(dimmed?'opacity:.6':'')+'" data-eid="'+e.id+'">'
         +'<span style="flex:1;min-width:100px;font-size:.88rem;'+nameStyle+'">'+nm+'</span>'
         +invBadge+remBadge+remBtn
-        +'<button class="btn ghost sm ie-edit-btn" data-eid="'+e.id+'" style="padding:3px 8px;font-size:.75rem">✎</button>'
-        +'<button class="btn ghost sm ie-del-btn" data-eid="'+e.id+'" style="padding:3px 8px;font-size:.75rem;color:#c00">✕</button>'
+        +'<button class="btn ghost sm ie-edit-btn" data-eid="'+e.id+'"'+(p?' data-pid="'+p.id+'" title="Teilnehmer bearbeiten"':' title="Termin bearbeiten"')+' style="padding:3px 8px;font-size:.75rem">✎</button>'
+        +'<button class="btn ghost sm ie-del-btn" data-eid="'+e.id+'" title="Teilnehmer aus diesem Lehrgang entfernen" style="padding:3px 8px;font-size:.75rem;color:#c00">✕</button>'
         +'</div>';
     };
 
@@ -4622,8 +4622,15 @@ function renderCourses(){
     });
     card.querySelectorAll('.ie-edit-btn').forEach(btn=>{
       btn.addEventListener('click',ev=>{
+        // stopPropagation: sonst landet der Klick auf der Lehrgangs-Karte
         ev.stopPropagation();
         const eid=btn.dataset.eid;
+        // Der Stift in einer Teilnehmerzeile bearbeitet den TEILNEHMER
+        // (Name, Geburtsdatum, Firma, Fuehrerschein-/Qualifikationsdaten) –
+        // nicht den Lehrgang. Nur die Zeilen ohne Teilnehmer ("Termin
+        // bearbeiten") oeffnen weiterhin den Termin/Lehrgang selbst.
+        const pid=btn.dataset.pid;
+        if(pid&&state.participants.find(x=>x.id===pid)){ openParticipant(pid); return; }
         if(isKurs) openCourse(eid);
         else if(isADR) openAdrInstruction(eid);
         else openInstruction(eid);
