@@ -4622,7 +4622,8 @@ function renderCourses(){
     });
     card.querySelectorAll('.ie-edit-btn').forEach(btn=>{
       btn.addEventListener('click',ev=>{
-        // stopPropagation: sonst landet der Klick auf der Lehrgangs-Karte
+        // stopPropagation vorsorglich: die Karte hat aktuell keinen eigenen
+        // Klick-Handler, soll aber spaeter einen bekommen koennen.
         ev.stopPropagation();
         const eid=btn.dataset.eid;
         // Der Stift in einer Teilnehmerzeile bearbeitet den TEILNEHMER
