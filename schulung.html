@@ -1803,6 +1803,7 @@ window.addEventListener('message', e => {
     if (firma.basiszins != null) s.basiszins       = firma.basiszins;
     if (firma.default_location)  s.defaultLocation = firma.default_location;
     if (firma.default_capacity != null) s.defaultCapacity = firma.default_capacity;
+    if (firma.bqr_sachbearbeiter) s.bqrSachbearbeiter = _bqrSb(firma.bqr_sachbearbeiter);
     if (firma.warn_days != null) s.warn            = firma.warn_days;
     if (firma.instr_interval != null) s.interval   = firma.instr_interval;
     if (firma.grundlagen && Object.keys(firma.grundlagen).length) s.grundlagen = firma.grundlagen;
@@ -1831,6 +1832,8 @@ function normalizeData(){
   if(!s.preise||typeof s.preise!=='object')s.preise={};
   if(s.defaultLocation==null)s.defaultLocation='Fahrschulteam Thorsten Gels, Rheiner Str. 158, 49809 Lingen (Ems)';
   if(s.defaultCapacity==null)s.defaultCapacity=18;
+  // BQR/KBA-Meldung: Sachbearbeiterkennung, max. 10 Zeichen (siehe BQR_MAXLEN).
+  s.bqrSachbearbeiter=_bqrSb(s.bqrSachbearbeiter);
   state.companies=state.companies.filter(Boolean).map(c=>({id:c.id||uid(),name:c.name||'(ohne Name)',addr:c.addr||'',contact:c.contact||'',email:c.email||'',phone:c.phone||''}));
   state.participants=state.participants.filter(Boolean).map(p=>{
     // Migration: altes "name"-Feld in firstName/lastName aufteilen
@@ -7137,6 +7140,73 @@ function _uncheckAllThemes(boxId){
 const BQR_KB={'1.1':'01','1.2':'02','1.3':'03','1.3a':'04','1.4':'19','1.5':'06','1.6':'20','2.1':'07','2.2':'08','2.3':'09','3.1':'10','3.2':'11','3.3':'12','3.4':'13','3.5':'14','3.6':'15','3.7':'16','3.8':'17'};
 const BQR_MODUL_KB={'BKF Modul 1':['1.3','1.3a','3.1'],'BKF Modul 2G':['1.3a','1.4'],'BKF Modul 2P':['1.3a','1.5'],'BKF Modul 3':['1.2','2.1','3.4','3.5'],'BKF Modul 4':['2.1','2.2','3.6','3.7','3.8'],'BKF Modul 5G':['2.2'],'BKF Modul 5P':['2.3']};
 const BQR_STAMM={name:'Fahrschulteam Thorsten Gels',strasse:'Rheiner Straße 158',plz:'49809',ort:'Lingen',aktenzeichen:'32/HAR',behoerde:'Stadt Lingen (Ems)'};
+// ── Feldlängen der KBA-Meldung ──────────────────────────────────────────────
+// Das KBA-Portal lehnt die KOMPLETTE Datei als nicht schemavalide ab, sobald ein
+// einziges Feld zu lang ist – deshalb wird vor dem Erzeugen geprüft (siehe
+// _bqrFeld) statt hinterher zu rätseln, welcher Satz die Meldung gekippt hat.
+//
+// BESTÄTIGT durch eine Ablehnung des KBA-Portals:
+//   sachbearbeiterkennung ............................................ 10
+//   (der frühere Wert "Thorsten G." hatte 11 Zeichen und war der Auslöser)
+//
+// RICHTWERTE – bewusst GROSSZÜGIG gewählt und NICHT gegen die offizielle XSD
+// verifiziert (die Schemadatei liegt diesem Projekt nicht bei). Sie fangen grob
+// zu lange Eingaben ab, ohne legitime Meldungen zu blockieren; sobald die XSD
+// vorliegt, hier auf die echten Werte nachziehen:
+//   vorname / familiennameUnstrukturiert / geburtsnameUnstrukturiert .. 55
+//   geburtsort ....................................................... 50
+//   ausbildungsstaette / strasse / anerkennungsbehoerde /
+//   ueberwachungsbehoerde ............................................ 100
+//   ort .............................................................. 50
+//   aktenzeichenAnerkennungsbescheid ................................. 30
+//
+// FESTE FORMATE – stammen aus Konstanten bzw. dem Code, nicht aus Eingaben,
+// und können praktisch nicht zu lang werden; trotzdem mitgeprüft, damit ein
+// künftiger Umbau nicht unbemerkt eine ungültige Datei erzeugt:
+//   satznummer 7 · kenntnisbereich 2 (Codes aus BQR_KB) · dauer 3
+//   beginn/ende 10 (JJJJ-MM-TT) · fahrerlaubnisklasse 3 (C1E/D1E)
+//   postleitzahl 5 · geburtsdatum 8 (TTMMJJJJ) · geschlecht 1
+const BQR_MAXLEN={
+  sachbearbeiterkennung:10,
+  vorname:55, familiennameUnstrukturiert:55, geburtsnameUnstrukturiert:55,
+  geburtsort:50, geschlecht:1, geburtsdatum:8,
+  ausbildungsstaette:100, strasse:100, ort:50, postleitzahl:5,
+  aktenzeichenAnerkennungsbescheid:30, anerkennungsbehoerde:100, ueberwachungsbehoerde:100,
+  satznummer:7, kenntnisbereich:2, dauer:3, beginn:10, ende:10, fahrerlaubnisklasse:3
+};
+const BQR_SB_DEFAULT='TGels';
+// Normalisiert die Sachbearbeiterkennung: leer oder zu lang → Standard.
+// Zu lange Altwerte werden NICHT abgeschnitten ("Thorsten G." → "Thorsten G"
+// wäre ein sinnloses Kürzel), sondern auf den konfigurierten Standard gesetzt.
+function _bqrSb(v){
+  const t=String(v==null?'':v).trim();
+  return (!t||t.length>BQR_MAXLEN.sachbearbeiterkennung)?BQR_SB_DEFAULT:t;
+}
+// Liefert den XML-escapten Wert und sammelt Längenverstöße in "fehler".
+// Geprüft wird der ROHwert: das Schema zählt die Zeichen vor dem Escapen,
+// ein "&" ist dort ein Zeichen und nicht die fünf aus "&amp;".
+function _bqrFeld(feld,wert,fehler,wer){
+  const v=String(wert==null?'':wert);
+  const max=BQR_MAXLEN[feld];
+  if(max&&v.length>max){
+    fehler.push((wer?wer+' – ':'')+'Feld '+feld+' ist '+v.length+' Zeichen lang, erlaubt sind '+max+' („'+v+'“)');
+  }
+  return _xmlEsc(v);
+}
+// Bricht das Erzeugen ab und zeigt die Verstöße im geöffneten BQR-Dialog an –
+// der Dialog bleibt stehen, damit die Kennung direkt korrigiert werden kann.
+function _bqrAbbruch(fehler){
+  const box=document.getElementById('bqr_fehler');
+  if(box){
+    box.innerHTML='<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:10px 12px;margin-top:10px">'
+      +'<div style="font-weight:700;color:#b91c1c;font-size:.85rem;margin-bottom:6px">⚠ Keine Datei erzeugt – Feldlängen verletzen das KBA-Schema</div>'
+      +'<ul style="margin:0;padding-left:18px;font-size:.82rem;color:#7f1d1d;line-height:1.5">'
+      +fehler.map(t=>'<li>'+_esc(t)+'</li>').join('')
+      +'</ul></div>';
+    box.scrollIntoView({block:'nearest'});
+  }
+  toast('⚠ '+fehler[0]);
+}
 function _xmlEsc(s){return String(s==null?'':s).replace(/[<>&'"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;',"'":'&apos;','"':'&quot;'}[c]));}
 function _bqrKlassen(p,typ){
   const kl=String((p.extDates||{}).KLASSEN||'').split(',').map(s=>s.trim()).filter(k=>/^(C1E|C1|CE|C|D1E|D1|DE|D)$/.test(k));
@@ -7165,9 +7235,11 @@ function openBqrDialog(g){
     <h3>🏛 BQR-Meldung ans KBA</h3>
     <p class="hint" style="margin:4px 0 12px"><b>${_esc(g.type)}</b> · ${fmt(datum)} · Kenntnisbereiche ${kbs.join(', ')} (Codes ${kbs.map(k=>BQR_KB[k]).join(', ')}) · ${liste.length} Teilnehmer</p>
     <div class="field"><label>Sachbearbeiterkennung (erscheint in der Meldung)</label>
-      <input id="bqr_sb" value="${_esc(state.settings.bqrSachbearbeiter||'')}" placeholder="z. B. Thorsten G."></div>
+      <input id="bqr_sb" maxlength="${BQR_MAXLEN.sachbearbeiterkennung}" value="${_esc(_bqrSb(state.settings.bqrSachbearbeiter))}" placeholder="${BQR_SB_DEFAULT}">
+      <div class="hint">Max. ${BQR_MAXLEN.sachbearbeiterkennung} Zeichen (Vorgabe des KBA-XML-Schemas). Dauerhaft änderbar unter <b>Einstellungen → Schulungen → Schulungsbetrieb</b>.</div></div>
     ${rows}
     <div class="hint" style="margin-top:8px">Teilnehmer mit fehlenden Pflichtangaben werden <b>nicht</b> in die Datei aufgenommen (rotes Etikett anklicken zum Ergänzen). Die fertige Datei lädst du bei kba-online.de unter „Dateiübermittlung" hoch. Meldefrist: unverzüglich nach dem Termin.</div>
+    <div id="bqr_fehler"></div>
     <div class="modal-actions">
       <button class="btn ghost" onclick="closeModal()">Abbrechen</button>
       <button class="btn" onclick="bqrErzeugen('${g.entries.find(e=>e.participant)?g.entries.find(e=>e.participant).id:g.entries[0].id}')">XML-Datei erzeugen</button>
@@ -7178,8 +7250,17 @@ function bqrErzeugen(courseId){
   const ref=state.courses.find(c=>c.id===courseId); if(!ref)return;
   const typ=ref.type, datum=ref.dateFrom||ref.date||'', ende=ref.dateTo||datum;
   const kbs=(BQR_MODUL_KB[typ]||[]).map(k=>BQR_KB[k]).filter(Boolean);
+  const _fehlerBox=document.getElementById('bqr_fehler');
+  if(_fehlerBox)_fehlerBox.innerHTML='';
+  const fehler=[];
   const sb=((document.getElementById('bqr_sb')||{}).value||'').trim();
   if(!sb){toast('Bitte Sachbearbeiterkennung eintragen');return;}
+  // Harte Grenze: lieber hier abbrechen als eine Datei erzeugen, die das
+  // KBA-Portal komplett zurueckweist.
+  if(sb.length>BQR_MAXLEN.sachbearbeiterkennung){
+    _bqrAbbruch(['Feld sachbearbeiterkennung ist '+sb.length+' Zeichen lang, erlaubt sind '+BQR_MAXLEN.sachbearbeiterkennung]);
+    return;
+  }
   state.settings.bqrSachbearbeiter=sb; save();
   const gruppe=state.courses.filter(c=>c.type===typ&&(c.dateFrom||c.date)===datum&&c.participant);
   const seen=new Set(); let nr=0; const uebersprungen=[];
@@ -7192,33 +7273,37 @@ function bqrErzeugen(courseId){
     nr++;
     const gd=p.birth.split('-');
     const gebname=(ext.GEBURTSNAME||'').trim();
+    // wer = Klartextname fuer die Fehlermeldung, damit sofort erkennbar ist,
+    // welcher Satz die Meldung sprengt.
+    const wer=pFullName(p);
+    const F=(feld,wert)=>_bqrFeld(feld,wert,fehler,wer);
     xml+='  <Qualifikation>\n'
-      +'    <satznummer>'+nr+'</satznummer>\n'
-      +'    <sachbearbeiterkennung>'+_xmlEsc(sb)+'</sachbearbeiterkennung>\n'
+      +'    <satznummer>'+F('satznummer',nr)+'</satznummer>\n'
+      +'    <sachbearbeiterkennung>'+F('sachbearbeiterkennung',sb)+'</sachbearbeiterkennung>\n'
       +'    <Weiterbildung>\n'
-      +kbs.map(k=>'      <kenntnisbereich>'+k+'</kenntnisbereich>\n').join('')
-      +'      <beginn>'+datum+'</beginn>\n'
-      +'      <ende>'+ende+'</ende>\n'
-      +'      <dauer>7</dauer>\n'
-      +_bqrKlassen(p,typ).map(k=>'      <fahrerlaubnisklasse>'+k+'</fahrerlaubnisklasse>\n').join('')
+      +kbs.map(k=>'      <kenntnisbereich>'+F('kenntnisbereich',k)+'</kenntnisbereich>\n').join('')
+      +'      <beginn>'+F('beginn',datum)+'</beginn>\n'
+      +'      <ende>'+F('ende',ende)+'</ende>\n'
+      +'      <dauer>'+F('dauer','7')+'</dauer>\n'
+      +_bqrKlassen(p,typ).map(k=>'      <fahrerlaubnisklasse>'+F('fahrerlaubnisklasse',k)+'</fahrerlaubnisklasse>\n').join('')
       +'      <Ausbildungsstaette>\n'
-      +'        <ausbildungsstaette>'+_xmlEsc(BQR_STAMM.name)+'</ausbildungsstaette>\n'
-      +'        <strasse>'+_xmlEsc(BQR_STAMM.strasse)+'</strasse>\n'
-      +'        <postleitzahl>'+BQR_STAMM.plz+'</postleitzahl>\n'
-      +'        <ort>'+_xmlEsc(BQR_STAMM.ort)+'</ort>\n'
+      +'        <ausbildungsstaette>'+F('ausbildungsstaette',BQR_STAMM.name)+'</ausbildungsstaette>\n'
+      +'        <strasse>'+F('strasse',BQR_STAMM.strasse)+'</strasse>\n'
+      +'        <postleitzahl>'+F('postleitzahl',BQR_STAMM.plz)+'</postleitzahl>\n'
+      +'        <ort>'+F('ort',BQR_STAMM.ort)+'</ort>\n'
       +'      </Ausbildungsstaette>\n'
-      +'      <aktenzeichenAnerkennungsbescheid>'+_xmlEsc(BQR_STAMM.aktenzeichen)+'</aktenzeichenAnerkennungsbescheid>\n'
-      +'      <anerkennungsbehoerde>'+_xmlEsc(BQR_STAMM.behoerde)+'</anerkennungsbehoerde>\n'
-      +'      <ueberwachungsbehoerde>'+_xmlEsc(BQR_STAMM.behoerde)+'</ueberwachungsbehoerde>\n'
+      +'      <aktenzeichenAnerkennungsbescheid>'+F('aktenzeichenAnerkennungsbescheid',BQR_STAMM.aktenzeichen)+'</aktenzeichenAnerkennungsbescheid>\n'
+      +'      <anerkennungsbehoerde>'+F('anerkennungsbehoerde',BQR_STAMM.behoerde)+'</anerkennungsbehoerde>\n'
+      +'      <ueberwachungsbehoerde>'+F('ueberwachungsbehoerde',BQR_STAMM.behoerde)+'</ueberwachungsbehoerde>\n'
       +'    </Weiterbildung>\n'
       +'    <Personendaten>\n'
-      +'      <geburtsdatum>'+gd[2]+gd[1]+gd[0]+'</geburtsdatum>\n'
-      +'      <geburtsort>'+_xmlEsc(p.birthplace)+'</geburtsort>\n'
-      +'      <geschlecht>'+String(ext.GESCHLECHT||'m').toLowerCase().slice(0,1)+'</geschlecht>\n'
+      +'      <geburtsdatum>'+F('geburtsdatum',gd[2]+gd[1]+gd[0])+'</geburtsdatum>\n'
+      +'      <geburtsort>'+F('geburtsort',p.birthplace)+'</geburtsort>\n'
+      +'      <geschlecht>'+F('geschlecht',String(ext.GESCHLECHT||'m').toLowerCase().slice(0,1))+'</geschlecht>\n'
       +'      <PersonendatenMitFamilienname>\n'
-      +'        <vorname>'+_xmlEsc(p.firstName||'')+'</vorname>\n'
-      +'        <familiennameUnstrukturiert>'+_xmlEsc(p.lastName||p.name||'')+'</familiennameUnstrukturiert>\n'
-      +(gebname?'        <geburtsnameUnstrukturiert>'+_xmlEsc(gebname)+'</geburtsnameUnstrukturiert>\n'
+      +'        <vorname>'+F('vorname',p.firstName||'')+'</vorname>\n'
+      +'        <familiennameUnstrukturiert>'+F('familiennameUnstrukturiert',p.lastName||p.name||'')+'</familiennameUnstrukturiert>\n'
+      +(gebname?'        <geburtsnameUnstrukturiert>'+F('geburtsnameUnstrukturiert',gebname)+'</geburtsnameUnstrukturiert>\n'
                :'        <geburtsnameFehltZurecht>1</geburtsnameFehltZurecht>\n')
       +'      </PersonendatenMitFamilienname>\n'
       +'    </Personendaten>\n'
@@ -7226,6 +7311,10 @@ function bqrErzeugen(courseId){
   }
   xml+='</Qualifikationen-Request>\n';
   if(!nr){toast('⚠ Kein Teilnehmer hat vollständige Pflichtangaben – es wurde keine Datei erzeugt.');return;}
+  // Abbruch VOR dem Download und vor allen Nebenwirkungen (passed-Flag,
+  // Bescheinigungsmails): eine einzige zu lange Angabe macht die KOMPLETTE
+  // Datei schemaungueltig, das KBA-Portal weist sie dann als Ganzes zurueck.
+  if(fehler.length){_bqrAbbruch(fehler);return;}
   // An die BQR-Meldung gekoppelt: Wer gemeldet wird, hat teilgenommen → automatisch
   // die Teilnahmebescheinigung verschicken (kein separater Klick nötig, idempotent).
   const _bqrSeen=new Set();

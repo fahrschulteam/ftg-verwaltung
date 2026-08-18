@@ -782,6 +782,14 @@ function escEinst(s) {
   return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
+// BQR-Meldung ans KBA: Die Sachbearbeiterkennung darf laut XML-Schema höchstens
+// 10 Zeichen lang sein. Der früher fest verdrahtete Wert "Thorsten G." hatte 11
+// Zeichen und führte dazu, dass das KBA-Portal die gesamte Upload-Datei als nicht
+// schemavalide zurückwies – deshalb hier hart begrenzt (maxlength im Feld plus
+// slice beim Speichern). Gegenstück in schulung.html: BQR_MAXLEN / _bqrSb.
+const BQR_SB_MAXLEN = 10;
+const BQR_SB_DEFAULT = 'TGels';
+
 function viewSchulung() {
   const f = einstState.firma || {};
   const g = f.grundlagen || {};
@@ -855,6 +863,17 @@ function viewSchulung() {
           ${feld('instr-interval','Unterweisungsintervall (Monate)', f.instr_interval??12, 'number', 'Standard: 12 = jährlich')}
         </div>
       </div>
+      <div class="frow" style="margin-top:4px">
+        <label>BQR-Sachbearbeiterkennung</label>
+        <input id="sch-bqr-sb" type="text" maxlength="${BQR_SB_MAXLEN}" style="max-width:180px"
+          value="${escEinst(f.bqr_sachbearbeiter ?? BQR_SB_DEFAULT)}" placeholder="${BQR_SB_DEFAULT}">
+        <div style="font-size:11px;color:var(--grau);margin-top:3px">
+          Erscheint als &lt;sachbearbeiterkennung&gt; in jeder KBA-Meldung (Berufskraftfahrer-
+          qualifikationsregister). Das XML-Schema erlaubt <b>maximal ${BQR_SB_MAXLEN} Zeichen</b>;
+          bei einem längeren Wert weist das KBA-Portal die komplette Upload-Datei ab.
+          Standard: ${BQR_SB_DEFAULT}
+        </div>
+      </div>
     </div>
 
     <div class="card" style="margin-bottom:16px">
@@ -924,6 +943,8 @@ async function schulungSpeichern() {
     default_capacity: parseInt(v('default-capacity')) || 18,
     warn_days:        parseInt(v('warn-days')) || 60,
     instr_interval:   parseInt(v('instr-interval')) || 12,
+    // slice als zweite Sicherung, falls das maxlength im Browser umgangen wird
+    bqr_sachbearbeiter: (v('bqr-sb') || BQR_SB_DEFAULT).slice(0, BQR_SB_MAXLEN),
     grundlagen,
     preise,
     updated_at: new Date().toISOString(),
