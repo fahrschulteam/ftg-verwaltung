@@ -205,9 +205,12 @@ tr:hover td{background:#fafafa}
 .pdfprev-page{width:100%;max-width:760px;margin:0 auto 14px;display:block;box-shadow:0 2px 12px rgba(0,0,0,.4);background:#fff}
 .pdfprev-foot{padding:8px 16px;border-top:1px solid var(--border-light);background:#fafafa}
 #printHolder{display:none}
-#printHolder img{width:100%;display:block;page-break-after:always}
+/* Die Breite setzt _druckImgTags() je Seite in mm – hier NICHT auf 100% zwingen,
+   sonst wird ein Querformat-Bild auf die Blattbreite hochskaliert und läuft
+   unten über (jedes Blatt zog dann ein fast leeres Folgeblatt nach sich). */
+#printHolder img{display:block;max-width:100%;page-break-after:always}
 #printHolder img:last-child{page-break-after:auto}
-@media print{@page{margin:10mm}body.printing-now>*{display:none !important}body.printing-now #printHolder{display:block !important}}
+@media print{body.printing-now>*{display:none !important}body.printing-now #printHolder{display:block !important}}
 .field{margin-bottom:13px}
 .hint{font-size:.77rem;color:var(--muted);margin-top:4px;line-height:1.5}
 .empty{text-align:center;padding:40px 20px;color:var(--muted);font-size:.9rem}
@@ -5981,10 +5984,7 @@ function printAttendanceList(g, isInstr){ try{
   const THEME_H  = themes
     ? 8.5 + (THEME_COLS===2 ? Math.ceil(themes.length/2) : themes.length) * 4.4
     : 0;
-  // Höhen vorab berechnet, weil die Seitenaufteilung sie kennen muss, bevor
-  // gezeichnet wird (die Seitenzahl "Seite 1 von 2" steht sonst nicht fest).
-  const TOP_S1 = 44 + 6.5 + Math.max(INFO_H, THEME_H) + 3;
-  const TOP_SN = 25;
+  const TOP_SN = 25;   // Folgeseiten: Ende der kompakten Kopfzeile
 
   function kopfbereich(){
     let y = pdfHeader(doc, '');
@@ -6020,7 +6020,10 @@ function printAttendanceList(g, isInstr){ try{
       });
     }
 
-    return TOP_S1;
+    // Gemessener Endwert statt vorab geschätzter Konstante: die Zeilenkapazität
+    // wird daraus berechnet, damit sie nicht auseinanderläuft, wenn sich am
+    // Kopfbereich etwas ändert.
+    return y + Math.max(INFO_H, THEME_H) + 3;
   }
 
   // ── Kopfbereich Folgeseiten ──────────────────────────────────────────
@@ -6100,35 +6103,57 @@ function printAttendanceList(g, isInstr){ try{
   }
 
   // ── Zeilen auf Seiten verteilen ───────────────────────────────────────
-  // Die Liste ist als zweiseitiges Formular für den beidseitigen Druck gedacht
-  // und hält immer mindestens 18 Zeilen bereit. Sind mehr Teilnehmer
+  // Die Liste hält immer mindestens 18 Zeilen bereit. Sind mehr Teilnehmer
   // eingetragen, kommen weitere Seiten dazu – es fällt niemand hinten runter.
   const slots = prep.slice();
   while(slots.length < MIN_SLOTS) slots.push(null);   // null = Leerzeile
+  const zh = r => r ? r.h : ROW_MIN;
 
-  const CAP_S1 = SAFE_BOTTOM - TOP_S1 - HEAD_H;
-  const CAP_SN = SAFE_BOTTOM - TOP_SN - HEAD_H;
+  // Kopfbereich der ersten Seite ZUERST zeichnen: sein gemessener Endwert
+  // bestimmt die Kapazität. Alles danach rechnet mit der tatsächlich
+  // verbliebenen Höhe, nicht mit einem festen Schätzwert.
+  const TOP_1 = kopfbereich();
 
-  const seiten = []; let akt = [], hoehe = 0, kap = CAP_S1;
-  slots.forEach(r=>{
-    const rh = r ? r.h : ROW_MIN;
-    if(akt.length && hoehe + rh > kap){ seiten.push(akt); akt = []; hoehe = 0; kap = CAP_SN; }
-    akt.push(r); hoehe += rh;
-  });
-  if(akt.length) seiten.push(akt);
+  // Das Unterschriftenfeld des Dozenten steht nur auf der LETZTEN Seite.
+  // Eine Seite, der noch eine folgt, darf deshalb bis dicht unter die Fußzeile
+  // laufen – das sind gut 20 mm und damit zwei Zeilen mehr.
+  const UNTEN_LETZTE = SAFE_BOTTOM;        // 153 mm, Platz für die Unterschrift
+  const UNTEN_WEITER = FOOTER_TOP - 2;     // 173 mm, ohne Unterschriftenfeld
+
+  const seiten = [];
+  let rest = slots.slice(), top = TOP_1;
+  while(rest.length){
+    const restH = rest.reduce((a,r)=>a+zh(r), 0);
+    // Passt der ganze Rest inkl. Unterschriftenfeld auf diese Seite, ist sie
+    // die letzte – dann wird keine weitere Seite mehr angelegt.
+    if(restH <= UNTEN_LETZTE - top - HEAD_H){
+      seiten.push({top, zeilen:rest, unten:UNTEN_LETZTE});
+      break;
+    }
+    // Sonst folgt noch mindestens eine Seite: bis UNTEN_WEITER füllen und
+    // mindestens eine Zeile für die Folgeseite übrig lassen.
+    const kap = UNTEN_WEITER - top - HEAD_H;
+    const drauf = []; let h = 0;
+    while(rest.length > 1 && h + zh(rest[0]) <= kap){ h += zh(rest[0]); drauf.push(rest.shift()); }
+    if(!drauf.length) drauf.push(rest.shift());   // Notnagel: nie eine leere Seite
+    seiten.push({top, zeilen:drauf, unten:UNTEN_WEITER});
+    top = TOP_SN;
+  }
 
   // ── Seiten zeichnen ───────────────────────────────────────────────────
   let nr = 0;
-  seiten.forEach((zeilen, si)=>{
+  seiten.forEach((seite, si)=>{
+    const zeilen = seite.zeilen;
+    // Seite 1 ist oben bereits gezeichnet worden (für die Messung).
     if(si) doc.addPage();
-    let y = tabellenkopf(si===0 ? kopfbereich() : kopfbereichFolge());
+    let y = tabellenkopf(si===0 ? seite.top : kopfbereichFolge());
     const rahmenTop = y - HEAD_H;
 
     // Übriges Restmaß gleichmäßig auf die Leerzeilen verteilen, damit die
     // Tabelle jeder Seite genau an der Unterkante endet.
-    const summe = zeilen.reduce((a,r)=>a+(r?r.h:ROW_MIN), 0);
+    const summe = zeilen.reduce((a,r)=>a+zh(r), 0);
     const leer  = zeilen.filter(r=>!r).length;
-    const extra = leer ? Math.max(0, SAFE_BOTTOM - y - summe) / leer : 0;
+    const extra = leer ? Math.max(0, seite.unten - y - summe) / leer : 0;
 
     zeilen.forEach(r=>{
       const h = r ? r.h : ROW_MIN + extra;
@@ -11653,9 +11678,14 @@ async function saveBlob(blob,fname,mime,types){
 }
 // Zeigt das PDF zuerst in einer Vorschau (als Bild gerendert, damit es auch lokal/file:// funktioniert)
 let _previewBlobUrl=null,_previewDoc=null,_previewFname=null,_previewPageImgs=[];
+// Seitengröße je Vorschauseite in mm. Ohne diese Angabe skaliert der Browser
+// das Seitenbild beim Drucken blind auf die Blattbreite – bei Querformat-PDFs
+// ist es dann entweder zu hoch (jedes Blatt zieht ein leeres Folgeblatt nach
+// sich) oder es schrumpft auf die halbe Blatthöhe.
+let _previewPageSizes=[];
 function previewPdf(doc,fname){
   try{
-    _previewDoc=doc;_previewFname=fname;_previewPageImgs=[];
+    _previewDoc=doc;_previewFname=fname;_previewPageImgs=[];_previewPageSizes=[];
     const blob=doc.output('blob');
     if(_previewBlobUrl)URL.revokeObjectURL(_previewBlobUrl);
     _previewBlobUrl=URL.createObjectURL(blob);
@@ -11700,9 +11730,12 @@ async function renderPreviewImages(arrayBuffer,body){
     if(!window.pdfjsLib){body.innerHTML='<div style="padding:30px;text-align:center;color:#fff">Vorschau-Bibliothek nicht geladen (Internet nötig). Du kannst trotzdem „Speichern“ und das PDF im Ordner ansehen.</div>';return;}
     try{pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';}catch(e){}
     const pdf=await pdfjsLib.getDocument({data:arrayBuffer}).promise;
-    body.innerHTML='';_previewPageImgs=[];
+    body.innerHTML='';_previewPageImgs=[];_previewPageSizes=[];
     for(let n=1;n<=pdf.numPages;n++){
       const page=await pdf.getPage(n);
+      // Seitenmaß in mm merken (PDF rechnet in Punkt: 1 pt = 25,4/72 mm)
+      const vp1=page.getViewport({scale:1});
+      _previewPageSizes.push({w:vp1.width*25.4/72, h:vp1.height*25.4/72});
       const viewport=page.getViewport({scale:2});
       const canvas=document.createElement('canvas');
       canvas.width=viewport.width;canvas.height=viewport.height;
@@ -11719,6 +11752,22 @@ async function renderPreviewImages(arrayBuffer,body){
   }
 }
 function closePreview(){const bg=document.getElementById('pdfPreviewBg');if(bg)bg.classList.remove('open');}
+// Seitenmaß der Vorschauseite i (Fallback A4 hoch, falls noch nichts gemessen)
+function _druckMass(i){ return _previewPageSizes[i] || _previewPageSizes[0] || {w:210,h:297}; }
+// Ein Seitenbild exakt in Blattgröße: kein Hochskalieren auf die Blattbreite
+// und damit kein Überlauf, der ein leeres Folgeblatt auslöst.
+function _druckImgTags(){
+  return _previewPageImgs.map((src,i)=>{
+    const m=_druckMass(i);
+    return '<img src="'+src+'" style="width:'+m.w.toFixed(2)+'mm;height:'+m.h.toFixed(2)+'mm">';
+  }).join('');
+}
+// @page mit der echten Seitengröße. margin:0 ist richtig, weil das Seitenbild
+// die KOMPLETTE PDF-Seite zeigt – die Ränder stecken schon im PDF.
+function _druckSeitenCss(){
+  const m=_druckMass(0);
+  return '@page{size:'+m.w.toFixed(2)+'mm '+m.h.toFixed(2)+'mm;margin:0}';
+}
 function isIOS(){return /iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);}
 async function printPreview(){
   if(!_previewPageImgs||!_previewPageImgs.length){toast('Noch keine Vorschau – bitte kurz warten');return;}
@@ -11732,9 +11781,9 @@ async function printPreview(){
     frame=document.createElement('iframe');frame.id='pdfPrintFrame';
     frame.style.cssText='position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden;pointer-events:none';
     document.body.appendChild(frame);
-    const imgs=_previewPageImgs.map(s=>`<img src="${s}" />`).join('');
+    const imgs=_druckImgTags();
     const html=`<!DOCTYPE html><html><head><meta charset="utf-8"><title>${_previewFname||'Druck'}</title>
-      <style>@page{margin:10mm}html,body{margin:0;padding:0}img{width:100%;display:block;page-break-after:always}img:last-child{page-break-after:auto}</style>
+      <style>${_druckSeitenCss()}html,body{margin:0;padding:0}img{display:block;page-break-after:always}img:last-child{page-break-after:auto}</style>
       </head><body>${imgs}</body></html>`;
     // Warte auf sauberes iframe-onload, dann print – niemals automatisch
     frame.onload=()=>{
@@ -11771,8 +11820,12 @@ async function iosShareOrPrint(){
 function printViaMainWindow(){
   try{
     const holder=document.createElement('div');holder.id='printHolder';
-    holder.innerHTML=_previewPageImgs.map(s=>`<img src="${s}" />`).join('');
+    holder.innerHTML=_druckImgTags();
     document.body.appendChild(holder);
+    // @page der Hauptseite (10 mm Rand) für diesen Druck überschreiben
+    let pst=document.getElementById('printPageStyle');
+    if(!pst){pst=document.createElement('style');pst.id='printPageStyle';document.head.appendChild(pst);}
+    pst.textContent=_druckSeitenCss();
     document.body.classList.add('printing-now');
     const done=()=>{document.body.classList.remove('printing-now');const h=document.getElementById('printHolder');if(h)h.remove();window.removeEventListener('afterprint',done);closePreview();};
     window.addEventListener('afterprint',done);
