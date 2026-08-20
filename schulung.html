@@ -4676,7 +4676,11 @@ function renderCourses(){
       '</div>'+
       '<div class="row-actions" style="margin-bottom:10px" id="ia_'+gKey+'">'+
           '<button class="btn ghost sm instr-attendance-btn" title="Anwesenheitsliste drucken">📋 Anwesenheit</button>'+
-          (()=>{const sc=((state.attendanceScans||{})[gKey]||[]).length;return '<button class="btn ghost sm instr-scan-btn" data-scan-key="'+gKey+'" title="Anwesenheitsliste einscannen">📎 Scan'+(sc?' <span style="background:#16a34a;color:#fff;border-radius:10px;font-size:.7rem;padding:1px 6px">'+sc+'</span>':'')+'</button>';})()+
+          (()=>{const sc=((state.attendanceScans||{})[gKey]||[]).length;
+            // Hochladen bleibt der 📎-Knopf; sobald ein Scan vorliegt, kommt
+            // ein eigener Knopf zum Ansehen mit der Anzahl dazu.
+            return '<button class="btn ghost sm instr-scan-btn" data-scan-key="'+gKey+'" title="Anwesenheitsliste einscannen">📎 Scan'+(sc?' <span style="background:#16a34a;color:#fff;border-radius:10px;font-size:.7rem;padding:1px 6px">'+sc+'</span>':'')+'</button>'
+              +(sc?'<button class="btn ghost sm scan-view-btn" data-scan-key="'+gKey+'" title="Gescannte Anwesenheitsliste ansehen">🔍 Scan ansehen ('+sc+')</button>':'');})()+
           '<button class="btn sm instr-cert-btn" style="background:#16a34a">📄 Bescheinigungen</button>'+(isKurs&&(g.type==='Gabelstapler'||g.type==='Ladekran'||g.type==='Baumaschinen')?'<button class="btn sm fa-group-btn" style="background:#0e7490">🪪 '+(g.type==='Gabelstapler'?'Fahrausweise':'Befähigungsnachweise')+'</button>':'')+
           '<button class="btn sm instr-inv-btn" style="background:#1d4ed8">🧾 Rechnungen</button>'+
           (isKurs&&String(g.type||'').indexOf('BKF Modul')===0?'<button class="btn sm bqr-btn" style="background:#7c3aed" title="KBA-Upload-Datei für das Berufskraftfahrerqualifikationsregister erzeugen">🏛 BQR-Meldung</button>':'')+
@@ -4711,6 +4715,10 @@ function renderCourses(){
     const _q__instr_scan_btn=card.querySelector('.instr-scan-btn'); if(_q__instr_scan_btn) _q__instr_scan_btn.addEventListener('click', ev=>{
       ev.stopPropagation();
       openScanUpload(g.key.replace(/[^a-z0-9]/gi,'_'), true);
+    });
+    const _q__scan_view_btn=card.querySelector('.scan-view-btn'); if(_q__scan_view_btn) _q__scan_view_btn.addEventListener('click', ev=>{
+      ev.stopPropagation();
+      openScanViewer(g.key.replace(/[^a-z0-9]/gi,'_'), 0);
     });
     const _q__instr_attendance_btn=card.querySelector('.instr-attendance-btn'); if(_q__instr_attendance_btn) _q__instr_attendance_btn.addEventListener('click',()=>printAttendanceList(g, !isKurs));
     const _q__instr_cert_btn=card.querySelector('.instr-cert-btn'); if(_q__instr_cert_btn) _q__instr_cert_btn.addEventListener('click',()=>instrGroupCerts(g));
@@ -4996,7 +5004,11 @@ function renderInstructions(){
       '</div>'+
       '<div class="row-actions" style="margin-bottom:10px" id="ia_'+gKey+'">'+
           '<button class="btn ghost sm instr-attendance-btn" title="Anwesenheitsliste drucken">📋 Anwesenheit</button>'+
-          (()=>{const sc=((state.attendanceScans||{})[gKey]||[]).length;return '<button class="btn ghost sm instr-scan-btn" data-scan-key="'+gKey+'" title="Anwesenheitsliste einscannen">📎 Scan'+(sc?' <span style="background:#16a34a;color:#fff;border-radius:10px;font-size:.7rem;padding:1px 6px">'+sc+'</span>':'')+'</button>';})()+
+          (()=>{const sc=((state.attendanceScans||{})[gKey]||[]).length;
+            // Hochladen bleibt der 📎-Knopf; sobald ein Scan vorliegt, kommt
+            // ein eigener Knopf zum Ansehen mit der Anzahl dazu.
+            return '<button class="btn ghost sm instr-scan-btn" data-scan-key="'+gKey+'" title="Anwesenheitsliste einscannen">📎 Scan'+(sc?' <span style="background:#16a34a;color:#fff;border-radius:10px;font-size:.7rem;padding:1px 6px">'+sc+'</span>':'')+'</button>'
+              +(sc?'<button class="btn ghost sm scan-view-btn" data-scan-key="'+gKey+'" title="Gescannte Anwesenheitsliste ansehen">🔍 Scan ansehen ('+sc+')</button>':'');})()+
           '<button class="btn sm instr-cert-btn" style="background:#16a34a">📄 Bescheinigungen</button>'+(isKurs&&(g.type==='Gabelstapler'||g.type==='Ladekran'||g.type==='Baumaschinen')?'<button class="btn sm fa-group-btn" style="background:#0e7490">🪪 '+(g.type==='Gabelstapler'?'Fahrausweise':'Befähigungsnachweise')+'</button>':'')+
           '<button class="btn sm instr-inv-btn" style="background:#1d4ed8">🧾 Rechnungen</button>'+
           '<button class="btn ghost sm instr-edit-btn">\u270e Bearbeiten</button>'+
@@ -5047,6 +5059,10 @@ function renderInstructions(){
     const _q__instr_scan_btn=card.querySelector('.instr-scan-btn'); if(_q__instr_scan_btn) _q__instr_scan_btn.addEventListener('click', ev=>{
       ev.stopPropagation();
       openScanUpload(g.key.replace(/[^a-z0-9]/gi,'_'), true);
+    });
+    const _q__scan_view_btn=card.querySelector('.scan-view-btn'); if(_q__scan_view_btn) _q__scan_view_btn.addEventListener('click', ev=>{
+      ev.stopPropagation();
+      openScanViewer(g.key.replace(/[^a-z0-9]/gi,'_'), 0);
     });
     const _q__instr_attendance_btn=card.querySelector('.instr-attendance-btn'); if(_q__instr_attendance_btn) _q__instr_attendance_btn.addEventListener('click',()=>printAttendanceList(g, !isKurs));
     const _q__instr_cert_btn=card.querySelector('.instr-cert-btn'); if(_q__instr_cert_btn) _q__instr_cert_btn.addEventListener('click',()=>instrGroupCerts(g));
@@ -6309,6 +6325,92 @@ function printAttendanceList(g, isInstr){ try{
 }
 
 // ── Anwesenheitslisten-Scan ──────────────────────────────────────────────
+// ── Gescannte Anwesenheitslisten ansehen ─────────────────────────────────
+// Die Scans liegen als data:-URL in state.attendanceScans[gruppenSchluessel].
+// Zum Anzeigen und Herunterladen werden sie in ein Blob umgewandelt: Chrome
+// blockiert das Navigieren zu data:-URLs im Hauptfenster, und ein <iframe
+// src="data:application/pdf"> bleibt dort leer. Genau daran scheiterte das
+// bisherige Ansehen. Über eine Blob-URL funktionieren PDF und Bild.
+let _scanBlobUrls=[];
+function _scanBlobUrl(scan){
+  if(!scan||!scan.dataUrl) return null;
+  try{
+    const [kopf,b64]=scan.dataUrl.split(',');
+    const typ=(kopf.match(/data:([^;]+)/)||[])[1]||'application/octet-stream';
+    const roh=atob(b64);
+    const bytes=new Uint8Array(roh.length);
+    for(let i=0;i<roh.length;i++) bytes[i]=roh.charCodeAt(i);
+    const url=URL.createObjectURL(new Blob([bytes],{type:typ}));
+    _scanBlobUrls.push(url);
+    return url;
+  }catch(e){ console.error('Scan konnte nicht gelesen werden',e); return null; }
+}
+// Blob-URLs freigeben, sobald der Viewer geschlossen wird
+function _scanBlobsFreigeben(){
+  _scanBlobUrls.forEach(u=>{try{URL.revokeObjectURL(u)}catch(e){}});
+  _scanBlobUrls=[];
+}
+function _scanIstPdf(scan){ return String(scan&&scan.dataUrl||'').startsWith('data:application/pdf'); }
+function scanOeffnen(groupKey, idx){
+  const scan=(state.attendanceScans||{})[groupKey]?.[idx];
+  const url=_scanBlobUrl(scan);
+  if(!url){ toast('Scan konnte nicht geöffnet werden'); return; }
+  window.open(url,'_blank');
+}
+function scanHerunterladen(groupKey, idx){
+  const scan=(state.attendanceScans||{})[groupKey]?.[idx];
+  const url=_scanBlobUrl(scan);
+  if(!url){ toast('Scan konnte nicht geladen werden'); return; }
+  const a=document.createElement('a');
+  a.href=url; a.download=scan.name||'Anwesenheitsliste';
+  document.body.appendChild(a); a.click(); a.remove();
+}
+// Viewer: zeigt den gewählten Scan groß und darunter die Liste aller Scans
+// dieses Lehrgangs (Dateiname, Upload-Datum, Größe).
+function openScanViewer(groupKey, aktiv){
+  _scanBlobsFreigeben();
+  const liste=((state.attendanceScans||{})[groupKey])||[];
+  if(!liste.length){ toast('Für diesen Lehrgang ist kein Scan hinterlegt.'); return; }
+  const i=Math.min(Math.max(+aktiv||0,0), liste.length-1);
+  const scan=liste[i];
+  const url=_scanBlobUrl(scan);
+  const LABEL='font-size:.72rem;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px';
+
+  const vorschau = !url
+    ? '<div class="hint">Diese Datei lässt sich nicht anzeigen – bitte herunterladen.</div>'
+    : _scanIstPdf(scan)
+      ? '<iframe src="'+url+'" style="width:100%;height:52vh;border:1px solid var(--border);border-radius:8px;background:#fff" title="'+_esc(scan.name||'Scan')+'"></iframe>'
+      : '<img src="'+url+'" alt="'+_esc(scan.name||'Scan')+'" style="max-width:100%;max-height:52vh;display:block;margin:0 auto;border:1px solid var(--border);border-radius:8px">';
+
+  const zeilen = liste.map((sc,k)=>{
+    const aktivZeile = k===i;
+    return '<div class="card" style="margin-bottom:8px;padding:10px 12px;'+(aktivZeile?'border-color:var(--accent)!important':'')+'">'
+      +'<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">'
+        +'<span style="font-size:1.05rem">'+(_scanIstPdf(sc)?'📄':'🖼')+'</span>'
+        +'<div style="flex:1;min-width:140px">'
+          +'<div style="font-size:.88rem;font-weight:600;word-break:break-all">'+_esc(sc.name||'Scan')+'</div>'
+          +'<div style="font-size:.75rem;color:var(--muted)">Hochgeladen am '+fmt(sc.date)+(sc.size?' · '+_esc(sc.size):'')+'</div>'
+        +'</div>'
+        +(aktivZeile?'':'<button class="btn ghost sm" onclick="openScanViewer(\''+groupKey+'\','+k+')">Anzeigen</button>')
+        +'<button class="btn ghost sm" onclick="scanOeffnen(\''+groupKey+'\','+k+')">Öffnen</button>'
+        +'<button class="btn ghost sm" onclick="scanHerunterladen(\''+groupKey+'\','+k+')">Herunterladen</button>'
+        +'<button class="btn danger sm" onclick="deleteScan(\''+groupKey+'\','+k+')" title="Scan löschen">🗑</button>'
+      +'</div></div>';
+  }).join('');
+
+  document.getElementById('modalContent').innerHTML =
+    '<h3>📎 Gescannte Anwesenheitsliste'+(liste.length>1?' ('+(i+1)+' von '+liste.length+')':'')+'</h3>'
+    +'<div style="'+LABEL+'">Vorschau</div>'
+    +vorschau
+    +'<div style="'+LABEL+';margin-top:16px">'+(liste.length>1?'Alle Scans dieses Lehrgangs':'Datei')+'</div>'
+    +zeilen
+    +'<div class="modal-actions" style="margin-top:14px">'
+      +'<button class="btn ghost" onclick="closeModal()">Schließen</button>'
+      +'<button class="btn" onclick="openScanUpload(\''+groupKey+'\', false)">📎 Weiteren Scan hochladen</button>'
+    +'</div>';
+  showModal();
+}
+
 function openScanUpload(groupKey, isInstr){
   const scans = state.attendanceScans || {};
   const existing = scans[groupKey] || [];
@@ -6399,28 +6501,28 @@ function handleScanUploadFiles(groupKey, files){
   });
 }
 
+// Aus dem Upload-Dialog heraus: zeigt den Scan im Viewer statt in einem neuen
+// Fenster mit data:-URL (das blieb in Chrome leer).
 function viewScan(groupKey, idx){
-  const scan = (state.attendanceScans||{})[groupKey]?.[idx];
-  if(!scan) return;
-  if(scan.dataUrl.startsWith('data:application/pdf')){
-    const win = window.open();
-    win.document.write('<iframe src="'+scan.dataUrl+'" width="100%" height="100%" style="border:none;position:fixed;top:0;left:0;width:100%;height:100%"></iframe>');
-  } else {
-    const win = window.open();
-    win.document.write('<html><body style="margin:0;background:#222"><img src="'+scan.dataUrl+'" style="max-width:100%;display:block;margin:auto"></body></html>');
-  }
+  openScanViewer(groupKey, idx);
 }
 
 function deleteScan(groupKey, idx){
-  askConfirm('Scan l\u00f6schen?', ()=>{
+  const scan=(state.attendanceScans||{})[groupKey]?.[idx];
+  const name=scan&&scan.name?scan.name:'Scan';
+  askConfirm('Scan „'+name+'“ wirklich löschen?\n\nDie Datei ist danach unwiderruflich weg – sie liegt nur hier, nicht in der Cloud.',()=>{
     if(state.attendanceScans && state.attendanceScans[groupKey]){
       state.attendanceScans[groupKey].splice(idx, 1);
-      if(!state.attendanceScans[groupKey].length) delete state.attendanceScans[groupKey];
+      const rest=(state.attendanceScans[groupKey]||[]).length;
+      if(!rest) delete state.attendanceScans[groupKey];
       save(); renderAll();
-      openScanUpload(groupKey, false);
-      toast('Scan gel\u00f6scht');
+      // Im Viewer bleiben, solange noch etwas anzuzeigen ist – sonst zurück
+      // in den Upload-Dialog.
+      if(rest) openScanViewer(groupKey, Math.max(0, idx-1));
+      else openScanUpload(groupKey, false);
+      toast('Scan gelöscht');
     }
-  });
+  }, 'Löschen', 'btn danger');
 }
 
 function updateScanBadges(){
@@ -6437,6 +6539,15 @@ function updateScanBadges(){
     btn.innerHTML = count
       ? '📎 Scan <span style="background:#16a34a;color:#fff;border-radius:10px;font-size:.7rem;padding:1px 6px;margin-left:2px">'+count+'</span>'
       : '📎 Scan';
+  });
+  // Ansehen-Knopf mitziehen: Anzahl aktualisieren bzw. ausblenden, wenn der
+  // letzte Scan gelöscht wurde.
+  document.querySelectorAll('.scan-view-btn').forEach(btn=>{
+    const key = btn.dataset.scanKey;
+    if(!key) return;
+    const count = (scans[key]||[]).length;
+    btn.style.display = count ? '' : 'none';
+    btn.innerHTML = '🔍 Scan ansehen ('+count+')';
   });
 }
 
@@ -12722,7 +12833,11 @@ function instructionCert(id){
 
 // ---------- Modal ----------
 function showModal(){document.getElementById('modal').classList.add('open')}
-function closeModal(){document.getElementById('modal').classList.remove('open')}
+function closeModal(){
+  // Offene Scan-Vorschauen freigeben, sonst bleiben die Blobs im Speicher
+  if(typeof _scanBlobsFreigeben==='function') _scanBlobsFreigeben();
+  document.getElementById('modal').classList.remove('open');
+}
 // Modal-Hintergrund: nur schließen wenn mousedown UND click beide auf Backdrop (kein Drag aus Modal-Innen)
 let _modalMousedownOnBg=false;
 document.getElementById('modal').addEventListener('mousedown',e=>{_modalMousedownOnBg=(e.target.id==='modal');});
