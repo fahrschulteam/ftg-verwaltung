@@ -758,11 +758,9 @@ const SCH_KURSTYPEN = [
   { key:'BGQ KOM',            label:'BGQ KOM',               prefix:'BK' },
   { key:'Umsteiger LKW',      label:'Umsteiger LKW',         prefix:'UL' },
   { key:'Umsteiger KOM',      label:'Umsteiger KOM',         prefix:'UK' },
-  // Fahreignungsseminar: vier Termine, jeder mit eigenem Preis (§ 4a StVG)
+  // Fahreignungsseminar: verkehrspaedagogische Teilmassnahme, zwei Module
   { key:'FES Modul 1',        label:'FES Modul 1 (verkehrspäd.)',    prefix:'F1' },
   { key:'FES Modul 2',        label:'FES Modul 2 (verkehrspäd.)',    prefix:'F2' },
-  { key:'FES Sitzung 1',      label:'FES Sitzung 1 (verkehrspsych.)',prefix:'F3' },
-  { key:'FES Sitzung 2',      label:'FES Sitzung 2 (verkehrspsych.)',prefix:'F4' },
 ];
 const SCH_UWTYPEN = [
   { key:'Gabelstapler', label:'Unterweisung Gabelstapler' },
@@ -775,8 +773,6 @@ const SCH_UWTYPEN = [
 const SCH_GRUNDLAGEN_DEFAULT = {
   'FES Modul 1':        '§ 4a StVG (Fahreignungsseminar)\n§ 42 FeV\nAnlage 16 FeV',
   'FES Modul 2':        '§ 4a StVG (Fahreignungsseminar)\n§ 42 FeV\nAnlage 16 FeV',
-  'FES Sitzung 1':      '§ 4a StVG (Fahreignungsseminar)\n§ 42 FeV\nAnlage 16 FeV',
-  'FES Sitzung 2':      '§ 4a StVG (Fahreignungsseminar)\n§ 42 FeV\nAnlage 16 FeV',
   'Gabelstapler':       'DGUV Vorschrift 68\nDGUV Grundsatz 308-001',
   'Ladekran':           'DGUV Vorschrift 52\nDGUV Grundsatz 309-003',
   'Baumaschinen':       'DGUV Regel 100-500\nDGUV Grundsatz 308-002',

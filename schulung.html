@@ -1287,7 +1287,6 @@ function _kursZuDb(c){
     pruef_theorie: c.pruefTheorie||'', pruef_praxis: c.pruefPraxis||'',
     confirmation_sent: c.confirmationSent||null,
     fes_bausteine: Array.isArray(c.fesBausteine)?c.fesBausteine:[],
-    fes_psychologe: c.fesPsychologe||'',
     updated_at: new Date().toISOString(),
   };
 }
@@ -1310,7 +1309,6 @@ function _kursVonDb(r){
     pruefTheorie: r.pruef_theorie||'', pruefPraxis: r.pruef_praxis||'',
     confirmationSent: r.confirmation_sent||null,
     fesBausteine: Array.isArray(r.fes_bausteine)?r.fes_bausteine:[],
-    fesPsychologe: r.fes_psychologe||'',
   };
 }
 let _kursLetzterFehler='';
@@ -1884,8 +1882,8 @@ function normalizeData(){
     return c.participant||!groupHasReal[k]; // leere nur behalten wenn Gruppe keine echten hat
   });
   state.courses=state.courses.filter(Boolean).map(c=>({id:c.id||uid(),participant:c.participant||'',type:c.type||'Gabelstapler',date:c.dateFrom||c.date||today(),dateFrom:c.dateFrom||c.date||today(),dateTo:c.dateTo||c.dateFrom||c.date||today(),location:c.location||'',locationPraxis:c.locationPraxis||'',theory:+c.theory||0,practice:+c.practice||0,vehicleHours:+c.vehicleHours||0,simHours:+c.simHours||0,passed:!!c.passed,note:c.note||'',dozent:c.dozent||'',themes:Array.isArray(c.themes)?c.themes:[],lsDauer:c.lsDauer||'',capacity:+c.capacity||0,bauart:c.bauart||'',antrieb:c.antrieb||'',tragfaehigkeit:c.tragfaehigkeit||'',pruefTheorie:c.pruefTheorie||'',pruefPraxis:c.pruefPraxis||'',confirmationSent:c.confirmationSent||null,
-    // FES: tatbezogene Bausteine je Teilnehmer, externer Verkehrspsychologe
-    fesBausteine:Array.isArray(c.fesBausteine)?c.fesBausteine:[],fesPsychologe:c.fesPsychologe||''}));
+    // FES: tatbezogene Bausteine je Teilnehmer (verkehrspädagogische Teilmaßnahme)
+    fesBausteine:Array.isArray(c.fesBausteine)?c.fesBausteine:[]}));
   state.planned=state.planned.filter(Boolean).map(pl=>({id:pl.id||uid(),type:pl.type||'Gabelstapler',date:pl.date||today(),location:pl.location||'',capacity:+pl.capacity||0,dozent:pl.dozent||'',note:pl.note||'',participants:Array.isArray(pl.participants)?pl.participants:[]}));
   state.instructions=state.instructions.filter(Boolean).map(i=>({id:i.id||uid(),groupId:i.groupId||'',participant:i.participant||'',instrType:i.instrType||'Gabelstapler',date:i.dateFrom||i.date||today(),dateFrom:i.dateFrom||i.date||today(),dateTo:i.dateTo||i.dateFrom||i.date||today(),topics:Array.isArray(i.topics)?i.topics:[],duration:+i.duration||0,location:i.location||'',dozent:i.dozent||'',note:i.note||''}));
   // Migration: Unterweisungen ohne groupId → anhand datum+typ+ort gruppieren und groupId zuweisen
@@ -2150,7 +2148,7 @@ const REQUIRED_QUAL_BY_TYPE = {
 // mehrfach waehlbar, richtet sich nach den eingetragenen Verstoessen.
 const FES_BAUSTEINE=['Geschwindigkeit','Abstand','Vorfahrt und Abbiegen','\u00dcberholen',
   'Ladung','Telefonieren im Fahrzeug','Alkohol und andere berauschende Mittel','Straftaten'];
-// Erkennt alle vier FES-Termine (2 Module + 2 Sitzungen)
+// Erkennt die FES-Termine (Modul 1 und Modul 2)
 function istFes(t){ return String(t||'').indexOf('FES ')===0; }
 
 const COURSE_TYPES={
@@ -2332,12 +2330,13 @@ const COURSE_TYPES={
     certText:'Weiterbildung für Berufskraftfahrer gem. § 5 BKrFQG – Tag 5: Recht und Dokumente im Personenkraftverkehr (Kenntnisbereich 2.3)',
     defaultGrundlagen:['Berufskraftfahrer-Qualifikations-Gesetz (BKrFQG) § 5','Berufskraftfahrer-Qualifikations-Verordnung (BKrFQV)']},
   // ── Fahreignungsseminar (§ 4a StVG, § 42 FeV) ─────────────────────────
-  // Vier Termine in zwei Teilmassnahmen. Die verkehrspsychologischen Sitzungen
-  // fuehrt ein externer Kooperationspartner durch (fesExtern).
+  // Die Fahrschule fuehrt ausschliesslich die verkehrspaedagogische
+  // Teilmassnahme durch: zwei Module a 90 Minuten. Die verkehrspsychologische
+  // Teilmassnahme liegt beim externen Partner und wird hier NICHT verwaltet.
   // WICHTIG: keine BQR/KBA-Meldung – der Teilnehmer legt die Bescheinigung
   // selbst bei der Fahrerlaubnisbehoerde vor (keinBqr).
   'FES Modul 1':{prefix:'F1',tag:'fes',duration:'90 Min.',validityMonths:0,warnMonths:0,
-    fesTeil:'paedagogisch', fesMaxTn:6, fesBausteine:true, keinBqr:true,
+    fesMaxTn:6, fesBausteine:true, keinBqr:true,
     themes:[
       'Analyse des eigenen Fahrverhaltens anhand der eingetragenen Verstöße',
       'Tatbezogene Bausteine (individuell je Teilnehmer)',
@@ -2347,7 +2346,7 @@ const COURSE_TYPES={
     certText:'Fahreignungsseminar nach § 4a StVG – Verkehrspädagogische Teilmaßnahme, Modul 1',
     defaultGrundlagen:['§ 4a Straßenverkehrsgesetz (StVG) – Fahreignungsseminar','§ 42 FeV (Inhalte und Durchführung)','Anlage 16 FeV']},
   'FES Modul 2':{prefix:'F2',tag:'fes',duration:'90 Min.',validityMonths:0,warnMonths:0,
-    fesTeil:'paedagogisch', fesMaxTn:6, keinBqr:true,
+    fesMaxTn:6, keinBqr:true,
     fesVorgaenger:'FES Modul 1', fesMinAbstandTage:7,
     themes:[
       'Auswertung der Beobachtungsaufgabe aus Modul 1',
@@ -2356,41 +2355,19 @@ const COURSE_TYPES={
       'Übertragung in den Fahralltag',
       'Abschluss der verkehrspädagogischen Teilmaßnahme'],
     certText:'Fahreignungsseminar nach § 4a StVG – Verkehrspädagogische Teilmaßnahme, Modul 2',
-    defaultGrundlagen:['§ 4a Straßenverkehrsgesetz (StVG) – Fahreignungsseminar','§ 42 FeV (Inhalte und Durchführung)','Anlage 16 FeV']},
-  'FES Sitzung 1':{prefix:'F3',tag:'fes',duration:'75 Min.',validityMonths:0,warnMonths:0,
-    fesTeil:'psychologisch', fesMaxTn:1, fesExtern:true, keinBqr:true,
-    themes:[
-      'Analyse der persönlichen Verkehrsauffälligkeiten',
-      'Hintergründe des bisherigen Fahrverhaltens',
-      'Erarbeitung individueller Veränderungsziele',
-      'Vereinbarung von Umsetzungsaufgaben'],
-    certText:'Fahreignungsseminar nach § 4a StVG – Verkehrspsychologische Teilmaßnahme, Sitzung 1',
-    defaultGrundlagen:['§ 4a Straßenverkehrsgesetz (StVG) – Fahreignungsseminar','§ 42 FeV (Inhalte und Durchführung)','Anlage 16 FeV']},
-  'FES Sitzung 2':{prefix:'F4',tag:'fes',duration:'75 Min.',validityMonths:0,warnMonths:0,
-    fesTeil:'psychologisch', fesMaxTn:1, fesExtern:true, keinBqr:true,
-    fesVorgaenger:'FES Sitzung 1', fesMinAbstandTage:21,
-    themes:[
-      'Auswertung der Umsetzungsaufgaben aus Sitzung 1',
-      'Stabilisierung des veränderten Fahrverhaltens',
-      'Rückfallprophylaxe',
-      'Abschluss der verkehrspsychologischen Teilmaßnahme'],
-    certText:'Fahreignungsseminar nach § 4a StVG – Verkehrspsychologische Teilmaßnahme, Sitzung 2',
     defaultGrundlagen:['§ 4a Straßenverkehrsgesetz (StVG) – Fahreignungsseminar','§ 42 FeV (Inhalte und Durchführung)','Anlage 16 FeV']}
 };
 function ctype(t){return COURSE_TYPES[t]||COURSE_TYPES['Gabelstapler']}
 
 // ── FES: Pruefungen zu Gruppengroesse und Mindestabstand ──────────────────
-// Harte Obergrenze der Teilnehmerzahl. Verkehrspaedagogisch sind hoechstens
-// 6 Teilnehmer zulaessig, die verkehrspsychologischen Sitzungen sind immer
-// Einzelmassnahmen. Liefert null, wenn der Typ keine Grenze hat.
+// Harte Obergrenze der Teilnehmerzahl: die verkehrspaedagogische Teilmassnahme
+// ist Einzel- oder Gruppenmassnahme mit hoechstens 6 Teilnehmern.
+// Liefert null, wenn der Typ keine Grenze hat.
 function fesMaxTn(type){ const c=COURSE_TYPES[type]; return c&&c.fesMaxTn?c.fesMaxTn:null; }
 function fesGruppePruefen(type, anzahl){
   const max=fesMaxTn(type);
   if(!max||anzahl<=max) return null;
-  const cfg=ctype(type);
-  return cfg.fesTeil==='psychologisch'
-    ? 'Die verkehrspsychologische Teilmaßnahme ist immer eine Einzelmaßnahme – '+anzahl+' Teilnehmer sind nicht zulässig (§ 42 FeV).'
-    : 'Die verkehrspädagogische Teilmaßnahme ist auf '+max+' Teilnehmer begrenzt – '+anzahl+' ausgewählt (§ 42 FeV).';
+  return 'Die verkehrspädagogische Teilmaßnahme ist auf '+max+' Teilnehmer begrenzt – '+anzahl+' ausgewählt (§ 42 FeV).';
 }
 // Tage zwischen zwei ISO-Datumsangaben (positiv = b liegt nach a)
 function _tageZwischen(a,b){
@@ -2399,7 +2376,7 @@ function _tageZwischen(a,b){
   return Math.round((d2-d1)/86400000);
 }
 // Mindestabstand zum Vorgaenger-Termin desselben Teilnehmers: Modul 2 frühestens
-// 7 Tage nach Modul 1, Sitzung 2 frühestens 21 Tage nach Sitzung 1. Liefert eine
+// 7 Tage nach Modul 1. Liefert eine
 // Liste von Klartext-Warnungen (leer = alles in Ordnung).
 function fesAbstandPruefen(type, datum, teilnehmerIds, ausserId){
   const cfg=COURSE_TYPES[type];
@@ -7126,23 +7103,17 @@ let _fesBausteineVorbelegung = {};
 function fesFormBlock(cc){
   const cfg=ctype(cc.type);
   if(!istFes(cc.type)) return '';
-  const psych=cfg.fesTeil==='psychologisch';
+
   const abstand=cfg.fesMinAbstandTage
     ? '<div style="margin-top:8px;padding:6px 10px;background:#fff;border:1px solid #fecdd3;border-radius:6px;font-size:.8rem;color:#9f1239">'
       +'⏱ Frühestens <b>'+cfg.fesMinAbstandTage+' Tage</b> nach „'+cfg.fesVorgaenger+'“ – wird beim Speichern geprüft.</div>'
     : '';
   return '<div style="background:#fef2f2;border:1px solid #fecdd3;border-radius:9px;padding:12px 16px;margin-bottom:14px">'
     +'<div style="font-size:.78rem;font-weight:700;color:#9f1239;text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px">'
-      +'🚗 Fahreignungsseminar (§ 4a StVG) – '+(psych?'verkehrspsychologische':'verkehrspädagogische')+' Teilmaßnahme</div>'
+      +'🚗 Fahreignungsseminar (§ 4a StVG) – verkehrspädagogische Teilmaßnahme</div>'
     +'<div style="font-size:.82rem;color:#7f1d1d;line-height:1.6">'
       +'Dauer: <b>'+(cfg.duration||'')+'</b> · '
-      +(psych ? 'immer <b>Einzelmaßnahme</b> (1 Teilnehmer)' : 'Einzel- oder Gruppenmaßnahme, <b>höchstens '+cfg.fesMaxTn+' Teilnehmer</b>')
-      +'</div>'
-    +(psych
-      ? '<div class="field" style="margin:10px 0 0"><label>Verkehrspsychologe / Kooperationspartner</label>'
-        +'<input id="m_fesPsychologe" value="'+_esc(cc.fesPsychologe||'')+'" placeholder="Name der externen Fachkraft">'
-        +'<div class="hint">Externe Teilmaßnahme – wird nicht von der Fahrschule durchgeführt.</div></div>'
-      : '')
+      +'Einzel- oder Gruppenmaßnahme, <b>höchstens '+cfg.fesMaxTn+' Teilnehmer</b></div>'
     +abstand
     +'<div style="margin-top:8px;font-size:.75rem;color:#9f1239">🏛 Keine BQR-/KBA-Meldung: Der Teilnehmer legt die Teilnahmebescheinigung selbst bei der Fahrerlaubnisbehörde vor.</div>'
     +'</div>';
@@ -7256,7 +7227,7 @@ function toggleFES(){
   const typ=cleanType(typEl.value);
   const row=document.getElementById('m_fesRow');
   if(row){
-    row.innerHTML = istFes(typ) ? fesFormBlock({type:typ, fesPsychologe:(document.getElementById('m_fesPsychologe')||{}).value||''}) : '';
+    row.innerHTML = istFes(typ) ? fesFormBlock({type:typ}) : '';
     row.style.display = istFes(typ) ? '' : 'none';
   }
   fesRenderBausteine();
@@ -7552,7 +7523,8 @@ function openBqrDialog(g){
   // Teilnehmer legt seine Teilnahmebescheinigung selbst bei der Fahrerlaubnis-
   // behörde vor. Ausdrücklich abfangen, damit das auch dann gilt, wenn der Typ
   // irgendwann versehentlich in BQR_MODUL_KB landet.
-  if(istFes(g.type)){
+  const _cfgBqr=COURSE_TYPES[g.type];
+  if(istFes(g.type) || (_cfgBqr && _cfgBqr.keinBqr)){
     toast('Fahreignungsseminare werden nicht ans KBA gemeldet – der Teilnehmer legt die Bescheinigung selbst vor.');
     return;
   }
@@ -7905,9 +7877,7 @@ function saveCourseGroup(idsCsv){
     reservierungen:refEntry_reservierungen_merken||[],
     lsDauer:(document.getElementById('m_lsDauer')&&cleanType(document.getElementById('m_type').value)==='Ladungssicherung')?document.getElementById('m_lsDauer').value:'',
     vehicleHours:+(document.getElementById('m_vehicleHours')||{}).value||0,
-    simHours:+(document.getElementById('m_simHours')||{}).value||0,
-    // FES: externer Verkehrspsychologe (leer bei allen anderen Typen)
-    fesPsychologe:(document.getElementById('m_fesPsychologe')||{}).value||''};
+    simHours:+(document.getElementById('m_simHours')||{}).value||0};
   const _ffz={bauart:(document.getElementById('m_bauart')||{}).value||'',antrieb:(document.getElementById('m_antrieb')||{}).value||'',tragfaehigkeit:(document.getElementById('m_trag')||{}).value||'',pruefTheorie:(document.getElementById('m_pruefTh')||{}).value||'',pruefPraxis:(document.getElementById('m_pruefPr')||{}).value||''};
   Object.assign(base,_ffz);
   if((base.type==='Gabelstapler'||base.type==='Ladekran'||base.type==='Baumaschinen')&&(_ffz.bauart||_ffz.antrieb||_ffz.tragfaehigkeit)){state.settings.ffzDefaults=Object.assign({},state.settings.ffzDefaults,{[base.type]:{bauart:_ffz.bauart,antrieb:_ffz.antrieb,tragfaehigkeit:_ffz.tragfaehigkeit}});}
@@ -8109,9 +8079,7 @@ function saveCourse(id){
     theory:+document.getElementById('m_theory').value||0,practice:+document.getElementById('m_practice').value||0,
     passed:_passedVal,note:_mergeTermineIntoNote(document.getElementById('m_note').value),
     dozent:document.getElementById('m_dozent').value,themes,
-    lsDauer:(document.getElementById('m_lsDauer')&&cleanType(document.getElementById('m_type').value)==='Ladungssicherung')?document.getElementById('m_lsDauer').value:'',
-    // FES: externer Verkehrspsychologe (nur bei der psychologischen Teilmaßnahme)
-    fesPsychologe:(document.getElementById('m_fesPsychologe')||{}).value||''};
+    lsDauer:(document.getElementById('m_lsDauer')&&cleanType(document.getElementById('m_type').value)==='Ladungssicherung')?document.getElementById('m_lsDauer').value:''};
   const _ffz={bauart:(document.getElementById('m_bauart')||{}).value||'',antrieb:(document.getElementById('m_antrieb')||{}).value||'',tragfaehigkeit:(document.getElementById('m_trag')||{}).value||'',pruefTheorie:(document.getElementById('m_pruefTh')||{}).value||'',pruefPraxis:(document.getElementById('m_pruefPr')||{}).value||''};
   Object.assign(base,_ffz);
   if((base.type==='Gabelstapler'||base.type==='Ladekran'||base.type==='Baumaschinen')&&(_ffz.bauart||_ffz.antrieb||_ffz.tragfaehigkeit)){state.settings.ffzDefaults=Object.assign({},state.settings.ffzDefaults,{[base.type]:{bauart:_ffz.bauart,antrieb:_ffz.antrieb,tragfaehigkeit:_ffz.tragfaehigkeit}});}
@@ -12431,9 +12399,7 @@ function pdfCertPage(doc, co, p){
     umfStr     ? ['Umfang:',       umfStr]                                        : null,
     (locStr&&locStr!==firm) ? ['Ort:',     locStr]                                        : null,
     doz        ? ['Dozent:',       doz.name]                                      : null,
-    // FES: die verkehrspsychologische Teilmaßnahme führt ein externer Partner
-    // durch – dann steht er statt der Fahrschule auf der Bescheinigung.
-    co.fesPsychologe ? ['Verkehrspsychologe:', co.fesPsychologe]                   : null,
+
   ].filter(Boolean);
 
   doc.setFillColor(248,248,248); doc.setDrawColor(220,220,220); doc.setLineWidth(0.3);
