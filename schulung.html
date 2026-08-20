@@ -171,6 +171,7 @@ tr:hover td{background:#fafafa}
 .tag.ls{background:#f5f3ff;color:#5b21b6}
 .tag.vl{background:#ecfdf5;color:#065f46}
 .tag.tacho{background:#f5f3ff;color:#5b21b6}
+.tag.fes{background:#fef2f2;color:#9f1239;border:1px solid #fecdd3}
 .type-badge{display:inline-block;font-size:.68rem;font-weight:700;padding:1px 6px;border-radius:4px;letter-spacing:.03em}
 .type-badge.gs{background:#fff5f5;color:#9a3412;border:1px solid #fecaca}
 .type-badge.lk{background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe}
@@ -546,6 +547,7 @@ setTimeout(_hideLoader, 1500);
     <button class="tab-btn" onclick="switchCourseTab('Umsteiger KOM',this)" id="cTabUB"></button>
     <button class="tab-btn" onclick="switchCourseTab('Fachkunde Güterverkehr',this)" id="cTabFG"></button>
     <button class="tab-btn" onclick="switchCourseTab('Fachkunde Personenverkehr',this)" id="cTabFP"></button>
+    <button class="tab-btn" onclick="switchCourseTab('FES',this)" id="cTabFES"></button>
   </div>
   <div class="search-bar">
     <input id="cSearch" placeholder="Suchen nach Teilnehmer, Typ…" oninput="renderCourses()">
@@ -1284,6 +1286,8 @@ function _kursZuDb(c){
     bauart: c.bauart||'', antrieb: c.antrieb||'', tragfaehigkeit: c.tragfaehigkeit||'',
     pruef_theorie: c.pruefTheorie||'', pruef_praxis: c.pruefPraxis||'',
     confirmation_sent: c.confirmationSent||null,
+    fes_bausteine: Array.isArray(c.fesBausteine)?c.fesBausteine:[],
+    fes_psychologe: c.fesPsychologe||'',
     updated_at: new Date().toISOString(),
   };
 }
@@ -1305,6 +1309,8 @@ function _kursVonDb(r){
     bauart: r.bauart||'', antrieb: r.antrieb||'', tragfaehigkeit: r.tragfaehigkeit||'',
     pruefTheorie: r.pruef_theorie||'', pruefPraxis: r.pruef_praxis||'',
     confirmationSent: r.confirmation_sent||null,
+    fesBausteine: Array.isArray(r.fes_bausteine)?r.fes_bausteine:[],
+    fesPsychologe: r.fes_psychologe||'',
   };
 }
 let _kursLetzterFehler='';
@@ -1877,7 +1883,9 @@ function normalizeData(){
     const k=c.date+'|'+c.type+'|'+(c.location||'');
     return c.participant||!groupHasReal[k]; // leere nur behalten wenn Gruppe keine echten hat
   });
-  state.courses=state.courses.filter(Boolean).map(c=>({id:c.id||uid(),participant:c.participant||'',type:c.type||'Gabelstapler',date:c.dateFrom||c.date||today(),dateFrom:c.dateFrom||c.date||today(),dateTo:c.dateTo||c.dateFrom||c.date||today(),location:c.location||'',locationPraxis:c.locationPraxis||'',theory:+c.theory||0,practice:+c.practice||0,vehicleHours:+c.vehicleHours||0,simHours:+c.simHours||0,passed:!!c.passed,note:c.note||'',dozent:c.dozent||'',themes:Array.isArray(c.themes)?c.themes:[],lsDauer:c.lsDauer||'',capacity:+c.capacity||0,bauart:c.bauart||'',antrieb:c.antrieb||'',tragfaehigkeit:c.tragfaehigkeit||'',pruefTheorie:c.pruefTheorie||'',pruefPraxis:c.pruefPraxis||'',confirmationSent:c.confirmationSent||null}));
+  state.courses=state.courses.filter(Boolean).map(c=>({id:c.id||uid(),participant:c.participant||'',type:c.type||'Gabelstapler',date:c.dateFrom||c.date||today(),dateFrom:c.dateFrom||c.date||today(),dateTo:c.dateTo||c.dateFrom||c.date||today(),location:c.location||'',locationPraxis:c.locationPraxis||'',theory:+c.theory||0,practice:+c.practice||0,vehicleHours:+c.vehicleHours||0,simHours:+c.simHours||0,passed:!!c.passed,note:c.note||'',dozent:c.dozent||'',themes:Array.isArray(c.themes)?c.themes:[],lsDauer:c.lsDauer||'',capacity:+c.capacity||0,bauart:c.bauart||'',antrieb:c.antrieb||'',tragfaehigkeit:c.tragfaehigkeit||'',pruefTheorie:c.pruefTheorie||'',pruefPraxis:c.pruefPraxis||'',confirmationSent:c.confirmationSent||null,
+    // FES: tatbezogene Bausteine je Teilnehmer, externer Verkehrspsychologe
+    fesBausteine:Array.isArray(c.fesBausteine)?c.fesBausteine:[],fesPsychologe:c.fesPsychologe||''}));
   state.planned=state.planned.filter(Boolean).map(pl=>({id:pl.id||uid(),type:pl.type||'Gabelstapler',date:pl.date||today(),location:pl.location||'',capacity:+pl.capacity||0,dozent:pl.dozent||'',note:pl.note||'',participants:Array.isArray(pl.participants)?pl.participants:[]}));
   state.instructions=state.instructions.filter(Boolean).map(i=>({id:i.id||uid(),groupId:i.groupId||'',participant:i.participant||'',instrType:i.instrType||'Gabelstapler',date:i.dateFrom||i.date||today(),dateFrom:i.dateFrom||i.date||today(),dateTo:i.dateTo||i.dateFrom||i.date||today(),topics:Array.isArray(i.topics)?i.topics:[],duration:+i.duration||0,location:i.location||'',dozent:i.dozent||'',note:i.note||''}));
   // Migration: Unterweisungen ohne groupId → anhand datum+typ+ort gruppieren und groupId zuweisen
@@ -1926,6 +1934,14 @@ function bereinigeDoppelteDozenten() {
 // validityMonths: Gültigkeit der Qualifikation (0 = keine wiederkehrende Frist über diesen Typ)
 // ── Piktogramme (SVG, inline) ────────────────────────────────────────────────
 const ICONS = {
+  // Fahreignungsseminar: Lenkrad mit Haken – es gibt (noch) kein PNG unter
+  // icons/lehrgang/, deshalb als Inline-SVG wie die uebrigen Alt-Icons.
+  FES: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="22" height="22" fill="none">
+    <circle cx="16" cy="16" r="11" stroke="currentColor" stroke-width="2.2"/>
+    <circle cx="16" cy="16" r="3.4" fill="currentColor"/>
+    <path d="M16 5.4v7.2M5.4 16h7.2M19.4 16h7.2" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+    <path d="M11.6 22.8l2.9 2.9 5.6-6.2" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>`,
   Gabelstapler: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="22" height="22" fill="none">
     /* Gegengewichtsstapler Seitenansicht */
     <rect x="4" y="17" width="16" height="9" rx="2" fill="currentColor" opacity=".85"/>
@@ -2082,13 +2098,17 @@ function typeIcon(type, size){
   const lg = LG_ICONS[type];
   if(lg) return '<img src="icons/lehrgang/'+lg+'.png" width="'+s+'" height="'+s+'" style="object-fit:contain;vertical-align:middle" alt="">';
   // Fallback: alte SVG-Icons für Typen ohne neues Piktogramm
-  const key = type==='ADR Basiskurs'||type==='ADR Aufbaukurs Tank'?'ADR':type==='ADR Fortbildung'?'ADRFort':type==='Baumaschinen UW'?'Baumaschinen':type==='BGQ LKW'?'BGQ LKW':type==='BGQ KOM'?'BGQ KOM':type==='Umsteiger LKW'?'Umsteiger LKW':type==='Umsteiger KOM'?'Umsteiger KOM':type;
+  const key = String(type||'').indexOf('FES ')===0?'FES'
+    :type==='ADR Basiskurs'||type==='ADR Aufbaukurs Tank'?'ADR':type==='ADR Fortbildung'?'ADRFort':type==='Baumaschinen UW'?'Baumaschinen':type==='BGQ LKW'?'BGQ LKW':type==='BGQ KOM'?'BGQ KOM':type==='Umsteiger LKW'?'Umsteiger LKW':type==='Umsteiger KOM'?'Umsteiger KOM':type;
   const svg = ICONS[key]||ICONS['Gabelstapler'];
   return svg.replace(/width="22"/g,`width="${s}"`).replace(/height="22"/g,`height="${s}"`);
 }
 
 // ── Teilnehmer-Sets für Multi-Auswahl (top-level, kein window.*) ────────────
 let _cpSet = new Set(); // Lehrgänge
+// true, solange der Nutzer eine FES-Abstandswarnung bereits bestätigt hat –
+// verhindert, dass die Rückfrage beim erneuten Speichern noch einmal kommt.
+let _fesGeprueft = false;
 let _ipSet = new Set(); // Unterweisungen
 let _apSet = new Set(); // ADR-Unterweisungen
 
@@ -2124,6 +2144,14 @@ const REQUIRED_QUAL_BY_TYPE = {
   'BGQ KOM':               ['Ausbilder BKrFQG (beschleunigte Grundqualifikation)'],
 };
 
+
+// ── Fahreignungsseminar (FES) nach § 4a StVG / § 42 FeV ───────────────────
+// Tatbezogene Bausteine der verkehrspaedagogischen Teilmassnahme: je Teilnehmer
+// mehrfach waehlbar, richtet sich nach den eingetragenen Verstoessen.
+const FES_BAUSTEINE=['Geschwindigkeit','Abstand','Vorfahrt und Abbiegen','\u00dcberholen',
+  'Ladung','Telefonieren im Fahrzeug','Alkohol und andere berauschende Mittel','Straftaten'];
+// Erkennt alle vier FES-Termine (2 Module + 2 Sitzungen)
+function istFes(t){ return String(t||'').indexOf('FES ')===0; }
 
 const COURSE_TYPES={
   'Gabelstapler':{prefix:'GS',tag:'staper',duration:'',validityMonths:0,warnMonths:0,
@@ -2302,9 +2330,116 @@ const COURSE_TYPES={
       'Fahrgastrechte und Haftung',
       'Linien- und Gelegenheitsverkehr'],
     certText:'Weiterbildung für Berufskraftfahrer gem. § 5 BKrFQG – Tag 5: Recht und Dokumente im Personenkraftverkehr (Kenntnisbereich 2.3)',
-    defaultGrundlagen:['Berufskraftfahrer-Qualifikations-Gesetz (BKrFQG) § 5','Berufskraftfahrer-Qualifikations-Verordnung (BKrFQV)']}
+    defaultGrundlagen:['Berufskraftfahrer-Qualifikations-Gesetz (BKrFQG) § 5','Berufskraftfahrer-Qualifikations-Verordnung (BKrFQV)']},
+  // ── Fahreignungsseminar (§ 4a StVG, § 42 FeV) ─────────────────────────
+  // Vier Termine in zwei Teilmassnahmen. Die verkehrspsychologischen Sitzungen
+  // fuehrt ein externer Kooperationspartner durch (fesExtern).
+  // WICHTIG: keine BQR/KBA-Meldung – der Teilnehmer legt die Bescheinigung
+  // selbst bei der Fahrerlaubnisbehoerde vor (keinBqr).
+  'FES Modul 1':{prefix:'F1',tag:'fes',duration:'90 Min.',validityMonths:0,warnMonths:0,
+    fesTeil:'paedagogisch', fesMaxTn:6, fesBausteine:true, keinBqr:true,
+    themes:[
+      'Analyse des eigenen Fahrverhaltens anhand der eingetragenen Verstöße',
+      'Tatbezogene Bausteine (individuell je Teilnehmer)',
+      'Fahreignungs-Bewertungssystem und Punktestand',
+      'Erarbeitung von Verhaltensalternativen',
+      'Beobachtungsaufgabe für die Zeit bis Modul 2'],
+    certText:'Fahreignungsseminar nach § 4a StVG – Verkehrspädagogische Teilmaßnahme, Modul 1',
+    defaultGrundlagen:['§ 4a Straßenverkehrsgesetz (StVG) – Fahreignungsseminar','§ 42 FeV (Inhalte und Durchführung)','Anlage 16 FeV']},
+  'FES Modul 2':{prefix:'F2',tag:'fes',duration:'90 Min.',validityMonths:0,warnMonths:0,
+    fesTeil:'paedagogisch', fesMaxTn:6, keinBqr:true,
+    fesVorgaenger:'FES Modul 1', fesMinAbstandTage:7,
+    themes:[
+      'Auswertung der Beobachtungsaufgabe aus Modul 1',
+      'Vertiefung der Verhaltensalternativen',
+      'Umgang mit Risiko- und Drucksituationen im Straßenverkehr',
+      'Übertragung in den Fahralltag',
+      'Abschluss der verkehrspädagogischen Teilmaßnahme'],
+    certText:'Fahreignungsseminar nach § 4a StVG – Verkehrspädagogische Teilmaßnahme, Modul 2',
+    defaultGrundlagen:['§ 4a Straßenverkehrsgesetz (StVG) – Fahreignungsseminar','§ 42 FeV (Inhalte und Durchführung)','Anlage 16 FeV']},
+  'FES Sitzung 1':{prefix:'F3',tag:'fes',duration:'75 Min.',validityMonths:0,warnMonths:0,
+    fesTeil:'psychologisch', fesMaxTn:1, fesExtern:true, keinBqr:true,
+    themes:[
+      'Analyse der persönlichen Verkehrsauffälligkeiten',
+      'Hintergründe des bisherigen Fahrverhaltens',
+      'Erarbeitung individueller Veränderungsziele',
+      'Vereinbarung von Umsetzungsaufgaben'],
+    certText:'Fahreignungsseminar nach § 4a StVG – Verkehrspsychologische Teilmaßnahme, Sitzung 1',
+    defaultGrundlagen:['§ 4a Straßenverkehrsgesetz (StVG) – Fahreignungsseminar','§ 42 FeV (Inhalte und Durchführung)','Anlage 16 FeV']},
+  'FES Sitzung 2':{prefix:'F4',tag:'fes',duration:'75 Min.',validityMonths:0,warnMonths:0,
+    fesTeil:'psychologisch', fesMaxTn:1, fesExtern:true, keinBqr:true,
+    fesVorgaenger:'FES Sitzung 1', fesMinAbstandTage:21,
+    themes:[
+      'Auswertung der Umsetzungsaufgaben aus Sitzung 1',
+      'Stabilisierung des veränderten Fahrverhaltens',
+      'Rückfallprophylaxe',
+      'Abschluss der verkehrspsychologischen Teilmaßnahme'],
+    certText:'Fahreignungsseminar nach § 4a StVG – Verkehrspsychologische Teilmaßnahme, Sitzung 2',
+    defaultGrundlagen:['§ 4a Straßenverkehrsgesetz (StVG) – Fahreignungsseminar','§ 42 FeV (Inhalte und Durchführung)','Anlage 16 FeV']}
 };
 function ctype(t){return COURSE_TYPES[t]||COURSE_TYPES['Gabelstapler']}
+
+// ── FES: Pruefungen zu Gruppengroesse und Mindestabstand ──────────────────
+// Harte Obergrenze der Teilnehmerzahl. Verkehrspaedagogisch sind hoechstens
+// 6 Teilnehmer zulaessig, die verkehrspsychologischen Sitzungen sind immer
+// Einzelmassnahmen. Liefert null, wenn der Typ keine Grenze hat.
+function fesMaxTn(type){ const c=COURSE_TYPES[type]; return c&&c.fesMaxTn?c.fesMaxTn:null; }
+function fesGruppePruefen(type, anzahl){
+  const max=fesMaxTn(type);
+  if(!max||anzahl<=max) return null;
+  const cfg=ctype(type);
+  return cfg.fesTeil==='psychologisch'
+    ? 'Die verkehrspsychologische Teilmaßnahme ist immer eine Einzelmaßnahme – '+anzahl+' Teilnehmer sind nicht zulässig (§ 42 FeV).'
+    : 'Die verkehrspädagogische Teilmaßnahme ist auf '+max+' Teilnehmer begrenzt – '+anzahl+' ausgewählt (§ 42 FeV).';
+}
+// Tage zwischen zwei ISO-Datumsangaben (positiv = b liegt nach a)
+function _tageZwischen(a,b){
+  const d1=new Date(a+'T00:00:00'), d2=new Date(b+'T00:00:00');
+  if(isNaN(d1)||isNaN(d2)) return null;
+  return Math.round((d2-d1)/86400000);
+}
+// Mindestabstand zum Vorgaenger-Termin desselben Teilnehmers: Modul 2 frühestens
+// 7 Tage nach Modul 1, Sitzung 2 frühestens 21 Tage nach Sitzung 1. Liefert eine
+// Liste von Klartext-Warnungen (leer = alles in Ordnung).
+function fesAbstandPruefen(type, datum, teilnehmerIds, ausserId){
+  const cfg=COURSE_TYPES[type];
+  if(!cfg||!cfg.fesVorgaenger||!datum) return [];
+  const warnungen=[];
+  (teilnehmerIds||[]).forEach(pid=>{
+    if(!pid) return;
+    const vorher=state.courses
+      .filter(c=>c.participant===pid && c.type===cfg.fesVorgaenger && c.id!==ausserId)
+      .map(c=>c.dateFrom||c.date).filter(Boolean)
+      .sort((a,b)=>b.localeCompare(a))[0];
+    const name=pName(pid)||'Teilnehmer';
+    if(!vorher){
+      warnungen.push(name+': kein Termin „'+cfg.fesVorgaenger+'“ erfasst – Reihenfolge prüfen.');
+      return;
+    }
+    const tage=_tageZwischen(vorher, datum);
+    if(tage===null) return;
+    if(tage < cfg.fesMinAbstandTage){
+      warnungen.push(name+': nur '+tage+' Tag'+(tage===1?'':'e')+' nach „'+cfg.fesVorgaenger+'“ ('+fmt(vorher)+') – '
+        +'vorgeschrieben sind mindestens '+cfg.fesMinAbstandTage+' Tage.');
+    }
+  });
+  return warnungen;
+}
+// Sammelpruefung vor dem Speichern. Gibt true zurueck, wenn gespeichert werden
+// darf. Die Gruppengroesse ist hart (Abbruch), der Mindestabstand wird zur
+// Bestaetigung vorgelegt – analog zur uebrigen Terminlogik.
+function fesSpeichernErlaubt(type, datum, teilnehmerIds, ausserId, weiter){
+  if(!istFes(type)) return true;
+  const zuViele=fesGruppePruefen(type, (teilnehmerIds||[]).length);
+  if(zuViele){ toast('⚠ '+zuViele); return false; }
+  const warnungen=fesAbstandPruefen(type, datum, teilnehmerIds, ausserId);
+  if(warnungen.length){
+    askConfirm('⚠ Mindestabstand nicht eingehalten\n\n'+warnungen.join('\n')+'\n\nTrotzdem speichern?',
+      ()=>weiter(), 'Trotzdem speichern', 'btn danger', '⚠');
+    return false;
+  }
+  return true;
+}
 function typeTag(t){
   if(t&&t.startsWith('UW-'))return 'steel';
   return ctype(t).tag;
@@ -4341,6 +4476,7 @@ function initTabIcons(){
     {id:'cTabUB', type:'Umsteiger KOM',        label:'Umsteig. KOM'},
     {id:'cTabFG', type:'Fachkunde Güterverkehr',    label:'Fachkunde Güter'},
     {id:'cTabFP', type:'Fachkunde Personenverkehr', label:'Fachkunde Pers.'},
+    {id:'cTabFES',type:'FES Modul 1',               label:'Fahreignungssem.'},
   ];
   tabs.forEach(t=>{
     const el=document.getElementById(t.id);
@@ -4412,7 +4548,10 @@ function renderCourses(){
   const q=(document.getElementById('cSearch').value||'').toLowerCase();
   const wrap=document.getElementById('cCards');
   let rows=state.courses.slice().sort((a,b)=>(b.date||'').localeCompare(a.date||''));
-  if(currentCourseType) rows=rows.filter(cc=> currentCourseType==='BKF' ? String(cc.type||'').indexOf('BKF Modul')===0 : cc.type===currentCourseType);
+  if(currentCourseType) rows=rows.filter(cc=>
+    currentCourseType==='BKF' ? String(cc.type||'').indexOf('BKF Modul')===0
+    : currentCourseType==='FES' ? istFes(cc.type)      // Sammelreiter: alle vier Termine
+    : cc.type===currentCourseType);
   rows=rows.filter(cc=>(pName(cc.participant)+(cc.type||'')+dozName(cc.dozent||'')).toLowerCase().includes(q));
   if(!rows.length){
     wrap.innerHTML='<div class="card"><div class="empty">Noch keine Lehrgänge'+(currentCourseType?' vom Typ '+currentCourseType:'')+' dokumentiert.</div></div>';
@@ -6847,7 +6986,9 @@ function openCourse(id){
   // Multi-participant: collect selected IDs in a Set
   _cpSet = new Set(); // reset für dieses Modal
   // Standardtyp aus aktivem Tab nehmen (nicht immer Gabelstapler)
-  const _defaultType = currentCourseType==='BKF' ? 'BKF Modul 1' : (currentCourseType || 'Gabelstapler');
+  const _defaultType = currentCourseType==='BKF' ? 'BKF Modul 1'
+    : currentCourseType==='FES' ? 'FES Modul 1'
+    : (currentCourseType || 'Gabelstapler');
   const _bgqDefaults = {
     'BGQ LKW':      {theory:130, vehicleHours:7.5, simHours:2.5},
     'BGQ KOM':      {theory:130, vehicleHours:7.5, simHours:2.5},
@@ -6867,7 +7008,7 @@ function openCourse(id){
     ${state.participants.length?'':'<p class="hint" style="margin-bottom:12px">Noch keine Teilnehmer angelegt – Lehrgang kann trotzdem gespeichert und Teilnehmer später zugewiesen werden.</p>'}
     <div class="grid grid-2" style="margin-bottom:0">
       <div class="field"><label>Lehrgangstyp</label>
-        <select id="m_type" onchange="courseThemes();updateCourseTypeIcon();toggleLSDauer();toggleFFZ()" style="font-size:1rem">${typeOptions(cc.type)}</select>
+        <select id="m_type" onchange="courseThemes();updateCourseTypeIcon();toggleLSDauer();toggleFFZ();toggleFES()" style="font-size:1rem">${typeOptions(cc.type)}</select>
       </div>
       <div class="field"></div>
     </div>
@@ -6880,6 +7021,7 @@ function openCourse(id){
       </div>
       <div></div>
     </div>
+    <div id="m_fesRow" style="${istFes(cc.type)?'':'display:none'}">${fesFormBlock(cc)}</div>
     <div id="m_bgqPraxisRow" style="${(cc.type==='BGQ LKW'||cc.type==='BGQ KOM'||cc.type==='Umsteiger LKW'||cc.type==='Umsteiger KOM')?'':'display:none'}">
       <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:9px;padding:12px 16px;margin-bottom:14px">
         <div style="font-size:.78rem;font-weight:700;color:#1e40af;text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px">🚗 Fahrpraktische Ausbildung</div>
@@ -6957,6 +7099,8 @@ function openCourse(id){
       </div>
     </div>
 
+    <div id="m_fesBausteine"></div>
+
     <div class="modal-actions" style="margin-top:16px">
       <button class="btn ghost" onclick="closeModal()">Abbrechen</button>
       <button class="btn" onclick="saveCourse('${id||''}')">Speichern</button>
@@ -6969,6 +7113,85 @@ function openCourse(id){
   coursePartFilter();
   coursePartRender();
   initCourseSummary();
+  // Beim Bearbeiten die bereits gewaehlten Bausteine des Teilnehmers vorbelegen
+  _fesBausteineVorbelegung = (id && Array.isArray(cc.fesBausteine) && cc.participant)
+    ? {[cc.participant]: cc.fesBausteine.slice()} : {};
+  fesRenderBausteine();
+}
+
+// ── FES: Dialogbausteine ─────────────────────────────────────────────────
+// Merkt sich die Auswahl je Teilnehmer, solange der Dialog offen ist – sonst
+// waere sie beim Neuzeichnen (Teilnehmer hinzu/entfernt) verloren.
+let _fesBausteineVorbelegung = {};
+function fesFormBlock(cc){
+  const cfg=ctype(cc.type);
+  if(!istFes(cc.type)) return '';
+  const psych=cfg.fesTeil==='psychologisch';
+  const abstand=cfg.fesMinAbstandTage
+    ? '<div style="margin-top:8px;padding:6px 10px;background:#fff;border:1px solid #fecdd3;border-radius:6px;font-size:.8rem;color:#9f1239">'
+      +'⏱ Frühestens <b>'+cfg.fesMinAbstandTage+' Tage</b> nach „'+cfg.fesVorgaenger+'“ – wird beim Speichern geprüft.</div>'
+    : '';
+  return '<div style="background:#fef2f2;border:1px solid #fecdd3;border-radius:9px;padding:12px 16px;margin-bottom:14px">'
+    +'<div style="font-size:.78rem;font-weight:700;color:#9f1239;text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px">'
+      +'🚗 Fahreignungsseminar (§ 4a StVG) – '+(psych?'verkehrspsychologische':'verkehrspädagogische')+' Teilmaßnahme</div>'
+    +'<div style="font-size:.82rem;color:#7f1d1d;line-height:1.6">'
+      +'Dauer: <b>'+(cfg.duration||'')+'</b> · '
+      +(psych ? 'immer <b>Einzelmaßnahme</b> (1 Teilnehmer)' : 'Einzel- oder Gruppenmaßnahme, <b>höchstens '+cfg.fesMaxTn+' Teilnehmer</b>')
+      +'</div>'
+    +(psych
+      ? '<div class="field" style="margin:10px 0 0"><label>Verkehrspsychologe / Kooperationspartner</label>'
+        +'<input id="m_fesPsychologe" value="'+_esc(cc.fesPsychologe||'')+'" placeholder="Name der externen Fachkraft">'
+        +'<div class="hint">Externe Teilmaßnahme – wird nicht von der Fahrschule durchgeführt.</div></div>'
+      : '')
+    +abstand
+    +'<div style="margin-top:8px;font-size:.75rem;color:#9f1239">🏛 Keine BQR-/KBA-Meldung: Der Teilnehmer legt die Teilnahmebescheinigung selbst bei der Fahrerlaubnisbehörde vor.</div>'
+    +'</div>';
+}
+// Tatbezogene Bausteine je Teilnehmer (nur Modul 1). Ein Kasten pro
+// ausgewaehltem Teilnehmer, weil die Verstoesse individuell sind.
+function fesRenderBausteine(){
+  const box=document.getElementById('m_fesBausteine');
+  if(!box) return;
+  const typEl=document.getElementById('m_type');
+  const typ=typEl?cleanType(typEl.value):'';
+  const cfg=COURSE_TYPES[typ];
+  if(!cfg||!cfg.fesBausteine){ box.innerHTML=''; return; }
+  fesMerkeBausteine();
+  const ids=[..._cpSet].filter(Boolean);
+  if(!ids.length){
+    box.innerHTML='<div class="hint" style="margin-top:12px">Tatbezogene Bausteine: bitte zuerst Teilnehmer auswählen.</div>';
+    return;
+  }
+  box.innerHTML='<div class="field" style="margin-top:14px"><label>Tatbezogene Bausteine (Modul 1, je Teilnehmer mehrfach wählbar)</label>'
+    +ids.map(pid=>{
+      const p=state.participants.find(x=>x.id===pid);
+      if(!p) return '';
+      const gewaehlt=_fesBausteineVorbelegung[pid]||[];
+      return '<div style="border:1px solid var(--border);border-radius:8px;padding:8px 10px;margin-bottom:6px;background:#fdfcf9">'
+        +'<div style="font-size:.85rem;font-weight:700;margin-bottom:5px">'+_esc(p.name||'')+'</div>'
+        +'<div style="display:flex;flex-wrap:wrap;gap:4px 14px">'
+        +FES_BAUSTEINE.map(b=>'<label style="display:flex;align-items:center;gap:5px;font-size:.82rem;cursor:pointer">'
+          +'<input type="checkbox" class="fes-bs" data-pid="'+pid+'" value="'+_esc(b)+'"'
+          +(gewaehlt.indexOf(b)>=0?' checked':'')+'> '+_esc(b)+'</label>').join('')
+        +'</div></div>';
+    }).join('')
+    +'</div>';
+}
+// Aktuellen Stand der Kaestchen sichern, bevor neu gezeichnet wird
+function fesMerkeBausteine(){
+  document.querySelectorAll('#m_fesBausteine .fes-bs').forEach(cb=>{
+    const pid=cb.dataset.pid;
+    if(!_fesBausteineVorbelegung[pid]) _fesBausteineVorbelegung[pid]=[];
+    const arr=_fesBausteineVorbelegung[pid];
+    const i=arr.indexOf(cb.value);
+    if(cb.checked && i<0) arr.push(cb.value);
+    if(!cb.checked && i>=0) arr.splice(i,1);
+  });
+}
+// Auswahl fuer einen Teilnehmer auslesen (fuer das Speichern)
+function fesBausteineVon(pid){
+  fesMerkeBausteine();
+  return (_fesBausteineVorbelegung[pid]||[]).slice();
 }
 function coursePartFilter(){
   const q=(document.getElementById('coursePartSearch').value||'').toLowerCase();
@@ -7018,11 +7241,25 @@ function coursePartRender(){
       '<span style="cursor:pointer;color:var(--crit);font-weight:700;padding:0 4px" data-pid="'+pid+'" onclick="coursePartRemove(this)">×</span>'+
       '</div>';
   }).join('');
+  // Bausteine folgen der Teilnehmerauswahl (nur bei FES Modul 1 sichtbar)
+  if(typeof fesRenderBausteine==='function') fesRenderBausteine();
 }
 function coursePartRemove(el){
   _cpSet.delete(el.dataset.pid);
   coursePartRender();
   coursePartFilter(); // refresh checkboxes
+}
+// Blendet den FES-Kasten und die Bausteine passend zum gewaehlten Typ ein/aus
+function toggleFES(){
+  const typEl=document.getElementById('m_type');
+  if(!typEl) return;
+  const typ=cleanType(typEl.value);
+  const row=document.getElementById('m_fesRow');
+  if(row){
+    row.innerHTML = istFes(typ) ? fesFormBlock({type:typ, fesPsychologe:(document.getElementById('m_fesPsychologe')||{}).value||''}) : '';
+    row.style.display = istFes(typ) ? '' : 'none';
+  }
+  fesRenderBausteine();
 }
 function updateCourseTypeIcon(){
   // optional: live icon update when type changes – handled by initTabIcons
@@ -7311,6 +7548,14 @@ function _bqrKlassen(p,typ){
   return /P$/.test(typ)?['D','DE','D1','D1E']:['C','CE','C1','C1E'];
 }
 function openBqrDialog(g){
+  // Das Fahreignungsseminar wird NICHT ans BQR/KBA gemeldet (§ 4a StVG): der
+  // Teilnehmer legt seine Teilnahmebescheinigung selbst bei der Fahrerlaubnis-
+  // behörde vor. Ausdrücklich abfangen, damit das auch dann gilt, wenn der Typ
+  // irgendwann versehentlich in BQR_MODUL_KB landet.
+  if(istFes(g.type)){
+    toast('Fahreignungsseminare werden nicht ans KBA gemeldet – der Teilnehmer legt die Bescheinigung selbst vor.');
+    return;
+  }
   const kbs=BQR_MODUL_KB[g.type];
   if(!kbs){toast('Für diesen Kurstyp ist keine BQR-Meldung vorgesehen.');return;}
   const seen=new Set();
@@ -7499,7 +7744,7 @@ function openCourseGroup(g){
     <h3>Lehrgang bearbeiten</h3>
     <div class="grid grid-2">
       <div class="field"><label>Lehrgangstyp</label>
-        <select id="m_type" onchange="courseThemes();updateCourseTypeIcon();toggleLSDauer();toggleFFZ()" style="font-size:1rem">${typeOptions(refEntry.type)}</select>
+        <select id="m_type" onchange="courseThemes();updateCourseTypeIcon();toggleLSDauer();toggleFFZ();toggleFES()" style="font-size:1rem">${typeOptions(refEntry.type)}</select>
       </div>
       <div class="field"></div>
     </div>
@@ -7512,6 +7757,7 @@ function openCourseGroup(g){
       </div>
       <div></div>
     </div>
+    <div id="m_fesRow" style="${istFes(refEntry.type)?'':'display:none'}">${fesFormBlock(refEntry)}</div>
     <div id="m_bgqPraxisRow" style="${(refEntry.type==='BGQ LKW'||refEntry.type==='BGQ KOM'||refEntry.type==='Umsteiger LKW'||refEntry.type==='Umsteiger KOM')?'':'display:none'}">
       <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:9px;padding:12px 16px;margin-bottom:14px">
         <div style="font-size:.78rem;font-weight:700;color:#1e40af;text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px">🚗 Fahrpraktische Ausbildung</div>
@@ -7585,6 +7831,7 @@ function openCourseGroup(g){
         <div id="coursePartAdded" style="border:1px solid var(--border);border-radius:8px;min-height:60px;max-height:180px;overflow-y:auto;background:#f0f7f0;padding:6px;font-size:.85rem"></div>
       </div>
     </div>
+    <div id="m_fesBausteine"></div>
     <div class="modal-actions" style="margin-top:16px">
       <button class="btn ghost" onclick="closeModal()">Abbrechen</button>
       <button class="btn" onclick="saveCourseGroup('${g.entries.map(e=>e.id).join(',')}')">Speichern</button>
@@ -7596,10 +7843,27 @@ function openCourseGroup(g){
   coursePartFilter();
   coursePartRender();
   initCourseSummary();
+  // FES: bereits erfasste Bausteine je Teilnehmer der Gruppe vorbelegen
+  _fesBausteineVorbelegung = {};
+  (g.entries||[]).forEach(e=>{
+    if(e && e.participant && Array.isArray(e.fesBausteine) && e.fesBausteine.length){
+      _fesBausteineVorbelegung[e.participant] = e.fesBausteine.slice();
+    }
+  });
+  fesRenderBausteine();
 }
 
 function saveCourseGroup(idsCsv){
   const ids = idsCsv ? idsCsv.split(',').filter(Boolean) : [];
+  // FES: gleiche Prüfung wie im Einzeldialog – Gruppengröße hart, Mindestabstand
+  // mit Rückfrage. Die Prüfung läuft vor jeder Änderung am Datenbestand.
+  const _fesTypG=cleanType((document.getElementById('m_type')||{}).value||'');
+  if(istFes(_fesTypG) && !_fesGeprueft){
+    const _fesDatumG=(document.getElementById('m_date')||{}).value||'';
+    const _fesIdsG=[..._cpSet].filter(Boolean);
+    if(!fesSpeichernErlaubt(_fesTypG,_fesDatumG,_fesIdsG,null,()=>{_fesGeprueft=true;saveCourseGroup(idsCsv);})) return;
+  }
+  _fesGeprueft=false;
   // Reservierungen der Gruppe unverändert übernehmen (Pflege im Reservieren-Dialog)
   const _ersterAlt = state.courses.find(x=>ids.includes(x.id)) || {};
   const refEntry_reserviert_merken = +_ersterAlt.reserviert||0;
@@ -7641,7 +7905,9 @@ function saveCourseGroup(idsCsv){
     reservierungen:refEntry_reservierungen_merken||[],
     lsDauer:(document.getElementById('m_lsDauer')&&cleanType(document.getElementById('m_type').value)==='Ladungssicherung')?document.getElementById('m_lsDauer').value:'',
     vehicleHours:+(document.getElementById('m_vehicleHours')||{}).value||0,
-    simHours:+(document.getElementById('m_simHours')||{}).value||0};
+    simHours:+(document.getElementById('m_simHours')||{}).value||0,
+    // FES: externer Verkehrspsychologe (leer bei allen anderen Typen)
+    fesPsychologe:(document.getElementById('m_fesPsychologe')||{}).value||''};
   const _ffz={bauart:(document.getElementById('m_bauart')||{}).value||'',antrieb:(document.getElementById('m_antrieb')||{}).value||'',tragfaehigkeit:(document.getElementById('m_trag')||{}).value||'',pruefTheorie:(document.getElementById('m_pruefTh')||{}).value||'',pruefPraxis:(document.getElementById('m_pruefPr')||{}).value||''};
   Object.assign(base,_ffz);
   if((base.type==='Gabelstapler'||base.type==='Ladekran'||base.type==='Baumaschinen')&&(_ffz.bauart||_ffz.antrieb||_ffz.tragfaehigkeit)){state.settings.ffzDefaults=Object.assign({},state.settings.ffzDefaults,{[base.type]:{bauart:_ffz.bauart,antrieb:_ffz.antrieb,tragfaehigkeit:_ffz.tragfaehigkeit}});}
@@ -7656,11 +7922,20 @@ function saveCourseGroup(idsCsv){
     return;
   }
   const oldIds=new Set(ids);
+  // WICHTIG: Der Gruppendialog wirft die alten Einträge weg und legt sie neu an.
+  // Die tatbezogenen Bausteine hängen aber am Teilnehmer und stehen nicht in
+  // jedem Dialog zur Verfügung – deshalb vor dem Löschen sichern und, falls die
+  // Auswahl gerade nicht angezeigt wird, unverändert übernehmen.
+  const _fesAlt=new Map(state.courses.filter(x=>oldIds.has(x.id))
+    .map(c=>[c.participant, Array.isArray(c.fesBausteine)?c.fesBausteine:[]]));
+  const _fesUiDa=!!document.querySelector('#m_fesBausteine .fes-bs');
+  const _bsG=pid=>(COURSE_TYPES[base.type]&&COURSE_TYPES[base.type].fesBausteine)
+    ? (_fesUiDa ? fesBausteineVon(pid) : (_fesAlt.get(pid)||[])) : [];
   state.courses=state.courses.filter(x=>!oldIds.has(x.id));
   const _certKandidatenG=[];
   if(participants.length){
     // Mit Teilnehmern: einen Eintrag pro Teilnehmer
-    participants.forEach(pid=>{ const _co={...base,id:uid(),participant:pid}; state.courses.push(_co); _certKandidatenG.push(_co); });
+    participants.forEach(pid=>{ const _co={...base,id:uid(),participant:pid,fesBausteine:_bsG(pid)}; state.courses.push(_co); _certKandidatenG.push(_co); });
     const _cap=+(document.getElementById('m_capacity')||{}).value||0;
     if(_cap>0&&participants.length>_cap) toast('⚠ '+participants.length+' TN zugewiesen, Kapazität: '+_cap+' – bitte prüfen');
     else toast(participants.length+' Einträge gespeichert');
@@ -7800,6 +8075,15 @@ function werbePrompt(base){
 }
 
 function saveCourse(id){
+  // FES: Gruppengröße hart begrenzen, Mindestabstand zum Vortermin prüfen.
+  // Bei Abstandsverstoß fragt fesSpeichernErlaubt nach und ruft saveCourse erneut.
+  const _fesTyp=cleanType((document.getElementById('m_type')||{}).value||'');
+  if(istFes(_fesTyp) && !_fesGeprueft){
+    const _fesDatum=(document.getElementById('m_date')||{}).value||'';
+    const _fesIds=[...(_cpSet||new Set())].filter(Boolean);
+    if(!fesSpeichernErlaubt(_fesTyp,_fesDatum,_fesIds,id,()=>{_fesGeprueft=true;saveCourse(id);})) return;
+  }
+  _fesGeprueft=false;
   // Öffentliche Einzeltermine: Von/Bis automatisch auf ersten/letzten Termin setzen,
   // damit der Kurs im öffentlichen Kurskalender am richtigen Tag erscheint.
   var _tIso=_collectTermineIso();
@@ -7825,19 +8109,26 @@ function saveCourse(id){
     theory:+document.getElementById('m_theory').value||0,practice:+document.getElementById('m_practice').value||0,
     passed:_passedVal,note:_mergeTermineIntoNote(document.getElementById('m_note').value),
     dozent:document.getElementById('m_dozent').value,themes,
-    lsDauer:(document.getElementById('m_lsDauer')&&cleanType(document.getElementById('m_type').value)==='Ladungssicherung')?document.getElementById('m_lsDauer').value:''};
+    lsDauer:(document.getElementById('m_lsDauer')&&cleanType(document.getElementById('m_type').value)==='Ladungssicherung')?document.getElementById('m_lsDauer').value:'',
+    // FES: externer Verkehrspsychologe (nur bei der psychologischen Teilmaßnahme)
+    fesPsychologe:(document.getElementById('m_fesPsychologe')||{}).value||''};
   const _ffz={bauart:(document.getElementById('m_bauart')||{}).value||'',antrieb:(document.getElementById('m_antrieb')||{}).value||'',tragfaehigkeit:(document.getElementById('m_trag')||{}).value||'',pruefTheorie:(document.getElementById('m_pruefTh')||{}).value||'',pruefPraxis:(document.getElementById('m_pruefPr')||{}).value||''};
   Object.assign(base,_ffz);
   if((base.type==='Gabelstapler'||base.type==='Ladekran'||base.type==='Baumaschinen')&&(_ffz.bauart||_ffz.antrieb||_ffz.tragfaehigkeit)){state.settings.ffzDefaults=Object.assign({},state.settings.ffzDefaults,{[base.type]:{bauart:_ffz.bauart,antrieb:_ffz.antrieb,tragfaehigkeit:_ffz.tragfaehigkeit}});}
   const _certKandidaten=[];
+  // Tatbezogene Bausteine hängen am Teilnehmer, nicht am Termin – deshalb je
+  // Eintrag einzeln übernehmen (leeres Array bei allen anderen Typen).
+  const _bs=pid=>(typeof fesBausteineVon==='function'&&COURSE_TYPES[base.type]&&COURSE_TYPES[base.type].fesBausteine)
+    ? fesBausteineVon(pid) : [];
   if(id){
     // Edit: update existing course
     const _co=state.courses.find(x=>x.id===id);
-    Object.assign(_co,{...base,participant:participants[0]||_co.participant||''});
+    const _pid=participants[0]||_co.participant||'';
+    Object.assign(_co,{...base,participant:_pid,fesBausteine:_bs(_pid)});
     _certKandidaten.push(_co);
   }else if(participants.length){
     // New with participants: one entry per participant
-    participants.forEach(pid=>{ const _co={...base,id:uid(),participant:pid}; state.courses.push(_co); _certKandidaten.push(_co); });
+    participants.forEach(pid=>{ const _co={...base,id:uid(),participant:pid,fesBausteine:_bs(pid)}; state.courses.push(_co); _certKandidaten.push(_co); });
   }else{
     // New without participants: save as general course entry (participant can be assigned later)
     state.courses.push({...base,id:uid(),participant:''});
@@ -12140,6 +12431,9 @@ function pdfCertPage(doc, co, p){
     umfStr     ? ['Umfang:',       umfStr]                                        : null,
     (locStr&&locStr!==firm) ? ['Ort:',     locStr]                                        : null,
     doz        ? ['Dozent:',       doz.name]                                      : null,
+    // FES: die verkehrspsychologische Teilmaßnahme führt ein externer Partner
+    // durch – dann steht er statt der Fahrschule auf der Bescheinigung.
+    co.fesPsychologe ? ['Verkehrspsychologe:', co.fesPsychologe]                   : null,
   ].filter(Boolean);
 
   doc.setFillColor(248,248,248); doc.setDrawColor(220,220,220); doc.setLineWidth(0.3);
@@ -12479,7 +12773,7 @@ function askConfirm(message,onYes,yesLabel,yesCls){
     bg=document.createElement('div');bg.id='confirmBg';bg.className='modal-bg';
     bg.innerHTML=`<div class="modal" style="max-width:420px">
       <h3 style="margin-bottom:14px">Bestätigen</h3>
-      <p id="confirmMsg" style="margin-bottom:20px;color:var(--ink)"></p>
+      <p id="confirmMsg" style="margin-bottom:20px;color:var(--ink);white-space:pre-line"></p>
       <div class="modal-actions">
         <button class="btn ghost" id="confirmNo">Abbrechen</button>
         <button class="${cls}" id="confirmYes">${label}</button>
