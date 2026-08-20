@@ -373,10 +373,11 @@ function showView(view) {
   if (view === 'kva' && window.renderKVA) window.renderKVA();
   if (view === 'dokumente' && window.renderDokumente) window.renderDokumente();
   if (view === 'einstellungen' && window.renderEinstellungen) window.renderEinstellungen();
-  if (view === 'bkrfqg') {
-    bkrfqgFrame.style.display = 'block';
-    bkrfqgFrame.contentWindow?.postMessage({type:'bkrfqg-resume'},'*');
-  } else if (view === 'schulung') {
+  // BKrFQG ist KEIN iframe-Modul: es rendert oben per renderBkrfqg() direkt in
+  // #view-bkrfqg. Der frühere bkrfqgFrame-Zweig war Rest eines aufgegebenen
+  // iframe-Ansatzes – die ID existiert nirgends, der Zugriff warf deshalb bei
+  // jedem Öffnen des Moduls einen ReferenceError und brach showView() ab.
+  if (view === 'schulung') {
     const f = document.getElementById('schulungFrame');
     if (f && !f.getAttribute('src')) {
       f.setAttribute('src', 'schulung.html?v=20260708a');
