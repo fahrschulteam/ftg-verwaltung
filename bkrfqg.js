@@ -4,6 +4,10 @@
 //  Nutzt window.sb + globale toast() Funktion
 // ════════════════════════════════════════════════════════════════════
 
+// Versionsstempel des Moduls. Muss mit dem ?v= am <script src="bkrfqg.js">
+// in index.html uebereinstimmen – beim Aendern beide Stellen anfassen.
+const BKRFQG_VERSION = '20260821a';
+
 const bkrfqgState = {
   standorte: [], raeume: [], fahrlehrer: [], kursplaene: [],
   dozentBaender: [], dozentUnterthemen: [],
@@ -1168,8 +1172,7 @@ function bkrfqgKursplaene(el) {
             </div>
           </div>
         </div>`).join(''))
-    + bkrfqgKPModalHTML()
-    + bkrfqgTNModalHTML();
+    + bkrfqgKPModalHTML();
   // Nächsten Montag vorausfüllen (für bkp-ki-aktiv relevant)
   const d=new Date(); while(d.getDay()!==1)d.setDate(d.getDate()+1); d.setDate(d.getDate()+7);
   window._bkrfqgNaechsterMontag=d.toISOString().split('T')[0];
@@ -1622,8 +1625,13 @@ function bkrfqgKPDetailView(el) {
       <button class="btn btn-outline btn-sm" onclick="bkrfqgDrucken('lehrplan')">📋 Lehrplan</button>
       <button class="btn btn-outline btn-sm" onclick="bkrfqgDrucken('dozent')">🖨️ Dozenten</button>
       <button class="btn btn-outline btn-sm" onclick="bkrfqgDruckenDozentenplaene()">👥 Dozenten-Pläne</button>
-      <button class="btn btn-outline btn-sm" onclick="bkrfqgTNView('${kp.id}')">👤 Teilnehmer</button>
-      <button class="btn btn-outline btn-sm" style="color:#6A1B9A;border-color:#6A1B9A" onclick="bkrfqgKBAMeldung('${kp.id}')">📨 KBA-Meldung</button>
+      <!-- Teilnehmererfassung entfaellt: Teilnehmer werden ausschliesslich im
+           Dialog "Lehrgang dokumentieren" erfasst.
+           Der Knopf "KBA-Meldung" ist vorerst mit ausgeblendet, weil
+           bkrfqgKBAMeldung() seine Liste noch aus bkrfqg_kursplan_teilnehmer
+           liest und ohne Erfassung nur leere Meldungen erzeugen wuerde.
+           Beides kommt zurueck, sobald der Export auf die Lehrgangsteilnehmer
+           umgebaut ist. -->
       <button class="btn btn-primary btn-sm" onclick="bkrfqgKurstagNeu('${kp.id}')">＋ Kurstag</button>
     </div>`
   );
@@ -1721,8 +1729,7 @@ function bkrfqgKPDetailView(el) {
       </table>
     </div>
     ${bkrfqgKurstagModalHTML(kp.id)}
-    ${bkrfqgKPModalHTML()}
-    ${bkrfqgTNModalHTML()}`;
+    ${bkrfqgKPModalHTML()}`;
 }
 
 
@@ -2540,135 +2547,17 @@ async function bkrfqgMelden(id) {
 
 
 // ════════════════════════════════════════════════════════════════════
-// KURSTEILNEHMER (KBA-Meldung §5 Abs.3 BKrFQV)
+// KURSTEILNEHMER – Erfassung entfernt
 // ════════════════════════════════════════════════════════════════════
-let _bkrfqgTNKursplanId = null;
+// Teilnehmer werden ausschliesslich im Dialog "Lehrgang dokumentieren"
+// (schulung.html) erfasst. Modal, Formular und Handler sind hier entfallen.
+// Die Tabelle bkrfqg_kursplan_teilnehmer bleibt bestehen und behaelt ihre
+// Altdaten - nur bkrfqgKBAMeldung() liest sie noch, bis der Export auf die
+// Lehrgangsteilnehmer umgebaut ist.
 
-async function bkrfqgTNView(kursplanId) {
-  _bkrfqgTNKursplanId = kursplanId;
-  const modal = document.getElementById('bkrfqg-tn-modal');
-  if (!modal) return;
-  modal.classList.add('open');
-  await bkrfqgTNLaden();
-}
-
-async function bkrfqgTNLaden() {
-  const el = document.getElementById('bkrfqg-tn-liste');
-  if (!el) return;
-  el.innerHTML = '<div style="color:var(--grau);font-size:13px">Lade …</div>';
-  try {
-    const tn = await bkrfqgSB('bkrfqg_kursplan_teilnehmer', {
-      select: '*', filter: { kursplan_id: _bkrfqgTNKursplanId }, order: 'nachname'
-    });
-    window._bkrfqgTNListe = tn;
-    if (!tn.length) {
-      el.innerHTML = '<div style="color:var(--grau);font-size:13px;padding:8px 0">Noch keine Teilnehmer eingetragen.</div>';
-      return;
-    }
-    const gLabel = { m: 'männlich', w: 'weiblich', d: 'divers' };
-    el.innerHTML = `<table class="ma-table" style="margin-top:8px">
-      <thead><tr><th>Name</th><th>Geburtsdatum</th><th>Geburtsort</th><th>Geschlecht</th><th>FS-Klasse</th><th></th></tr></thead>
-      <tbody>${tn.map(t => `<tr>
-        <td style="font-weight:600">${t.nachname}, ${t.vorname}</td>
-        <td>${t.geburtsdatum ? new Date(t.geburtsdatum+'T12:00').toLocaleDateString('de-DE') : '–'}</td>
-        <td>${t.geburtsort || '–'}</td>
-        <td><span style="background:${t.geschlecht==='m'?'#e0f2fe':t.geschlecht==='w'?'#fce7f3':'#f3e8ff'};padding:1px 7px;border-radius:10px;font-size:11px">${gLabel[t.geschlecht]||'–'}</span></td>
-        <td>${t.fs_klasse || '–'}</td>
-        <td class="tbl-actions">
-          <button class="btn btn-outline btn-sm" onclick="bkrfqgTNEdit('${t.id}')">✏️</button>
-          <button class="btn btn-outline btn-sm" style="color:var(--rot)" onclick="bkrfqgTNLoeschen('${t.id}')">🗑</button>
-        </td>
-      </tr>`).join('')}</tbody>
-    </table>`;
-  } catch(e) { el.innerHTML = `<div style="color:var(--rot)">Fehler: ${e.message}</div>`; }
-}
-
-function bkrfqgTNFormReset() {
-  ['tn-id','tn-vn','tn-nn','tn-geb','tn-go','tn-gschl','tn-fsk'].forEach(id => {
-    const el = document.getElementById(id); if (el) el.value = '';
-  });
-}
-
-function bkrfqgTNEdit(id) {
-  const t = (window._bkrfqgTNListe||[]).find(x => x.id === id);
-  if (!t) return;
-  document.getElementById('tn-id').value = t.id;
-  document.getElementById('tn-vn').value = t.vorname || '';
-  document.getElementById('tn-nn').value = t.nachname || '';
-  document.getElementById('tn-geb').value = (t.geburtsdatum||'').slice(0,10);
-  document.getElementById('tn-go').value = t.geburtsort || '';
-  document.getElementById('tn-gschl').value = t.geschlecht || '';
-  document.getElementById('tn-fsk').value = t.fs_klasse || '';
-}
-
-async function bkrfqgTNSpeichern() {
-  const id = document.getElementById('tn-id').value;
-  const vn = document.getElementById('tn-vn').value.trim();
-  const nn = document.getElementById('tn-nn').value.trim();
-  const gschl = document.getElementById('tn-gschl').value;
-  if (!vn || !nn) { toast('Vor- und Nachname erforderlich','err'); return; }
-  if (!gschl) { toast('Geschlecht ist Pflichtfeld (KBA-Meldung)','err'); return; }
-  const payload = {
-    kursplan_id: _bkrfqgTNKursplanId,
-    vorname: vn, nachname: nn,
-    geburtsdatum: document.getElementById('tn-geb').value || null,
-    geburtsort: document.getElementById('tn-go').value.trim() || null,
-    geschlecht: gschl,
-    fs_klasse: document.getElementById('tn-fsk').value.trim() || null,
-  };
-  try {
-    if (id) await bkrfqgUpdate('bkrfqg_kursplan_teilnehmer', id, payload);
-    else await bkrfqgInsert('bkrfqg_kursplan_teilnehmer', payload);
-    bkrfqgTNFormReset();
-    await bkrfqgTNLaden();
-    toast('Teilnehmer gespeichert ✓');
-  } catch(e) { toast('Fehler: '+e.message,'err'); }
-}
-
-async function bkrfqgTNLoeschen(id) {
-  if (!confirm('Teilnehmer löschen?')) return;
-  await bkrfqgDelete('bkrfqg_kursplan_teilnehmer', id);
-  await bkrfqgTNLaden();
-  toast('Teilnehmer gelöscht');
-}
-
-function bkrfqgTNModalHTML() {
-  return `
-  <div id="bkrfqg-tn-modal" class="bkrfqg-modal" onclick="if(event.target===this)this.classList.remove('open')">
-    <div class="bkrfqg-modal-box" style="max-width:780px">
-      <div style="display:flex;justify-content:space-between;align-items:center;background:var(--dunkel);color:#fff;padding:12px 16px;border-radius:var(--radius) var(--radius) 0 0">
-        <strong>👤 Teilnehmer (KBA-Meldung)</strong>
-        <button style="background:none;border:none;color:#fff;font-size:20px;cursor:pointer" onclick="document.getElementById('bkrfqg-tn-modal').classList.remove('open')">✕</button>
-      </div>
-      <div style="padding:16px">
-        <div class="card" style="padding:14px 16px;margin-bottom:12px">
-          <div style="font-weight:700;font-size:12px;margin-bottom:10px">Teilnehmer hinzufügen / bearbeiten</div>
-          <input type="hidden" id="tn-id">
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
-            <div class="frow"><label>Vorname</label><input id="tn-vn" placeholder="Vorname"></div>
-            <div class="frow"><label>Nachname</label><input id="tn-nn" placeholder="Nachname"></div>
-            <div class="frow"><label>Geburtsdatum</label><input type="date" id="tn-geb"></div>
-            <div class="frow"><label>Geburtsort</label><input id="tn-go" placeholder="z.B. Lingen"></div>
-            <div class="frow"><label>Geschlecht <span style="color:var(--rot)">*</span></label>
-              <select id="tn-gschl">
-                <option value="">– bitte wählen –</option>
-                <option value="m">männlich</option>
-                <option value="w">weiblich</option>
-                <option value="d">divers</option>
-              </select></div>
-            <div class="frow"><label>FS-Klasse</label><input id="tn-fsk" placeholder="z.B. CE"></div>
-          </div>
-          <div style="display:flex;gap:8px">
-            <button class="btn btn-primary btn-sm" onclick="bkrfqgTNSpeichern()">💾 Speichern</button>
-            <button class="btn btn-outline btn-sm" onclick="bkrfqgTNFormReset()">✕ Leeren</button>
-          </div>
-        </div>
-        <div id="bkrfqg-tn-liste"></div>
-      </div>
-    </div>
-  </div>`;
-}
-
+// Erzeugt die KBA-Meldung als Druckansicht. Wird derzeit von keinem Knopf
+// aufgerufen (siehe Hinweis in der Kursplan-Kopfzeile) und bleibt nur
+// erhalten, damit der Umbau darauf aufsetzen kann.
 async function bkrfqgKBAMeldung(kursplanId) {
   const kp = bkrfqgState.kursplaene.find(x => x.id === kursplanId);
   if (!kp) return;
