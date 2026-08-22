@@ -274,9 +274,26 @@ tr:hover td{background:#fafafa}
   --accent:#C0001A!important; --accent-dark:#9a0015!important;
   --crit:#C0001A!important; --crit-bg:#fff0f1!important;
   --steel:#3F4B57!important; --steel-light:#5a6775!important;
+  /* Marken-Aliase mit denselben Namen wie in der Shell (index.html). Dort
+     heissen die Token --rot/--blau, hier hiessen sie bisher nur --red/--accent
+     - dieselbe Farbe unter beiden Namen, damit Statusfarben in Shell und
+     iframe nicht auseinanderlaufen. */
+  --rot:#C0001A!important; --rot-dark:#9a0015!important;
+  --blau:#2A6CAE!important; --blau-dark:#1e5a96!important;
+  /* Zwischenstufe "erledigt, aber noch nicht bestaetigt" - bewusst kein Gruen,
+     damit ein offener Vorgang nicht wie ein abgeschlossener aussieht. */
+  --orange:#B45309!important; --orange-light:#fffbeb!important;
+  --gruen:#15803D!important;
 }
 html,body{font-family:'Poppins',-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif!important;background:#F3F4F6!important;}
 .card{border-radius:10px!important;box-shadow:0 1px 3px rgba(0,0,0,.08)!important;border:1px solid var(--border)!important;}
+/* .btn-primary wie in der Shell: blau statt markenrot, fuer bestaetigende
+   Aktionen, die keine Marken-Aktion sind. schulung.html kannte die Klasse
+   bisher nicht - .btn allein ist hier immer rot. */
+.btn-primary{background:var(--blau)!important;color:#fff!important;border:none!important;}
+.btn-primary:hover{background:var(--blau-dark)!important;}
+/* Grossbuchstaben-Label des Designsystems: 11px/600 */
+.ds-label{font-size:11px!important;font-weight:600!important;text-transform:uppercase!important;letter-spacing:.06em!important;color:var(--ink-3)!important;}
 header h1{color:#3F4B57!important;}
 nav button.active{background:#fff0f1!important;color:#C0001A!important;border-bottom:2px solid #C0001A!important;}
 .global-search-wrap input:focus{border-color:#C0001A!important;}
@@ -1286,6 +1303,10 @@ function _kursZuDb(c){
     bauart: c.bauart||'', antrieb: c.antrieb||'', tragfaehigkeit: c.tragfaehigkeit||'',
     pruef_theorie: c.pruefTheorie||'', pruef_praxis: c.pruefPraxis||'',
     confirmation_sent: c.confirmationSent||null,
+    // BQR/KBA-Meldestatus (Migration 31). Zwei Stufen, weil "Datei erzeugt"
+    // noch keine Meldung ist - erst der Upload ins KBA-Portal zaehlt.
+    bqr_datei_am: c.bqrDateiAm||null,
+    bqr_gemeldet_am: c.bqrGemeldetAm||null,
     fes_bausteine: Array.isArray(c.fesBausteine)?c.fesBausteine:[],
     updated_at: new Date().toISOString(),
   };
@@ -1308,6 +1329,8 @@ function _kursVonDb(r){
     bauart: r.bauart||'', antrieb: r.antrieb||'', tragfaehigkeit: r.tragfaehigkeit||'',
     pruefTheorie: r.pruef_theorie||'', pruefPraxis: r.pruef_praxis||'',
     confirmationSent: r.confirmation_sent||null,
+    bqrDateiAm: r.bqr_datei_am||'',
+    bqrGemeldetAm: r.bqr_gemeldet_am||'',
     fesBausteine: Array.isArray(r.fes_bausteine)?r.fes_bausteine:[],
   };
 }
@@ -2482,6 +2505,19 @@ function adrExpiry(pid){
 
 function today(){return new Date().toISOString().slice(0,10)}
 function fmt(d){if(!d)return'–';const p=String(d).split('-');if(p.length!==3)return d;const[y,m,dd]=p;return`${dd}.${m}.${y}`}
+// Datum + Uhrzeit aus einem ISO-Zeitstempel, z. B. "22.08.2026, 14:32 Uhr".
+// fmt() liefert nur das Datum - fuer "wann genau ist das passiert" zu wenig.
+function _zeitpunkt(iso){
+  if(!iso) return '';
+  // Reines Datum ohne Zeitanteil: nur das Datum zeigen. new Date('2026-08-22')
+  // liest UTC-Mitternacht und wuerde daraus hier "02:00 Uhr" machen - eine
+  // Uhrzeit, die nie irgendwo stand.
+  if(/^\d{4}-\d{2}-\d{2}$/.test(String(iso))) return fmt(iso);
+  const d=new Date(iso);
+  if(isNaN(d.getTime())) return String(iso).slice(0,10).split('-').reverse().join('.');
+  const z=n=>String(n).padStart(2,'0');
+  return z(d.getDate())+'.'+z(d.getMonth()+1)+'.'+d.getFullYear()+', '+z(d.getHours())+':'+z(d.getMinutes())+' Uhr';
+}
 function addMonths(dateStr,m){if(!dateStr)return null;const d=new Date(dateStr);if(isNaN(d))return null;d.setMonth(d.getMonth()+m);return d.toISOString().slice(0,10)}
 function daysUntil(dateStr){if(!dateStr)return 0;const d=new Date(dateStr);if(isNaN(d))return 0;const n=new Date(today());return Math.round((d-n)/86400000)}
 function pFullName(p){if(!p)return'(gelöscht)';if(p.lastName||p.firstName){return[p.lastName,p.firstName].filter(Boolean).join(', ');}return p.name||'(ohne Name)';}
@@ -4672,18 +4708,19 @@ function renderCourses(){
     card.innerHTML=
       '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px">'+
         '<strong style="font-size:1.05rem;color:var(--ink);flex:1;min-width:0">'+typeLabel+'</strong>'+
-        billingBadge+
+        billingBadge+_statusBadges(g,gKey)+
       '</div>'+
       '<div class="row-actions" style="margin-bottom:10px" id="ia_'+gKey+'">'+
           '<button class="btn ghost sm instr-attendance-btn" title="Anwesenheitsliste drucken">📋 Anwesenheit</button>'+
-          (()=>{const sc=((state.attendanceScans||{})[gKey]||[]).length;
-            // Hochladen bleibt der 📎-Knopf; sobald ein Scan vorliegt, kommt
-            // ein eigener Knopf zum Ansehen mit der Anzahl dazu.
-            return '<button class="btn ghost sm instr-scan-btn" data-scan-key="'+gKey+'" title="Anwesenheitsliste einscannen">📎 Scan'+(sc?' <span style="background:#16a34a;color:#fff;border-radius:10px;font-size:.7rem;padding:1px 6px">'+sc+'</span>':'')+'</button>'
-              +(sc?'<button class="btn ghost sm scan-view-btn" data-scan-key="'+gKey+'" title="Gescannte Anwesenheitsliste ansehen">🔍 Scan ansehen ('+sc+')</button>':'');})()+
+          (()=>{const st=_scanStatus(gKey);
+            // Hochladen bleibt der 📎-Knopf - jetzt mit gruenem Haken und dem
+            // Zeitpunkt des juengsten Scans im Tooltip. Das Ansehen behaelt
+            // seinen eigenen Knopf mit der Anzahl.
+            return '<button class="btn ghost sm instr-scan-btn" data-scan-key="'+gKey+'" title="'+_esc(st.titel)+'">'+_scanKnopfInhalt(st)+'</button>'
+              +(st.anzahl?'<button class="btn ghost sm scan-view-btn" data-scan-key="'+gKey+'" title="'+_esc(st.titel)+'">🔍 Scan ansehen ('+st.anzahl+')</button>':'');})()+
           '<button class="btn sm instr-cert-btn" style="background:#16a34a">📄 Bescheinigungen</button>'+(isKurs&&(g.type==='Gabelstapler'||g.type==='Ladekran'||g.type==='Baumaschinen')?'<button class="btn sm fa-group-btn" style="background:#0e7490">🪪 '+(g.type==='Gabelstapler'?'Fahrausweise':'Befähigungsnachweise')+'</button>':'')+
           '<button class="btn sm instr-inv-btn" style="background:#1d4ed8">🧾 Rechnungen</button>'+
-          (isKurs&&String(g.type||'').indexOf('BKF Modul')===0?'<button class="btn sm bqr-btn" style="background:#7c3aed" title="KBA-Upload-Datei für das Berufskraftfahrerqualifikationsregister erzeugen">🏛 BQR-Meldung</button>':'')+
+          (isKurs?_bqrKnoepfe(g):'')+
           (isKurs?'<button class="btn ghost sm resv-btn" title="Plätze mit Namen reservieren – z. B. telefonische Zusagen">🔒 Reservieren</button>':'')+
           '<button class="btn ghost sm instr-edit-btn">✎ Bearbeiten</button>'+
           '<button class="btn danger sm instr-del-btn" title="Löschen">🗑</button>'+
@@ -4712,6 +4749,7 @@ function renderCourses(){
 
     // Event-Listener (alle null-sicher)
     const _q__bqr_btn=card.querySelector('.bqr-btn'); if(_q__bqr_btn) _q__bqr_btn.addEventListener('click',()=>openBqrDialog(g));
+    const _q__bqr_upload_btn=card.querySelector('.bqr-upload-btn'); if(_q__bqr_upload_btn) _q__bqr_upload_btn.addEventListener('click',()=>bqrUploadSchalter(g));
     const _q__instr_scan_btn=card.querySelector('.instr-scan-btn'); if(_q__instr_scan_btn) _q__instr_scan_btn.addEventListener('click', ev=>{
       ev.stopPropagation();
       openScanUpload(g.key.replace(/[^a-z0-9]/gi,'_'), true);
@@ -5000,15 +5038,16 @@ function renderInstructions(){
     card.innerHTML=
       '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px">'+
         '<strong style="font-size:1.05rem;color:var(--ink);flex:1;min-width:0">'+typeLabel+'</strong>'+
-        billingBadge+
+        billingBadge+_statusBadges(g,gKey)+
       '</div>'+
       '<div class="row-actions" style="margin-bottom:10px" id="ia_'+gKey+'">'+
           '<button class="btn ghost sm instr-attendance-btn" title="Anwesenheitsliste drucken">📋 Anwesenheit</button>'+
-          (()=>{const sc=((state.attendanceScans||{})[gKey]||[]).length;
-            // Hochladen bleibt der 📎-Knopf; sobald ein Scan vorliegt, kommt
-            // ein eigener Knopf zum Ansehen mit der Anzahl dazu.
-            return '<button class="btn ghost sm instr-scan-btn" data-scan-key="'+gKey+'" title="Anwesenheitsliste einscannen">📎 Scan'+(sc?' <span style="background:#16a34a;color:#fff;border-radius:10px;font-size:.7rem;padding:1px 6px">'+sc+'</span>':'')+'</button>'
-              +(sc?'<button class="btn ghost sm scan-view-btn" data-scan-key="'+gKey+'" title="Gescannte Anwesenheitsliste ansehen">🔍 Scan ansehen ('+sc+')</button>':'');})()+
+          (()=>{const st=_scanStatus(gKey);
+            // Hochladen bleibt der 📎-Knopf - jetzt mit gruenem Haken und dem
+            // Zeitpunkt des juengsten Scans im Tooltip. Das Ansehen behaelt
+            // seinen eigenen Knopf mit der Anzahl.
+            return '<button class="btn ghost sm instr-scan-btn" data-scan-key="'+gKey+'" title="'+_esc(st.titel)+'">'+_scanKnopfInhalt(st)+'</button>'
+              +(st.anzahl?'<button class="btn ghost sm scan-view-btn" data-scan-key="'+gKey+'" title="'+_esc(st.titel)+'">🔍 Scan ansehen ('+st.anzahl+')</button>':'');})()+
           '<button class="btn sm instr-cert-btn" style="background:#16a34a">📄 Bescheinigungen</button>'+(isKurs&&(g.type==='Gabelstapler'||g.type==='Ladekran'||g.type==='Baumaschinen')?'<button class="btn sm fa-group-btn" style="background:#0e7490">🪪 '+(g.type==='Gabelstapler'?'Fahrausweise':'Befähigungsnachweise')+'</button>':'')+
           '<button class="btn sm instr-inv-btn" style="background:#1d4ed8">🧾 Rechnungen</button>'+
           '<button class="btn ghost sm instr-edit-btn">\u270e Bearbeiten</button>'+
@@ -6325,6 +6364,34 @@ function printAttendanceList(g, isInstr){ try{
 }
 
 // ── Anwesenheitslisten-Scan ──────────────────────────────────────────────
+// Zeitpunkt eines einzelnen Scans. Frueher wurde nur das Datum mitgeschrieben;
+// solche Altbestaende haben kein at - dann eben ohne Uhrzeit anzeigen statt
+// eine zu erfinden.
+function _scanZeit(sc){
+  if(!sc) return '';
+  return sc.at ? _zeitpunkt(sc.at) : fmt(sc.date);
+}
+// Sammelstatus aller Scans eines Lehrgangs: Anzahl + juengster Zeitpunkt.
+// Der juengste Scan ist der aussagekraeftige - er zeigt, ob die Liste nach
+// dem Termin nachgereicht wurde.
+function _scanStatus(groupKey){
+  const liste=((state.attendanceScans||{})[groupKey])||[];
+  if(!liste.length) return {anzahl:0, titel:'Anwesenheitsliste einscannen'};
+  const juengster=liste.slice().sort((a,b)=>
+    String(a.at||a.date||'').localeCompare(String(b.at||b.date||''))).pop();
+  const zeit=_scanZeit(juengster);
+  return {
+    anzahl: liste.length,
+    titel: (liste.length>1 ? liste.length+' Scans hinterlegt · zuletzt am ' : 'Gescannt am ')+zeit
+  };
+}
+// Knopfbeschriftung mit gruenem Haken, sobald ein Scan vorliegt.
+function _scanKnopfInhalt(st){
+  return '📎 Scan'+(st.anzahl
+    ? ' <span style="background:var(--gruen);color:#fff;border-radius:10px;font-size:.7rem;font-weight:700;padding:1px 6px;margin-left:2px">✓'
+      +(st.anzahl>1?' '+st.anzahl:'')+'</span>'
+    : '');
+}
 // ── Gescannte Anwesenheitslisten ansehen ─────────────────────────────────
 // Die Scans liegen als data:-URL in state.attendanceScans[gruppenSchluessel].
 // Zum Anzeigen und Herunterladen werden sie in ein Blob umgewandelt: Chrome
@@ -6389,7 +6456,7 @@ function openScanViewer(groupKey, aktiv){
         +'<span style="font-size:1.05rem">'+(_scanIstPdf(sc)?'📄':'🖼')+'</span>'
         +'<div style="flex:1;min-width:140px">'
           +'<div style="font-size:.88rem;font-weight:600;word-break:break-all">'+_esc(sc.name||'Scan')+'</div>'
-          +'<div style="font-size:.75rem;color:var(--muted)">Hochgeladen am '+fmt(sc.date)+(sc.size?' · '+_esc(sc.size):'')+'</div>'
+          +'<div style="font-size:.75rem;color:var(--muted)">Hochgeladen am '+_scanZeit(sc)+(sc.size?' · '+_esc(sc.size):'')+'</div>'
         +'</div>'
         +(aktivZeile?'':'<button class="btn ghost sm" onclick="openScanViewer(\''+groupKey+'\','+k+')">Anzeigen</button>')
         +'<button class="btn ghost sm" onclick="scanOeffnen(\''+groupKey+'\','+k+')">Öffnen</button>'
@@ -6486,6 +6553,9 @@ function handleScanUploadFiles(groupKey, files){
       state.attendanceScans[groupKey].push({
         name: file.name,
         date: today(),
+        // Volle Uhrzeit zusaetzlich zu date: fuer den Tooltip am Scan-Knopf.
+        // date bleibt erhalten, damit aeltere Scans ohne at weiter passen.
+        at: new Date().toISOString(),
         dataUrl: e.target.result,
         size: Math.round(file.size/1024)+'KB'
       });
@@ -6535,10 +6605,9 @@ function updateScanBadges(){
     // We store the key as data attribute when rendering
     const key = btn.dataset.scanKey;
     if(!key) return;
-    const count = (scans[key]||[]).length;
-    btn.innerHTML = count
-      ? '📎 Scan <span style="background:#16a34a;color:#fff;border-radius:10px;font-size:.7rem;padding:1px 6px;margin-left:2px">'+count+'</span>'
-      : '📎 Scan';
+    const st = _scanStatus(key);
+    btn.innerHTML = _scanKnopfInhalt(st);
+    btn.title = st.titel;
   });
   // Ansehen-Knopf mitziehen: Anzahl aktualisieren bzw. ausblenden, wenn der
   // letzte Scan gelöscht wurde.
@@ -7629,6 +7698,110 @@ function _bqrKlassen(p,typ){
   // Ohne bekannte Klassen: sinnvolle Vorgabe je Modul-Variante
   return /P$/.test(typ)?['D','DE','D1','D1E']:['C','CE','C1','C1E'];
 }
+// ── Meldestatus eines Termins ────────────────────────────────────────────
+// Die BQR-Datei umfasst IMMER alle Teilnehmer eines Termins (Typ + Datum),
+// unabhaengig von Dozent und Ort - nach denen die Karten aber zusaetzlich
+// gruppieren. Der Status wird deshalb ueber genau die Menge gelesen, die
+// bqrErzeugen() auch schreibt. Sonst zeigten zwei Karten desselben Tages
+// widerspruechliche Stufen fuer ein und dieselbe Datei.
+function _bqrGruppe(g){
+  const e0=(g.entries||[]).find(e=>e.participant)||(g.entries||[])[0]||{};
+  const typ=g.type||e0.type||'';
+  const datum=e0.dateFrom||e0.date||g.date||'';
+  if(!typ||!datum) return [];
+  return state.courses.filter(c=>c.type===typ&&(c.dateFrom||c.date)===datum&&c.participant);
+}
+// stufe: 'leer' | 'erzeugt' | 'gemeldet'
+// offen = Teilnehmer des Termins, die in KEINER Datei stehen - etwa weil sie
+// erst nach dem Erzeugen dazukamen oder Pflichtangaben fehlten. Die duerfen
+// nicht unter einem gruenen Haken verschwinden, sie sind ungemeldet.
+function _bqrStatus(g){
+  const grp=_bqrGruppe(g);
+  const mit=grp.filter(c=>c.bqrDateiAm);
+  const gemeldet=mit.filter(c=>c.bqrGemeldetAm);
+  const neuester=(liste,feld)=>liste.map(c=>c[feld]).filter(Boolean).sort().pop()||'';
+  return {
+    gesamt:  grp.length,
+    inDatei: mit.length,
+    offen:   grp.length-mit.length,
+    stufe:   !mit.length ? 'leer' : (gemeldet.length===mit.length ? 'gemeldet' : 'erzeugt'),
+    dateiAm:    neuester(mit,'bqrDateiAm'),
+    gemeldetAm: neuester(gemeldet,'bqrGemeldetAm')
+  };
+}
+// Meldepflichtig sind nur die BKF-Module. Fahreignungsseminare ausdruecklich
+// nicht (§ 4a StVG) - gleiche Abfrage wie in openBqrDialog().
+function _istBqrPflicht(g){
+  const cfg=(typeof COURSE_TYPES!=='undefined')?COURSE_TYPES[g.type]:null;
+  if(istFes(g.type)||(cfg&&cfg.keinBqr)) return false;
+  return String(g.type||'').indexOf('BKF Modul')===0;
+}
+// Bestaetigungsschalter "Im BQR hochgeladen". Bewusst ein eigener Klick und
+// nicht an bqrErzeugen() gekoppelt: hochgeladen wird von Hand bei
+// kba-online.de, davon bekommt die App nichts mit.
+function bqrUploadSchalter(g){
+  const grp=_bqrGruppe(g).filter(c=>c.bqrDateiAm);
+  if(!grp.length){toast('Für diesen Termin wurde noch keine BQR-Datei erzeugt.');return;}
+  const st=_bqrStatus(g);
+  if(st.stufe==='gemeldet'){
+    askConfirm('Bestätigung zurücknehmen?\n\nBestätigt am '+_zeitpunkt(st.gemeldetAm)+'.\n'
+      +'Der Termin gilt danach wieder als „Datei erzeugt – Upload offen".',()=>{
+      grp.forEach(c=>{c.bqrGemeldetAm='';});
+      save(); renderAll();
+      toast('Bestätigung zurückgenommen');
+    },'Zurücknehmen','btn danger');
+    return;
+  }
+  askConfirm('Datei im KBA-Portal hochgeladen?\n\n'+(g.type||'')+' · '+fmt(g.date||'')+'\n'
+    +'Datei erzeugt am '+_zeitpunkt(st.dateiAm)+' · '+st.inDatei+' Teilnehmer'
+    +(st.offen?'\n\n⚠ '+st.offen+' Teilnehmer dieses Termins stehen in KEINER Datei und bleiben ungemeldet.':''),()=>{
+    const jetzt=new Date().toISOString();
+    grp.forEach(c=>{c.bqrGemeldetAm=jetzt;});
+    save(); renderAll();
+    toast('✓ Als im BQR hochgeladen vermerkt');
+  },'Hochgeladen','btn btn-primary');
+}
+// Knopf + Schalter fuer die Lehrgangskarte. Zweistufig: orange = Datei
+// erzeugt, gruen = Upload bestaetigt.
+function _bqrKnoepfe(g){
+  if(!_istBqrPflicht(g)) return '';
+  const st=_bqrStatus(g);
+  const offenTxt=st.offen?' · '+st.offen+' Teilnehmer noch nicht in der Meldung':'';
+  const stil = st.stufe==='gemeldet' ? 'background:var(--gruen)'
+             : st.stufe==='erzeugt'  ? 'background:var(--orange)'
+             : 'background:#7c3aed';
+  const marke = st.stufe==='gemeldet' ? ' ✓' : st.stufe==='erzeugt' ? ' ●' : '';
+  const titel = st.stufe==='gemeldet'
+      ? 'Im BQR hochgeladen am '+_zeitpunkt(st.gemeldetAm)+' · Datei erzeugt am '+_zeitpunkt(st.dateiAm)+offenTxt
+      : st.stufe==='erzeugt'
+      ? 'Datei erzeugt am '+_zeitpunkt(st.dateiAm)+' – Upload ins KBA-Portal noch nicht bestätigt'+offenTxt
+      : 'KBA-Upload-Datei für das Berufskraftfahrerqualifikationsregister erzeugen';
+  return '<button class="btn sm bqr-btn" style="'+stil+'" title="'+_esc(titel)+'">🏛 BQR-Meldung'+marke+'</button>'
+    +(st.stufe==='leer' ? '' :
+      '<button class="btn sm bqr-upload-btn'+(st.stufe==='gemeldet'?' ghost':' btn-primary')+'" title="'
+      +_esc(st.stufe==='gemeldet'
+        ?'Bestätigt am '+_zeitpunkt(st.gemeldetAm)+' – klicken zum Zurücknehmen'
+        :'Erst klicken, wenn die Datei bei kba-online.de tatsächlich hochgeladen wurde')
+      +'">'+(st.stufe==='gemeldet'?'☑':'☐')+' Im BQR hochgeladen</button>');
+}
+// Etiketten fuer den Kartenkopf - der Zustand soll in der Kursliste stehen,
+// ohne dass man die Karte oeffnen muss. Fehlendes wird nur bei bereits
+// gelaufenen Terminen angemahnt; vorher ist es schlicht noch nicht faellig.
+function _statusBadges(g, gKey){
+  const vorbei=String(g.dateTo||g.date||'')<today();
+  let out='';
+  const sc=_scanStatus(gKey);
+  if(sc.anzahl) out+='<span class="tag green" style="font-size:.72rem" title="'+_esc(sc.titel)+'">📎 Liste gescannt</span>';
+  else if(vorbei) out+='<span class="tag warn" style="font-size:.72rem" title="Für diesen Lehrgang ist keine unterschriebene Anwesenheitsliste hinterlegt">📎 Scan fehlt</span>';
+  if(_istBqrPflicht(g)){
+    const st=_bqrStatus(g);
+    if(st.stufe==='gemeldet') out+='<span class="tag green" style="font-size:.72rem" title="'+_esc('Hochgeladen am '+_zeitpunkt(st.gemeldetAm))+'">🏛 im BQR gemeldet</span>';
+    else if(st.stufe==='erzeugt') out+='<span class="tag warn" style="font-size:.72rem" title="'+_esc('Datei erzeugt am '+_zeitpunkt(st.dateiAm)+' – Upload noch nicht bestätigt')+'">🏛 Datei erzeugt · Upload offen</span>';
+    else if(vorbei) out+='<span class="tag crit" style="font-size:.72rem" title="Termin gelaufen, aber noch keine BQR-Datei erzeugt. Meldefrist: unverzüglich nach dem Termin.">🏛 BQR-Meldung offen</span>';
+    if(st.stufe!=='leer'&&st.offen) out+='<span class="tag crit" style="font-size:.72rem" title="Diese Teilnehmer stehen in keiner erzeugten Datei – für sie ist noch eine Meldung nötig">🏛 '+st.offen+' nicht gemeldet</span>';
+  }
+  return out;
+}
 function openBqrDialog(g){
   // Das Fahreignungsseminar wird NICHT ans BQR/KBA gemeldet (§ 4a StVG): der
   // Teilnehmer legt seine Teilnahmebescheinigung selbst bei der Fahrerlaubnis-
@@ -7655,9 +7828,26 @@ function openBqrDialog(g){
       +(fehlt.length?'<span class="tag crit" style="cursor:pointer" onclick="openParticipant(\''+p.id+'\')" title="Klicken zum Ergänzen">fehlt: '+fehlt.join(', ')+'</span>':'<span class="tag green">vollständig</span>')+'</div>';
   }).join('');
   const datum=g.entries[0].dateFrom||g.entries[0].date||'';
+  // Meldestatus oben im Dialog, damit man vor dem Erzeugen sieht, ob fuer
+  // diesen Termin schon eine Datei existiert - und ob sie hochgeladen ist.
+  const _st=_bqrStatus(g);
+  const _statusZeile = _st.stufe==='leer' ? '' :
+    '<div style="margin:0 0 12px;padding:10px 12px;border-radius:8px;'
+    +(_st.stufe==='gemeldet'
+        ? 'background:#f0fdf4;border:1px solid #bbf7d0'
+        : 'background:var(--orange-light);border:1px solid var(--warn-border)')+'">'
+    +'<div class="ds-label" style="margin-bottom:5px">Meldestatus</div>'
+    +'<div style="font-size:.85rem;color:var(--ink)">'
+    +(_st.stufe==='gemeldet'
+        ? '✓ Am '+_zeitpunkt(_st.gemeldetAm)+' im KBA-Portal hochgeladen · Datei erzeugt am '+_zeitpunkt(_st.dateiAm)
+          +'<br><span style="color:var(--orange)">Ein erneutes Erzeugen setzt diese Bestätigung zurück.</span>'
+        : '● Datei erzeugt am '+_zeitpunkt(_st.dateiAm)+' – Upload ins KBA-Portal noch nicht bestätigt')
+    +(_st.offen?'<br>⚠ '+_st.offen+' Teilnehmer dieses Termins stehen in keiner Datei und sind ungemeldet.':'')
+    +'</div></div>';
   document.getElementById('modalContent').innerHTML=`
     <h3>🏛 BQR-Meldung ans KBA</h3>
     <p class="hint" style="margin:4px 0 12px"><b>${_esc(g.type)}</b> · ${fmt(datum)} · Kenntnisbereiche ${kbs.join(', ')} (Codes ${kbs.map(k=>BQR_KB[k]).join(', ')}) · ${liste.length} Teilnehmer</p>
+    ${_statusZeile}
     <div class="field"><label>Sachbearbeiterkennung (erscheint in der Meldung)</label>
       <input id="bqr_sb" maxlength="${BQR_MAXLEN.sachbearbeiterkennung}" value="${_esc(_bqrSb(state.settings.bqrSachbearbeiter))}" placeholder="${BQR_SB_DEFAULT}">
       <div class="hint">Max. ${BQR_MAXLEN.sachbearbeiterkennung} Zeichen (Vorgabe des KBA-XML-Schemas). Dauerhaft änderbar unter <b>Einstellungen → Schulungen → Schulungsbetrieb</b>.</div></div>
@@ -7666,7 +7856,7 @@ function openBqrDialog(g){
     <div id="bqr_fehler"></div>
     <div class="modal-actions">
       <button class="btn ghost" onclick="closeModal()">Abbrechen</button>
-      <button class="btn" onclick="bqrErzeugen('${g.entries.find(e=>e.participant)?g.entries.find(e=>e.participant).id:g.entries[0].id}')">XML-Datei erzeugen</button>
+      <button class="btn" onclick="bqrErzeugen('${g.entries.find(e=>e.participant)?g.entries.find(e=>e.participant).id:g.entries[0].id}')">${_st.stufe==='leer'?'XML-Datei erzeugen':'Datei erneut erzeugen'}</button>
     </div>`;
   showModal();
 }
@@ -7688,13 +7878,16 @@ function bqrErzeugen(courseId){
   state.settings.bqrSachbearbeiter=sb; save();
   const gruppe=state.courses.filter(c=>c.type===typ&&(c.dateFrom||c.date)===datum&&c.participant);
   const seen=new Set(); let nr=0; const uebersprungen=[];
+  // Nur wer tatsaechlich in die Datei geschrieben wird, bekommt spaeter den
+  // Meldestempel - Uebersprungene bleiben sichtbar ungemeldet.
+  const gemeldeteTn=new Set();
   let xml='<?xml version="1.0" encoding="UTF-8"?>\n<Qualifikationen-Request xmlns="http://www.kba.de/bqr/qualifikation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">\n';
   for(const c of gruppe){
     if(seen.has(c.participant))continue; seen.add(c.participant);
     const p=state.participants.find(x=>x.id===c.participant); if(!p)continue;
     const ext=p.extDates||{};
     if(!p.birth||!p.birthplace||!ext.GESCHLECHT){uebersprungen.push(pFullName(p));continue;}
-    nr++;
+    nr++; gemeldeteTn.add(c.participant);
     const gd=p.birth.split('-');
     const gebname=(ext.GEBURTSNAME||'').trim();
     // wer = Klartextname fuer die Fehlermeldung, damit sofort erkennbar ist,
@@ -7747,6 +7940,18 @@ function bqrErzeugen(courseId){
     if(c.passed!==true) c.passed=true;   // Teilnahme = mit BQR-Meldung bestätigt
     sendBescheinigungMail(c);
   });
+  // Meldestatus Stufe 1 (Migration 31): "Datei erzeugt" - mehr ist es noch
+  // nicht. Alle Zeilen des Teilnehmers stempeln, nicht nur die erste, damit
+  // der Status ueber die ganze Gruppe gleich aussieht.
+  const _bqrJetzt=new Date().toISOString();
+  gruppe.forEach(c=>{
+    if(!gemeldeteTn.has(c.participant)) return;
+    c.bqrDateiAm=_bqrJetzt;
+    // Eine frisch erzeugte Datei ist noch nirgends hochgeladen. Eine alte
+    // Bestaetigung stehen zu lassen wuerde eine Meldung behaupten, die es
+    // fuer diesen Stand nicht gibt - lieber einmal zu viel bestaetigen.
+    c.bqrGemeldetAm='';
+  });
   save();
   const blob=new Blob([xml],{type:'application/xml'});
   const a=document.createElement('a');
@@ -7755,7 +7960,8 @@ function bqrErzeugen(courseId){
   document.body.appendChild(a); a.click(); a.remove();
   setTimeout(()=>{try{URL.revokeObjectURL(a.href);}catch(e){}},5000);
   closeModal();
-  toast('✓ BQR-Datei erzeugt: '+nr+' Teilnehmer'+(uebersprungen.length?' · übersprungen ('+uebersprungen.length+'): '+uebersprungen.join(', '):''));
+  toast('✓ BQR-Datei erzeugt: '+nr+' Teilnehmer'+(uebersprungen.length?' · übersprungen ('+uebersprungen.length+'): '+uebersprungen.join(', '):'')
+    +' · noch nicht gemeldet – nach dem Upload bei kba-online.de am Lehrgang „☐ Im BQR hochgeladen" bestätigen');
 }
 
 // ── Reservierungen mit Namen: kleiner Dialog an der Kurs-Karte ────────────
