@@ -430,23 +430,41 @@ async function bkrfqgLadeAlles() {
 }
 
 // ── Shell mit Sidebar (App-Design) ────────────────────────────────────
+// Symbole der Seitenleiste. stroke=currentColor laesst sie der
+// Textfarbe folgen: grau im Normalzustand, rot beim aktiven Eintrag.
+function bkrfqgIcon(pfad){
+  return '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"'
+    + ' stroke-width="2" stroke-linecap="round" stroke-linejoin="round"'
+    + ' style="width:20px;flex-shrink:0">' + pfad + '</svg>';
+}
+const BKRFQG_ICONS = {
+  dashboard:   '<line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>',
+  kursplaene:  '<rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>',
+  kursmeldung: '<path d="M4 4h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/><polyline points="22,6 12,13 2,6"/>',
+  antrag:      '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>',
+  dokumente:   '<path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>',
+  standorte:   '<path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>',
+  raeume:      '<path d="M3 21h18"/><path d="M5 21V7l7-4 7 4v14"/><path d="M9 21v-6h6v6"/>',
+  dozenten:    '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/>'
+};
+
 function bkrfqgRenderShell(view) {
   const primary = [
-    { id:'dashboard',   icon:'📊', label:'Übersicht' },
-    { id:'kursplaene',  icon:'📅', label:'Kurspläne' },
-    { id:'kursmeldung', icon:'📨', label:'Kursmeldung' },
-    { id:'antrag',      icon:'📋', label:'Antrag' },
-    { id:'dokumente',   icon:'📁', label:'Dokumente' },
+    { id:'dashboard',   label:'Übersicht' },
+    { id:'kursplaene',  label:'Kurspläne' },
+    { id:'kursmeldung', label:'Kursmeldung' },
+    { id:'antrag',      label:'Antrag' },
+    { id:'dokumente',   label:'Dokumente' },
   ];
   const config = [
-    { id:'standorte',   icon:'📍', label:'Standorte' },
-    { id:'raeume',      icon:'🏫', label:'Räume' },
-    { id:'dozenten',    icon:'🎯', label:'Dozenten-Themen' },
+    { id:'standorte',   label:'Standorte' },
+    { id:'raeume',      label:'Räume' },
+    { id:'dozenten',    label:'Dozenten-Themen' },
   ];
   const t = bkrfqgState.aktuellerTab;
   const btn = tab => `
     <button class="mod-side-btn ${t===tab.id?'active':''}" data-btab="${tab.id}" onclick="bkrfqgSetTab('${tab.id}')">
-      <span style="font-size:16px;width:20px;text-align:center">${tab.icon}</span>
+      ${bkrfqgIcon(BKRFQG_ICONS[tab.id] || '')}
       <span class="mod-lbl">${tab.label}</span>
     </button>`;
   view.innerHTML = `
