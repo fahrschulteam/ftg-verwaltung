@@ -4012,6 +4012,41 @@ function druckeTerminuebersicht(){
   doc.save('Terminuebersicht'+(typ?'_'+typ:'')+'.pdf');
 }
 
+// ── Sortierung der beiden Ampeltabellen im Dashboard ─────────────────
+// Nur der Zustand liegt hier draussen. Sortiert und gezeichnet wird
+// innerhalb von renderDashboard, wo die noetigen Hilfsfunktionen und
+// Daten zu Hause sind. Ein Klick zeichnet das Dashboard einfach neu.
+var _feSort = { feld:'fe',   richtung:1 };
+var _bkSort = { feld:'sz95', richtung:1 };
+
+function _feSortieren(feld){
+  if(_feSort.feld === feld) _feSort.richtung = -_feSort.richtung;
+  else _feSort = { feld:feld, richtung:1 };
+  renderDashboard();
+}
+function _bkSortieren(feld){
+  if(_bkSort.feld === feld) _bkSort.richtung = -_bkSort.richtung;
+  else _bkSort = { feld:feld, richtung:1 };
+  renderDashboard();
+}
+
+// Leere Werte immer ans Ende, unabhaengig von der Richtung. Zahlen
+// numerisch vergleichen, sonst stuende -114 hinter 145.
+function _dashVgl(x, y, richtung){
+  if(x === '' || x === null || x === undefined) x = null;
+  if(y === '' || y === null || y === undefined) y = null;
+  if(x === null && y === null) return 0;
+  if(x === null) return 1;
+  if(y === null) return -1;
+  if(typeof x === 'number' && typeof y === 'number') return (x - y) * richtung;
+  return String(x).localeCompare(String(y), 'de') * richtung;
+}
+
+function _dashSortTh(feld, text, zustand, fn){
+  var pfeil = (zustand.feld === feld) ? (zustand.richtung > 0 ? ' \u25B2' : ' \u25BC') : '';
+  return '<th style="cursor:pointer;user-select:none" onclick="' + fn + '(\'' + feld + '\')">' + text + pfeil + '</th>';
+}
+
 function renderDashboard(){
   // ── Warnfenster ──────────────────────────────────────────────────────────
   const w = (state.settings.warn != null) ? Number(state.settings.warn) : 60;
@@ -4122,10 +4157,24 @@ function renderDashboard(){
   // ── Fahrerlaubnis-Ampel: Liste der bald ablaufenden / abgelaufenen FE ─────
   const feCard=document.getElementById('feCard'), feTable=document.getElementById('feTable');
   if(feCard&&feTable){
+    // Erst sortieren, dann auf 80 Zeilen begrenzen - sonst waere nur der
+    // bereits abgeschnittene Ausschnitt sortiert.
+    const _feWert=function(x,f){
+      if(f==='fahrer') return pFullName(x.p).toLowerCase();
+      if(f==='firma')  return (companyName(x.p.companyId)||x.p.company||'').toLowerCase();
+      if(f==='tage')   return _daysUntil(x.fe);
+      return x.fe||'';
+    };
     const feListe=feAlle.filter(x=>_daysUntil(x.fe)<=180)
-      .sort((a,b)=>a.fe.localeCompare(b.fe)).slice(0,80);
+      .sort((a,b)=>_dashVgl(_feWert(a,_feSort.feld),_feWert(b,_feSort.feld),_feSort.richtung))
+      .slice(0,80);
     feCard.style.display=feListe.length?'':'none';
-    feTable.innerHTML=feListe.length?('<table><thead><tr><th>Fahrer</th><th>Firma</th><th>FE gültig bis</th><th>Tage</th><th></th></tr></thead><tbody>'
+    feTable.innerHTML=feListe.length?('<table><thead><tr>'
+      +_dashSortTh('fahrer','Fahrer',_feSort,'_feSortieren')
+      +_dashSortTh('firma','Firma',_feSort,'_feSortieren')
+      +_dashSortTh('fe','FE gültig bis',_feSort,'_feSortieren')
+      +_dashSortTh('tage','Tage',_feSort,'_feSortieren')
+      +'<th></th></tr></thead><tbody>'
       +feListe.map(x=>{
         const t=_daysUntil(x.fe);
         const tag=t<0?'<span class="tag crit">abgelaufen</span>':(t<=90?'<span class="tag warn">'+t+' T.</span>':'<span class="tag green">'+t+' T.</span>');
@@ -4137,10 +4186,24 @@ function renderDashboard(){
   // ── BKF-Ampel: Stichtag (SZ95) in den nächsten 12 Monaten bzw. überschritten ─
   const bkfCard=document.getElementById('bkfCard'), bkfTable=document.getElementById('bkfTable');
   if(bkfCard&&bkfTable){
+    const _bkWert=function(x,f){
+      if(f==='fahrer') return pFullName(x.p).toLowerCase();
+      if(f==='firma')  return (companyName(x.p.companyId)||x.p.company||'').toLowerCase();
+      if(f==='module') return x.bs.n;
+      if(f==='tage')   return x.bs.tage;
+      return x.bs.sz95||'';
+    };
     const bkfListe=bkfAlle.filter(x=>x.bs.tage<=365)
-      .sort((a,b)=>a.bs.sz95.localeCompare(b.bs.sz95)).slice(0,100);
+      .sort((a,b)=>_dashVgl(_bkWert(a,_bkSort.feld),_bkWert(b,_bkSort.feld),_bkSort.richtung))
+      .slice(0,100);
     bkfCard.style.display=bkfListe.length?'':'none';
-    bkfTable.innerHTML=bkfListe.length?('<table><thead><tr><th>Fahrer</th><th>Firma</th><th>Module</th><th>Stichtag SZ 95</th><th>Tage</th><th></th></tr></thead><tbody>'
+    bkfTable.innerHTML=bkfListe.length?('<table><thead><tr>'
+      +_dashSortTh('fahrer','Fahrer',_bkSort,'_bkSortieren')
+      +_dashSortTh('firma','Firma',_bkSort,'_bkSortieren')
+      +_dashSortTh('module','Module',_bkSort,'_bkSortieren')
+      +_dashSortTh('sz95','Stichtag SZ 95',_bkSort,'_bkSortieren')
+      +_dashSortTh('tage','Tage',_bkSort,'_bkSortieren')
+      +'<th></th></tr></thead><tbody>'
       +bkfListe.map(x=>{
         const t=x.bs.tage;
         const mTag='<span class="tag '+x.bs.cls+'">'+x.bs.n+' / 5</span>';
