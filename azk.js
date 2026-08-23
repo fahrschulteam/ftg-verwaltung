@@ -376,8 +376,9 @@ function _uIstWerktag(d, ft) {
 let _uTageCache = {};
 function _uCacheLeeren() { _uTageCache = {}; }
 
-// Liefert fuer einen Mitarbeiter und ein Jahr die Urlaubstage:
-// proMonat[0..11], genommen (bis einschliesslich heute), geplant, gesamt.
+// Liefert die noch bevorstehenden Urlaubstage eines Mitarbeiters im Jahr.
+// Bereits vergangene Tage bleiben aussen vor - der genommene Urlaub wird
+// weiterhin in der Monatserfassung gepflegt.
 function urlaubTage(maId, jahr) {
   const key = maId + "|" + jahr;
   if (_uTageCache[key]) return _uTageCache[key];
@@ -400,8 +401,9 @@ function urlaubTage(maId, jahr) {
     if (b > jEnde) b = new Date(jEnde);
     for (let d = new Date(v); d <= b; d.setDate(d.getDate() + 1)) {
       if (!_uIstWerktag(d, ft)) continue;
+      if (d <= heute) { genommen++; continue; }
       proMonat[d.getMonth()]++;
-      if (d <= heute) genommen++; else geplant++;
+      geplant++;
     }
   });
 
@@ -420,14 +422,15 @@ function azkBerechne(maId) {
   let standVormonat = standAnfang;
   let resturlaub = urlaubAnspruch;
   let krankGesamt = 0;
+  let urlaubGenommen = 0;
   const zeilen = [];
 
   for (let m = 1; m <= 12; m++) {
     const e = azkState.monate.find(x => x.mitarbeiter_id === maId && x.monat === m);
-    // Urlaub wird auch dann verrechnet, wenn fuer den Monat noch keine
-    // Stunden erfasst sind.
-    resturlaub = resturlaub - ut.proMonat[m - 1];
     if (!e) { zeilen.push(null); continue; }
+    // Genommener Urlaub kommt aus der Monatserfassung.
+    resturlaub = resturlaub - Number(e.urlaubstage||0);
+    urlaubGenommen += Number(e.urlaubstage||0);
     const ist = Number(e.praxis||0) + Number(e.theorie||0) + Number(e.kurse||0) + Number(e.sonstige||0);
     const diffMonat = ist - Number(e.soll||0);
     const diffGesamt = (standVormonat + diffMonat) - Number(e.ausgezahlt||0);
@@ -445,11 +448,12 @@ function azkBerechne(maId) {
     standEnde: standVormonat,
     resturlaubEnde: resturlaub,
     krankGesamt,
-    urlaubProMonat: ut.proMonat,
-    urlaubGenommen: ut.genommen,
+    // genommen = erfasste Monatswerte, geplant = kuenftige Eintraege im Urlaubsjahr
+    urlaubGeplantProMonat: ut.proMonat,
+    urlaubGenommen: urlaubGenommen,
     urlaubGeplant: ut.geplant,
-    urlaubGesamt: ut.gesamt,
-    urlaubRest: urlaubAnspruch - ut.gesamt,
+    urlaubGesamt: urlaubGenommen + ut.geplant,
+    urlaubRest: urlaubAnspruch - urlaubGenommen - ut.geplant,
   };
 }
 
@@ -491,7 +495,7 @@ window.renderAZK = async function() {
       <td class="num ${cls}">${z ? fmtNum(z.diffMonat) : '–'}</td>
       <td class="num">${e ? fmtNum(e.ausgezahlt) : '–'}</td>
       <td class="num ${z?negCls(z.diffGesamt):''}"><strong>${z ? fmtNum(z.diffGesamt) : '–'}</strong></td>
-      <td class="num">${fmtNum(ber.urlaubProMonat[monat-1])}</td>
+      <td class="num">${e ? fmtNum(e.urlaubstage) : '–'}</td>
       <td class="num">${fmtNum(ber.urlaubGenommen)}</td>
       <td class="num" style="color:var(--blau)">${fmtNum(ber.urlaubGeplant)}</td>
       <td class="num ${negCls(ber.urlaubRest)}"><strong>${fmtNum(ber.urlaubRest)}</strong></td>
@@ -510,11 +514,11 @@ window.renderAZK = async function() {
     const ber = azkBerechne(ma.id);
     const z = ber.zeilen[monat-1];
     // Urlaub zaehlt auch ohne erfasste Stunden mit.
-    sum.urlaubMonat += ber.urlaubProMonat[monat-1];
     sum.urlaubGenommen += ber.urlaubGenommen;
     sum.urlaubGeplant += ber.urlaubGeplant;
     sum.urlaubRest += ber.urlaubRest;
     if (!z) return;
+    sum.urlaubMonat += Number(e.urlaubstage||0);
     const e = z.eintrag;
     sum.standVormonat += z.standVormonat; sum.praxis += Number(e.praxis||0); sum.theorie += Number(e.theorie||0);
     sum.kurse += Number(e.kurse||0); sum.sonstige += Number(e.sonstige||0); sum.soll += Number(e.soll||0);
@@ -566,7 +570,7 @@ window.renderAZK = async function() {
         <tbody>${rows}${mas.length?sumRow:''}</tbody>
       </table>
     </div>
-    <p style="font-size:11px;color:var(--grau);margin-top:8px">Alle Stundenwerte in Einheiten á 45 min. Ist = Praxis + Theorie + Kurse + Sonstige. Diff gesamt wird monatlich fortgeschrieben. Urlaubstage kommen automatisch aus der Urlaubsjahr-Ansicht: gezählt werden Werktage Montag bis Samstag ohne Feiertage, nur genehmigte Einträge der Art „Urlaub“. Genommen = bis einschließlich heute, geplant = danach.</p>
+    <p style="font-size:11px;color:var(--grau);margin-top:8px">Alle Stundenwerte in Einheiten á 45 min. Ist = Praxis + Theorie + Kurse + Sonstige. Diff gesamt wird monatlich fortgeschrieben. Genommener Urlaub wird je Monat erfasst. Geplanter Urlaub kommt automatisch aus der Urlaubsjahr-Ansicht: gezählt werden künftige Werktage Montag bis Samstag ohne Feiertage, nur genehmigte Einträge der Art „Urlaub“. Sobald geplanter Urlaub vorbei ist, muss er im jeweiligen Monat als genommen erfasst werden.</p>
     `}`;
 };
 
@@ -614,8 +618,11 @@ function azkErfassen(maId) {
           <div class="frow"><label>Soll-Stunden</label><input type="number" step="0.01" id="azk-soll" value="${e.soll??195}"></div>
           <div class="frow"><label>Ausgezahlt</label><input type="number" step="0.01" id="azk-ausgezahlt" value="${e.ausgezahlt??''}"></div>
         </div>
-        <div class="frow"><label>Krankheitstage</label><input type="number" step="0.5" id="azk-krank" value="${e.krankheitstage??''}"></div>
-        <p style="font-size:12px;color:var(--grau);margin-top:8px">Urlaubstage werden nicht mehr hier erfasst, sondern automatisch aus der Urlaubsjahr-Ansicht berechnet.</p>
+        <div class="fgrid">
+          <div class="frow"><label>Urlaubstage genommen</label><input type="number" step="0.5" id="azk-urlaub" value="${e.urlaubstage??''}"></div>
+          <div class="frow"><label>Krankheitstage</label><input type="number" step="0.5" id="azk-krank" value="${e.krankheitstage??''}"></div>
+        </div>
+        <p style="font-size:12px;color:var(--grau);margin-top:8px">Geplanter Urlaub wird nicht hier erfasst, sondern kommt aus der Urlaubsjahr-Ansicht.</p>
       </div>
       <div class="modal-footer">
         ${e.id?`<button class="btn btn-outline" style="margin-right:auto;color:var(--rot)" onclick="azkLoeschen('${e.id}')">Löschen</button>`:''}
@@ -633,7 +640,7 @@ async function azkSpeichern() {
     mitarbeiter_id: maId, jahr: azkState.jahr, monat: azkState.monat,
     praxis: v('azk-praxis'), theorie: v('azk-theorie'), kurse: v('azk-kurse'), sonstige: v('azk-sonstige'),
     soll: v('azk-soll'), ausgezahlt: v('azk-ausgezahlt'),
-    krankheitstage: v('azk-krank'),
+    urlaubstage: v('azk-urlaub'), krankheitstage: v('azk-krank'),
   };
   const { error } = await sb.from('azk_monate').upsert(datensatz, { onConflict: 'mitarbeiter_id,jahr,monat' });
   if (error) { toast('Fehler: '+error.message,'err'); return; }
@@ -813,7 +820,7 @@ function azkDruckEinzel(maId) {
       <td class="num"><strong>${fmtNum(z.ist)}</strong></td>
       <td class="num" style="color:${z.diffMonat<0?'#991B1B':'#166534'}">${fmtNum(z.diffMonat)}</td>
       <td class="num"><strong>${fmtNum(z.diffGesamt)}</strong></td>
-      <td class="num">${fmtNum(ber.urlaubProMonat[i])}</td>
+      <td class="num">${fmtNum(e.urlaubstage)}</td>
       <td class="num">${fmtNum(z.resturlaub)}</td>
       <td class="num">${fmtNum(z.krankGesamt)}</td>
     </tr>`;
@@ -1051,7 +1058,7 @@ async function azkSigniertSpeichern(maId, sigDataUrl) {
         MONATSNAMEN[i].substring(0, 3), fmtNum(z.standVormonat), fmtNum(z.eintrag.praxis),
         fmtNum(z.eintrag.theorie), fmtNum(z.eintrag.kurse), fmtNum(z.eintrag.sonstige),
         fmtNum(z.eintrag.soll), fmtNum(z.ist), fmtNum(z.diffMonat), fmtNum(z.diffGesamt),
-        fmtNum(ber.urlaubProMonat[i]), fmtNum(z.resturlaub), fmtNum(z.krankGesamt),
+        fmtNum(z.eintrag.urlaubstage), fmtNum(z.resturlaub), fmtNum(z.krankGesamt),
       ] : [MONATSNAMEN[i].substring(0, 3), '–', '–', '–', '–', '–', '–', '–', '–', '–', '–', '–', '–'];
       if (i % 2 === 0) { doc.setFillColor(249, 249, 251); doc.rect(PL, y - 3.5, PW, 5.5, 'F'); }
       doc.setDrawColor(...BD); doc.setLineWidth(0.1); doc.line(PL, y + 2, PL + PW, y + 2);
