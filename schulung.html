@@ -7962,7 +7962,9 @@ function _statusBadges(g, gKey){
     // Kein Etikett bei bestaetigtem Upload: der gruene Haken am BQR-Knopf
     // zeigt das bereits, der Zeitpunkt steht in dessen Tooltip.
     if(st.stufe==='erzeugt') out+='<span class="tag warn" style="font-size:.72rem" title="'+_esc('Datei erzeugt am '+_zeitpunkt(st.dateiAm)+' – Upload noch nicht bestätigt')+'">🏛 Datei erzeugt · Upload offen</span>';
-    else if(vorbei) out+='<span class="tag crit" style="font-size:.72rem" title="Termin gelaufen, aber noch keine BQR-Datei erzeugt. Meldefrist: unverzüglich nach dem Termin.">🏛 BQR-Meldung offen</span>';
+    // Nur wenn wirklich noch nichts erzeugt wurde. Ohne die Pruefung auf
+    // 'leer' landet auch der bereits gemeldete Zustand in diesem Zweig.
+    else if(vorbei && st.stufe==='leer') out+='<span class="tag crit" style="font-size:.72rem" title="Termin gelaufen, aber noch keine BQR-Datei erzeugt. Meldefrist: unverzüglich nach dem Termin.">🏛 BQR-Meldung offen</span>';
     if(st.stufe!=='leer'&&st.offen) out+='<span class="tag crit" style="font-size:.72rem" title="Diese Teilnehmer stehen in keiner erzeugten Datei – für sie ist noch eine Meldung nötig">🏛 '+st.offen+' nicht gemeldet</span>';
   }
   return out;
