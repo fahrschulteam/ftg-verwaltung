@@ -144,23 +144,32 @@ input:focus,select:focus,textarea:focus{border-color:var(--red);background:#fff}
 input[type="number"]{-moz-appearance:textfield}
 input[type="number"]::-webkit-inner-spin-button,input[type="number"]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
 textarea{resize:vertical;min-height:64px}
-.btn{background:var(--red);color:#fff;border:none;padding:9px 18px;border-radius:8px;font-size:.875rem;font-weight:700;cursor:pointer;transition:background .12s,transform .1s;display:inline-flex;align-items:center;gap:7px;font-family:inherit}
-.btn:hover{background:#aa0000;transform:translateY(-1px)}
-.btn:active{transform:translateY(0)}
-.btn.ghost{background:none;color:var(--ink-2);border:1.5px solid var(--border)}
-.btn.ghost:hover{background:var(--surface-2);transform:none}
-.btn.steel{background:var(--ink-2);color:#fff}
-.btn.steel:hover{background:var(--ink)}
-.btn.sm{padding:6px 12px;font-size:.78rem;border-radius:7px}
-.btn.danger{background:#dc2626}
-.btn.danger:hover{background:#b91c1c}
+/* Grundform ist neutral. Rot ist Signalfarbe fuer die eine Hauptaktion
+   je Ansicht - auf jedem Knopf verliert sie ihre Wirkung. */
+.btn{background:#fff;color:var(--ink);border:1px solid var(--border);padding:var(--btn-pad);border-radius:var(--btn-radius);font-size:var(--fs-body);font-weight:500;cursor:pointer;transition:background .12s,border-color .12s;display:inline-flex;align-items:center;gap:6px;font-family:inherit}
+.btn:hover{background:var(--surface-2);border-color:var(--ink-4)}
+/* ghost war randlos gedacht, wurde aber wie die Grundform benutzt.
+   Beide sehen jetzt gleich aus - der Name bleibt, damit nichts bricht. */
+.btn.ghost{background:#fff;color:var(--ink);border:1px solid var(--border)}
+.btn.ghost:hover{background:var(--surface-2);border-color:var(--ink-4)}
+.btn.primary{background:var(--rot);color:#fff;border-color:var(--rot);font-weight:500}
+.btn.primary:hover{background:var(--rot-dark);border-color:var(--rot-dark)}
+.btn.blau{background:var(--blau);color:#fff;border-color:var(--blau)}
+.btn.blau:hover{background:var(--blau-dark);border-color:var(--blau-dark)}
+.btn.steel{background:var(--ink-2);color:#fff;border-color:var(--ink-2)}
+.btn.steel:hover{background:var(--ink);border-color:var(--ink)}
+.btn.sm{padding:var(--btn-pad-sm);font-size:var(--fs-mini)}
+/* Loeschen: roter Rand statt roter Flaeche - erkennbar, aber nicht laut. */
+.btn.danger{background:#fff;color:var(--rot);border-color:var(--rot)}
+.btn.danger:hover{background:var(--red-light);border-color:var(--rot)}
+.btn:disabled{opacity:.5;cursor:default}
 .row-actions{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
 table{width:100%;border-collapse:collapse;font-size:.88rem}
 th{text-align:left;padding:9px 13px;background:#f5f5f5;color:var(--ink-3);font-weight:700;font-size:.72rem;text-transform:uppercase;letter-spacing:.5px;border-bottom:2px solid var(--border)}
 td{padding:10px 13px;border-bottom:1px solid #f0f0f0;vertical-align:middle;color:var(--ink-2)}
 tr:last-child td{border-bottom:none}
 tr:hover td{background:#fafafa}
-.tag{display:inline-flex;align-items:center;gap:4px;padding:2px 9px;border-radius:20px;font-size:.72rem;font-weight:700;letter-spacing:.02em}
+.tag{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:var(--fs-label);font-weight:600;letter-spacing:.02em}
 .tag.green{background:var(--green-light);color:#166534}
 .tag.warn{background:var(--warn-bg);color:var(--warn-col);border:1px solid var(--warn-border)}
 .tag.crit{background:var(--red-light);color:var(--red);border:1px solid var(--red-border)}
@@ -280,6 +289,12 @@ tr:hover td{background:#fafafa}
      iframe nicht auseinanderlaufen. */
   --rot:#C0001A!important; --rot-dark:#9a0015!important;
   --blau:#2A6CAE!important; --blau-dark:#1e5a96!important;
+  /* Schriftstufen: sechs benannte Groessen statt frei gewaehlter Werte.
+     --fs-label ist die Versalien-Beschriftung, --fs-title der Seitenkopf. */
+  --fs-label:11px; --fs-mini:12px; --fs-body:13px;
+  --fs-text:14px;  --fs-card:16px; --fs-title:20px;
+  /* Knopfmasse */
+  --btn-pad:8px 14px; --btn-pad-sm:5px 10px; --btn-radius:6px;
   /* Zwischenstufe "erledigt, aber noch nicht bestaetigt" - bewusst kein Gruen,
      damit ein offener Vorgang nicht wie ein abgeschlossener aussieht. */
   --orange:#B45309!important; --orange-light:#fffbeb!important;
@@ -3389,7 +3404,7 @@ function openDuePanel(mode){
           : '')
       // Noch nicht erinnert: voller Erinnern-Button
       : ((r.p.phone || r.p.email)
-          ? '<button class="btn sm" style="background:' + cfg.color + ';padding:4px 11px;font-size:.75rem;white-space:nowrap" '
+          ? '<button class="btn sm" style="background:' + cfg.color + ';padding:4px 11px;font-size:.75rem;white-space:nowrap;color:#fff;border-color:transparent" '
             + 'onclick="duePanel_remind(\'' + r.p.id + '\',\'' + r.due + '\')">📩 Erinnern</button>'
           : '<span style="font-size:.75rem;color:#bbb;white-space:nowrap">keine Kontaktdaten</span>');
     return '<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid ' + cfg.sepColor + ';flex-wrap:wrap;' + (dimmed ? 'opacity:.5' : '') + '">'
@@ -3611,7 +3626,7 @@ function diagRemindAll(typ){
     +'</div>'
     +'<div class="modal-actions" style="margin-top:16px">'
       +'<button class="btn ghost" onclick="closeModal()">Abbrechen</button>'
-      +'<button class="btn" style="background:var(--red)" onclick="_diagRemindSend()">📩 Erinnerungen öffnen &amp; als erinnert markieren</button>'
+      +'<button class="btn" style="background:var(--red);color:#fff;border-color:transparent" onclick="_diagRemindSend()">📩 Erinnerungen öffnen &amp; als erinnert markieren</button>'
     +'</div>';
 
   document.getElementById('modalContent').innerHTML = modalHtml;
@@ -3698,7 +3713,7 @@ function _diagRemindStep(){
     +'<p class="hint" style="margin-bottom:20px">Klick öffnet den E-Mail-Client mit dem vorbereiteten Text.<br>Nach dem Absenden hier fortfahren.</p>'
     +'<div class="modal-actions">'
       +'<button class="btn ghost" onclick="closeModal()">Abbrechen</button>'
-      +'<button class="btn" style="background:var(--red);min-width:220px" id="remStepBtn">'
+      +'<button class="btn" style="background:var(--red);min-width:220px;color:#fff;border-color:transparent" id="remStepBtn">'
         +'📩 E-Mail öffnen'+(next<total?' &amp; weiter →':' &amp; fertig ✓')
       +'</button>'
     +'</div>';
@@ -3796,7 +3811,7 @@ function diagFirmaRemindAll(){
     +'<div style="max-height:62vh;overflow-y:auto;padding-right:4px">'+previews+'</div>'
     +'<div class="modal-actions" style="margin-top:16px">'
       +'<button class="btn ghost" onclick="closeModal()">Abbrechen</button>'
-      +'<button class="btn" style="background:var(--red)" onclick="_firmaRemindSend()">📩 Alle '+persons.length+' E-Mails öffnen</button>'
+      +'<button class="btn" style="background:var(--red);color:#fff;border-color:transparent" onclick="_firmaRemindSend()">📩 Alle '+persons.length+' E-Mails öffnen</button>'
     +'</div>';
   showModal();
 }
@@ -4221,7 +4236,7 @@ function renderDashboard(){
                 <td class="row-actions">
                   <button class="btn sm" onclick="invoicePDF('${i.id}')">📄</button>
                   ${isOpen?`<button class="btn ghost sm" onclick="markInvoiceSent('${i.id}')">✉ Senden</button>`:''}
-                  <button class="btn" style="background:var(--ok);padding:5px 10px;font-size:.78rem" onclick="markInvoicePaid('${i.id}')">✅</button>
+                  <button class="btn" style="background:var(--ok);padding:5px 10px;font-size:.78rem;color:#fff;border-color:transparent" onclick="markInvoicePaid('${i.id}')">✅</button>
                 </td>
               </tr>`;
             }).join('')}
@@ -4366,7 +4381,7 @@ function renderDashboard(){
         const nPending = allOfType.filter(r=>!r.p.lastReminder).length;
         const lbl = typBtnLabels[typ]||typ;
         if(nPending===0) return ''; // alle erinnert → kein Button
-        return '<button class="btn sm" style="background:var(--red);white-space:nowrap" '
+        return '<button class="btn sm" style="background:var(--red);white-space:nowrap;color:#fff;border-color:transparent" '
           +'onclick="diagRemindAll(\''+typ+'\')">📩 '+lbl+' ('+nPending+')</button>';
       }).join('');
       // Toolbar nur anzeigen wenn es tatsächlich aktive Buttons gibt
@@ -4387,7 +4402,7 @@ function renderDashboard(){
         const reminderBtn = (r.p.phone||r.p.email)
           ? (r.p.lastReminder
               ? '<button class="btn sm ghost" style="padding:3px 9px;font-size:.75rem;color:#854d0e;border-color:#f59e0b" data-pid="'+r.p.id+'" data-due="'+r.due+'" data-action="remind" title="Erneut erinnern">🔁 Erneut</button>'
-              : '<button class="btn sm" style="background:var(--red);padding:3px 10px;font-size:.75rem" data-pid="'+r.p.id+'" data-due="'+r.due+'" data-action="remind">📩 Erinnern</button>')
+              : '<button class="btn sm" style="background:var(--red);padding:3px 10px;font-size:.75rem;color:#fff;border-color:transparent" data-pid="'+r.p.id+'" data-due="'+r.due+'" data-action="remind">📩 Erinnern</button>')
           : '<span style="font-size:.75rem;color:#bbb">keine Kontaktdaten</span>';
         const erfBtn = r.isADRFort
           ? '<button class="btn sm ghost" style="padding:3px 9px;font-size:.75rem" data-pid="'+r.p.id+'" data-action="adrfort">Kurs erfassen</button>'
@@ -4873,7 +4888,7 @@ function renderCourses(){
 
     card.innerHTML=
       '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px">'+
-        '<strong style="font-size:1.05rem;color:var(--ink);flex:1;min-width:0">'+typeLabel+'</strong>'+
+        '<strong style="font-size:var(--fs-card);font-weight:600;color:var(--ink);flex:1;min-width:0">'+typeLabel+'</strong>'+
         billingBadge+_statusBadges(g,gKey)+
       '</div>'+
       '<div class="row-actions" style="margin-bottom:10px" id="ia_'+gKey+'">'+
@@ -4885,11 +4900,11 @@ function renderCourses(){
             // Kein eigener Ansehen-Knopf mehr: der 📎-Knopf oeffnet den
             // Dialog, in dem die Listen angesehen und gedruckt werden.
             return '<button class="btn ghost sm instr-scan-btn" data-scan-key="'+gKey+'" title="'+_esc(st.titel)+'">'+_scanKnopfInhalt(st)+'</button>';})()+
-          '<button class="btn sm instr-cert-btn" style="background:#16a34a">📄 Bescheinigungen</button>'+(isKurs&&(g.type==='Gabelstapler'||g.type==='Ladekran'||g.type==='Baumaschinen')?'<button class="btn sm fa-group-btn" style="background:#0e7490">🪪 '+(g.type==='Gabelstapler'?'Fahrausweise':'Befähigungsnachweise')+'</button>':'')+
-          '<button class="btn sm instr-inv-btn" style="background:#1d4ed8">🧾 Rechnungen</button>'+
+          '<button class="btn sm instr-cert-btn">📄 Bescheinigungen</button>'+(isKurs&&(g.type==='Gabelstapler'||g.type==='Ladekran'||g.type==='Baumaschinen')?'<button class="btn sm fa-group-btn">🪪 '+(g.type==='Gabelstapler'?'Fahrausweise':'Befähigungsnachweise')+'</button>':'')+
+          '<button class="btn sm instr-inv-btn">🧾 Rechnungen</button>'+
           (isKurs?_bqrKnoepfe(g):'')+
-          (isKurs?'<button class="btn ghost sm resv-btn" title="Plätze mit Namen reservieren – z. B. telefonische Zusagen">🔒 Reservieren</button>':'')+
-          '<button class="btn ghost sm instr-edit-btn">✎ Bearbeiten</button>'+
+          (isKurs?'<button class="btn sm resv-btn" title="Plätze mit Namen reservieren – z. B. telefonische Zusagen">🔒 Reservieren</button>':'')+
+          '<button class="btn sm instr-edit-btn">✎ Bearbeiten</button>'+
           '<button class="btn danger sm instr-del-btn" title="Löschen">🗑</button>'+
       '</div>'+
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:10px">'+
@@ -5204,7 +5219,7 @@ function renderInstructions(){
 
     card.innerHTML=
       '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px">'+
-        '<strong style="font-size:1.05rem;color:var(--ink);flex:1;min-width:0">'+typeLabel+'</strong>'+
+        '<strong style="font-size:var(--fs-card);font-weight:600;color:var(--ink);flex:1;min-width:0">'+typeLabel+'</strong>'+
         billingBadge+_statusBadges(g,gKey)+
       '</div>'+
       '<div class="row-actions" style="margin-bottom:10px" id="ia_'+gKey+'">'+
@@ -5216,8 +5231,8 @@ function renderInstructions(){
             // Kein eigener Ansehen-Knopf mehr: der 📎-Knopf oeffnet den
             // Dialog, in dem die Listen angesehen und gedruckt werden.
             return '<button class="btn ghost sm instr-scan-btn" data-scan-key="'+gKey+'" title="'+_esc(st.titel)+'">'+_scanKnopfInhalt(st)+'</button>';})()+
-          '<button class="btn sm instr-cert-btn" style="background:#16a34a">📄 Bescheinigungen</button>'+(isKurs&&(g.type==='Gabelstapler'||g.type==='Ladekran'||g.type==='Baumaschinen')?'<button class="btn sm fa-group-btn" style="background:#0e7490">🪪 '+(g.type==='Gabelstapler'?'Fahrausweise':'Befähigungsnachweise')+'</button>':'')+
-          '<button class="btn sm instr-inv-btn" style="background:#1d4ed8">🧾 Rechnungen</button>'+
+          '<button class="btn sm instr-cert-btn">📄 Bescheinigungen</button>'+(isKurs&&(g.type==='Gabelstapler'||g.type==='Ladekran'||g.type==='Baumaschinen')?'<button class="btn sm fa-group-btn">🪪 '+(g.type==='Gabelstapler'?'Fahrausweise':'Befähigungsnachweise')+'</button>':'')+
+          '<button class="btn sm instr-inv-btn">🧾 Rechnungen</button>'+
           '<button class="btn ghost sm instr-edit-btn">\u270e Bearbeiten</button>'+
           '<button class="btn danger sm instr-del-btn" title="Löschen">🗑</button>'+
       '</div>'+
@@ -5431,7 +5446,7 @@ function openInstrGroupInvoiceDialog(g){
     +'<div style="background:#f0f0f0;border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:10px">'
     +'<div style="font-size:.78rem;font-weight:700;color:#555">Was m\u00f6chten Sie erstellen?</div>'
     +'<div style="display:flex;gap:10px;flex-wrap:wrap">'
-    +'<button class="btn" style="background:#CC0000;flex:1;min-width:180px;justify-content:center" onclick="iiCreateCollective()">'
+    +'<button class="btn" style="background:#CC0000;flex:1;min-width:180px;justify-content:center;color:#fff;border-color:transparent" onclick="iiCreateCollective()">'
     +'\uD83E\uDDFE 1 Sammelrechnung<br><span style="font-size:.75rem;font-weight:400;opacity:.85">(alle Ausgew\u00e4hlten)</span></button>'
     +'<button class="btn ghost" style="flex:1;min-width:180px;justify-content:center" onclick="iiCreateEach()">'
     +'\uD83D\uDCC4 Einzelrechnungen<br><span style="font-size:.75rem;font-weight:400;color:#888">(je Person eine Rechnung)</span></button>'
@@ -5855,7 +5870,7 @@ function openFahrausweisChooser(g){
   document.getElementById('modalContent').innerHTML=
     '<h3>Fahrausweise – '+passed.length+' Teilnehmer</h3>'
     +'<p class="hint" style="margin:6px 0 12px">Einzeln drucken oder alle zusammen als Serien-PDF (je Person eine A6-Karte mit Falz).</p>'
-    +'<button class="btn" style="background:#0e7490;margin-bottom:14px" onclick="fahrausweisGroup()">🪪 Alle als Serie drucken ('+passed.length+')</button>'
+    +'<button class="btn" style="background:#0e7490;margin-bottom:14px;color:#fff;border-color:transparent" onclick="fahrausweisGroup()">🪪 Alle als Serie drucken ('+passed.length+')</button>'
     +rows
     +'<div class="modal-actions"><button class="btn ghost" onclick="closeModal()">Schließen</button></div>';
   showModal();
@@ -5922,7 +5937,7 @@ function certificateGroup(passedIds){
     +'<div id="certTnListCourse" style="max-height:50vh;overflow-y:auto;margin-bottom:14px">'+tnHtml+'</div>'
     +'<div class="modal-actions">'
       +'<button class="btn ghost" onclick="closeModal()">Abbrechen</button>'
-      +'<button class="btn" style="background:#16a34a" onclick="certificateGroupDownload()">'
+      +'<button class="btn primary" onclick="certificateGroupDownload()">'
         +'\uD83D\uDCC4 Bescheinigungen herunterladen'
       +'</button>'
     +'</div>';
@@ -6012,7 +6027,7 @@ function instrGroupCerts(g){
     +'<div id="certTnList" style="max-height:50vh;overflow-y:auto;margin-bottom:14px">'+tnHtml+'</div>'
     +'<div class="modal-actions">'
       +'<button class="btn ghost" onclick="closeModal()">Abbrechen</button>'
-      +'<button class="btn" style="background:#16a34a" onclick="instrGroupCertDownload('+JSON.stringify(isADR)+','+JSON.stringify(isKurs)+')">'
+      +'<button class="btn primary" onclick="instrGroupCertDownload('+JSON.stringify(isADR)+','+JSON.stringify(isKurs)+')">'
         +'📄 Bescheinigungen herunterladen'
       +'</button>'
     +'</div>';
@@ -7972,9 +7987,12 @@ function _bqrKnoepfe(g){
   if(!_istBqrPflicht(g)) return '';
   const st=_bqrStatus(g);
   const offenTxt=st.offen?' · '+st.offen+' Teilnehmer noch nicht in der Meldung':'';
-  const stil = st.stufe==='gemeldet' ? 'background:var(--gruen)'
-             : st.stufe==='erzeugt'  ? 'background:var(--orange)'
-             : 'background:#7c3aed';
+  // Statusfarben bleiben: sie tragen Information (violett = offen,
+  // orange = Datei erzeugt, gruen = gemeldet). Seit die Grundform neutral
+  // ist, muessen Schrift- und Randfarbe mitgegeben werden.
+  const stil = st.stufe==='gemeldet' ? 'background:var(--gruen);border-color:var(--gruen);color:#fff'
+             : st.stufe==='erzeugt'  ? 'background:var(--orange);border-color:var(--orange);color:#fff'
+             : 'background:#7c3aed;border-color:#7c3aed;color:#fff';
   const marke = st.stufe==='gemeldet' ? ' ✓' : st.stufe==='erzeugt' ? ' ●' : '';
   const titel = st.stufe==='gemeldet'
       ? 'Im BQR hochgeladen am '+_zeitpunkt(st.gemeldetAm)+' · Datei erzeugt am '+_zeitpunkt(st.dateiAm)+offenTxt
@@ -8943,7 +8961,7 @@ function openGroupInvoiceDialog(g){
     // Preis + Datum
     // Preis-Modus Toggle
     +'<div style="display:flex;gap:6px;margin-bottom:10px">'
-      +'<button id="gi_mode_pp" class="btn sm" style="background:#CC0000;flex:1" onclick="giSetPriceMode(\'pp\')">'
+      +'<button id="gi_mode_pp" class="btn sm" style="background:#CC0000;flex:1;color:#fff;border-color:transparent" onclick="giSetPriceMode(\'pp\')">'
         +'👤 Preis pro Person</button>'
       +'<button id="gi_mode_flat" class="btn sm ghost" style="flex:1" onclick="giSetPriceMode(\'flat\')">'
         +'📦 Pauschalpreis gesamt</button>'
@@ -8978,7 +8996,7 @@ function openGroupInvoiceDialog(g){
     +'<div style="background:#f0f0f0;border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:10px">'
     +'<div style="font-size:.78rem;font-weight:700;color:#555">Was m\u00f6chten Sie erstellen?</div>'
     +'<div style="display:flex;gap:10px;flex-wrap:wrap">'
-    +'<button class="btn" style="background:#CC0000;flex:1;min-width:180px;justify-content:center" onclick="giCreateCollectiveAll()">'
+    +'<button class="btn" style="background:#CC0000;flex:1;min-width:180px;justify-content:center;color:#fff;border-color:transparent" onclick="giCreateCollectiveAll()">'
     +'\uD83E\uDDFE 1 Sammelrechnung<br><span style="font-size:.75rem;font-weight:400;opacity:.85">(alle Ausgew\u00e4hlten, Empf\u00e4nger wie oben)</span></button>'
     +'<button class="btn ghost" style="flex:1;min-width:180px;justify-content:center" onclick="giCreateEach()">'
     +'\uD83D\uDCC4 Einzelrechnungen<br><span style="font-size:.75rem;font-weight:400;color:#888">(je Person eine eigene Rechnung)</span></button>'
@@ -9097,7 +9115,7 @@ function giUpdateSummary(){
     const firms=[...new Set(sel.filter(r=>r.firm).map(r=>r.firm))];
     if(firms.length>1){
       firmaArea.innerHTML=`<div style="font-size:.75rem;color:#777;margin-bottom:5px">Oder je Firma einzeln abrechnen:</div>`+
-        firms.map(f=>`<button class="btn sm" style="background:#1d4ed8;margin:2px" onclick="giCreateCollectiveFirm('${_esc(f).replace(/'/g,"&#39;")}')">
+        firms.map(f=>`<button class="btn sm" style="background:#1d4ed8;margin:2px;color:#fff;border-color:transparent" onclick="giCreateCollectiveFirm('${_esc(f).replace(/'/g,"&#39;")}')">
           🏢 Sammelrechnung: ${f}
         </button>`).join('');
     }else{
@@ -9651,7 +9669,7 @@ function _wfStep4(){
           </div>`;}).join('')}
       </div>
       <div class="row-actions">
-        <button class="btn sm" style="background:#1d4ed8" onclick="wf4CreateCollective('${fk}')">🧾 Sammelrechnung Firma</button>
+        <button class="btn sm primary" onclick="wf4CreateCollective('${fk}')">🧾 Sammelrechnung Firma</button>
         <button class="btn ghost sm" onclick="wf4CreateSingle('${fk}')">📄 Einzelrechnungen</button>
       </div>
     </div>`).join('');
@@ -10612,7 +10630,7 @@ function renderInvoices(){
       <td class="row-actions" style="padding:4px 8px">
         <div style="display:flex;gap:4px;align-items:center;flex-wrap:nowrap">
           <button class="btn sm" onclick="invoicePDF('${i.id}')" style="padding:4px 10px">📄 PDF</button>
-          <button class="btn sm" style="background:var(--ok);padding:4px 10px" onclick="markInvoicePaid('${i.id}')">✅ Bezahlt</button>
+          <button class="btn sm" style="background:var(--ok);padding:4px 10px;color:#fff;border-color:transparent" onclick="markInvoicePaid('${i.id}')">✅ Bezahlt</button>
           ${(()=>{
             const od=invOverdue(i);
             const mSt=i.mahnStufe||0;
@@ -10623,7 +10641,7 @@ function renderInvoices(){
             const naechste=hatM?Math.min(mSt+1,3):0;
             const cfg2=MAHN_CONFIG[naechste];
             const ot=od.tage===1?'1 Tag':od.tage+' Tage';
-            return '<button class="btn sm" style="background:#dc2626;padding:4px 10px;display:flex;align-items:center;gap:5px" onclick="openMahnungDialog(\''+i.id+'\')" title="'+cfg2.label+'">'
+            return '<button class="btn sm" style="background:#dc2626;padding:4px 10px;display:flex;align-items:center;gap:5px;color:#fff;border-color:transparent" onclick="openMahnungDialog(\''+i.id+'\')" title="'+cfg2.label+'">'
               +'<span style="font-size:1.1rem;line-height:1">⚠️</span>'
               +'<span>'+ot+' überfällig</span></button>';
           })()}
@@ -11074,7 +11092,7 @@ ${firm}`;
         Dort den Kontakt <strong>${p.phone}</strong> suchen (oder antippen falls vorhanden) → Texteingabe antippen → <strong>Einfügen (Strg+V)</strong> → Absenden.
       </p>
       <div class="row-actions">
-        <button class="btn" style="background:#25d366;border:none" onclick="sendReminderWA()">💬 Text kopieren &amp; WhatsApp öffnen</button>
+        <button class="btn" style="background:#25d366;border:none;color:#fff;border-color:transparent" onclick="sendReminderWA()">💬 Text kopieren &amp; WhatsApp öffnen</button>
         <button class="btn ghost sm" onclick="copyReminderText()" id="rm_copy_btn">📋 Nur Text kopieren</button>
       </div>
       <div id="wa_copy_confirm" style="display:none;margin-top:8px;font-size:.82rem;color:#1a5c2e;font-weight:600">✅ Text in Zwischenablage kopiert – WhatsApp wird geöffnet.</div>
@@ -11520,7 +11538,7 @@ function openMahnungDialog(invId){
     +'<div class="modal-actions" style="margin-top:14px">'
       +'<button class="btn ghost" onclick="closeModal()">Abbrechen</button>'
       +'<button class="btn ghost sm" onclick="mahnungPDF(\''+invId+'\','+mStufe+')">📄 PDF Vorschau</button>'
-      +'<button class="btn" style="background:'+cfg.color+'" onclick="mahnungSenden(\''+invId+'\','+mStufe+')">'+cfg.icon+' Speichern & E-Mail</button>'
+      +'<button class="btn" style="background:'+cfg.color+';color:#fff;border-color:transparent" onclick="mahnungSenden(\''+invId+'\','+mStufe+')">'+cfg.icon+' Speichern & E-Mail</button>'
     +'</div>';
   showModal();
 }
