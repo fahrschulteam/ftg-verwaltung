@@ -90,7 +90,9 @@ function renderUrlaub() {
   // Heute-Markierung nur im laufenden Jahr
   const heute = new Date();
   const heuteLinie = (heute.getFullYear() === jahr)
-    ? '<div style="position:absolute;left:' + (_uTagImJahr(heute) / tage * 100) + '%;top:0;bottom:0;width:2px;background:var(--rot);opacity:.5"></div>'
+    ? '<div title="Heute" style="position:absolute;top:0;bottom:0;'
+      + 'left:calc(190px + (100% - 190px) * ' + (_uTagImJahr(heute) / tage) + ');'
+      + 'width:2px;background:var(--rot);opacity:.55;pointer-events:none;z-index:3"></div>'
     : '';
 
   const zeilen = liste.map(function (m) {
@@ -123,15 +125,15 @@ function renderUrlaub() {
     }, 0);
 
     return '<div style="display:flex;align-items:stretch;border-bottom:1px solid #f0f0f0">'
-      + '<div style="flex:0 0 190px;padding:7px 10px;font-size:13px;display:flex;align-items:center;gap:6px">'
+      + '<div style="flex:0 0 190px;width:190px;min-width:190px;max-width:190px;box-sizing:border-box;overflow:hidden;padding:7px 10px;font-size:13px;display:flex;align-items:center;gap:6px">'
         + '<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'
         + _uEsc((m.nachname || '') + ', ' + (m.vorname || '')) + '</span>'
         + (eig.length ? '<span style="font-size:11px;color:var(--grau);flex:none">' + summe + ' T.</span>'
                       : '<span style="font-size:11px;color:var(--gelb);flex:none" title="Für dieses Jahr wurde noch kein Urlaub eingetragen">nichts</span>')
       + '</div>'
-      + '<div style="flex:1;position:relative;min-height:34px;background:' + (eig.length ? '#fff' : '#fffdf5') + '" '
+      + '<div style="flex:1;min-width:0;position:relative;min-height:34px;background:' + (eig.length ? '#fff' : '#fffdf5') + '" '
         + 'ondblclick="urlaubDialog(null,\'' + m.id + '\')" title="Doppelklick: Eintrag anlegen">'
-        + raster + heuteLinie + balken
+        + raster + balken
       + '</div></div>';
   }).join('');
 
@@ -153,10 +155,10 @@ function renderUrlaub() {
     + '</div>'
     + '<div class="card" style="padding:0;overflow:hidden">'
       + '<div style="display:flex;border-bottom:1px solid var(--border);background:#fafafa">'
-        + '<div style="flex:0 0 190px;padding:6px 10px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--grau)">Mitarbeiter</div>'
-        + '<div style="flex:1;position:relative;height:26px">' + kopf + '</div>'
+        + '<div style="flex:0 0 190px;width:190px;min-width:190px;max-width:190px;box-sizing:border-box;overflow:hidden;padding:6px 10px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--grau)">Mitarbeiter</div>'
+        + '<div style="flex:1;min-width:0;position:relative;height:26px">' + kopf + '</div>'
       + '</div>'
-      + (liste.length ? zeilen : '<div style="padding:24px;text-align:center;color:var(--grau);font-size:13px">Keine Mitarbeiter in dieser Auswahl.</div>')
+      + (liste.length ? '<div style="position:relative">' + zeilen + heuteLinie + '</div>' : '<div style="padding:24px;text-align:center;color:var(--grau);font-size:13px">Keine Mitarbeiter in dieser Auswahl.</div>')
     + '</div>'
     + '<div style="display:flex;gap:16px;margin-top:10px;font-size:11px;color:var(--grau);align-items:center;flex-wrap:wrap">'
       + '<span><span style="display:inline-block;width:22px;height:10px;background:#2A6CAE;border-radius:2px;vertical-align:-1px"></span> Urlaub</span>'
