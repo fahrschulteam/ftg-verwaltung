@@ -1642,6 +1642,51 @@ async function _scanAlleLaden(){
   }catch(e){ console.warn('Scan-Laden', e); return null; }
 }
 
+// Horcht auf neue oder geloeschte Scans anderer Rechner.
+let _scanKanal = null;
+function _scanRealtime(){
+  if(_scanKanal) return;
+  try{
+    const rtToken = getAccessToken() || MAIN_KEY;
+    const ws = new WebSocket(MAIN_URL.replace('https://','wss://')+'/realtime/v1/websocket?apikey='+rtToken+'&vsn=1.0.0');
+    ws.onopen = () => ws.send(JSON.stringify({topic:'realtime:public:schulung_scans', event:'phx_join',
+      payload:{config:{broadcast:{self:false},presence:{key:''},
+        postgres_changes:[{event:'*',schema:'public',table:'schulung_scans'}]}, access_token:rtToken}, ref:'s1'}));
+    ws.onmessage = (e) => {
+      try{
+        const msg = JSON.parse(e.data);
+        const rec = msg.payload && msg.payload.record;
+        const alt = msg.payload && msg.payload.old_record;
+        const ev  = msg.payload && msg.payload.type;
+        if(!ev) return;
+        if(!state.attendanceScans) state.attendanceScans = {};
+
+        if(ev==='DELETE' && alt){
+          // Eintrag mit dieser Datenbank-Kennung ueberall entfernen.
+          Object.keys(state.attendanceScans).forEach(k=>{
+            state.attendanceScans[k] = (state.attendanceScans[k]||[]).filter(sc => sc._dbId !== alt.id);
+            if(!state.attendanceScans[k].length) delete state.attendanceScans[k];
+          });
+        } else if(rec){
+          const liste = state.attendanceScans[rec.group_key] || (state.attendanceScans[rec.group_key]=[]);
+          // Eigene Uploads sind schon im State – nicht doppelt eintragen.
+          if(!liste.some(sc => sc._dbId === rec.id)){
+            liste.push({
+              _dbId:rec.id, name:rec.name||'Scan', path:rec.storage_path, mime:rec.mime||'',
+              at:rec.scanned_at, date:String(rec.scanned_at||'').slice(0,10),
+              sizeKb:rec.size_kb||0, size:(rec.size_kb||0)+'KB'
+            });
+          }
+        }
+        if(typeof renderAll==='function') renderAll();
+      }catch(err){ console.warn('Scan-Realtime', err); }
+    };
+    ws.onclose = () => { _scanKanal=null; setTimeout(_scanRealtime, 4000); };
+    ws.onerror = () => { try{ ws.close(); }catch(_e){} };
+    _scanKanal = ws;
+  }catch(e){ console.warn('Scan-Realtime Start', e); }
+}
+
 // Altbestand aus der IndexedDB (data:-URL) einmalig nachziehen.
 async function scansNachtragen(){
   const lokal = state.attendanceScans || {};
@@ -13392,6 +13437,7 @@ function hideConfirm(){const bg=document.getElementById('confirmBg');if(bg)bg.cl
       });
       state.attendanceScans = _scans;
       _scanSyncAktiv = true;
+      _scanRealtime();
       const _anz = Object.values(_scans).reduce((a,v)=>a+v.length,0);
       syncErgebnis('Scans['+_anz+']', true);
     } else {
