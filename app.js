@@ -389,7 +389,7 @@ function showView(view) {
   }
   if (view === 'teilnehmer') {
     const f = document.getElementById('teilnehmerFrame');
-    if (f && !f.getAttribute('src')) f.setAttribute('src', 'teilnehmer.html?v=20260709a');
+    if (f && !f.getAttribute('src')) f.setAttribute('src', 'teilnehmer.html?v=20260710a');
   }
   if (view === 'kalender') {
     const f = document.getElementById('kalenderFrame');
