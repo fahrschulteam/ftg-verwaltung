@@ -1685,8 +1685,16 @@ function bkrfqgKPDetailView(el) {
     const mBadge = k.meldung_status==='gemeldet'
       ? '<span style="color:#059669;font-size:10px">✓ gemeldet</span>'
       : '<span style="color:var(--grau);font-size:10px">ausstehend</span>';
-    return `<tr style="${bg}">
-      <td style="font-weight:600;white-space:nowrap;font-size:12px">${bfmtD(k.datum)}<br><span style="color:var(--grau);font-weight:400;font-size:10px">${wt}</span></td>
+    // Gemeldete Tage bleiben liegen - ein Tausch wuerde die Meldung ans
+    // KBA nachtraeglich unrichtig machen.
+    const _fest = k.meldung_status==='gemeldet';
+    return `<tr style="${bg}" data-kt="${k.id}" ${_fest?'':'draggable="true"'}
+      ondragstart="bkrfqgZiehStart(event,'${k.id}')"
+      ondragover="bkrfqgZiehUeber(event)"
+      ondragleave="bkrfqgZiehRaus(event)"
+      ondrop="bkrfqgZiehAb(event,'${k.id}')"
+      ondragend="bkrfqgZiehEnde(event)">
+      <td style="font-weight:600;white-space:nowrap;font-size:12px" title="${_fest?'Bereits gemeldet – nicht verschiebbar':'Zum Tauschen auf einen anderen Kurstag ziehen'}">${_fest?'':'<span style="color:var(--grau);cursor:grab;margin-right:5px">⠿</span>'}${bfmtD(k.datum)}<br><span style="color:var(--grau);font-weight:400;font-size:10px">${wt}</span></td>
       <td style="white-space:nowrap;font-size:11px">${k.beginn?.slice(0,5)||'–'}<br>${k.ende?.slice(0,5)||'–'}</td>
       <td style="font-size:12px;max-width:260px">
         <div>${(k.gegenstand||'–').replace(/^Band [^:]+:\s*/,'')}</div>
@@ -2399,6 +2407,68 @@ function bkrfqgKurstagModalHTML(kpId) {
       </div>
     </div>
   </div>`;
+}
+
+// ── Kurstage per Ziehen tauschen ─────────────────────────────────────
+let _bkrfqgZiehId = null;
+
+function bkrfqgZiehStart(ev, id){
+  _bkrfqgZiehId = id;
+  ev.dataTransfer.effectAllowed = 'move';
+  try { ev.dataTransfer.setData('text/plain', id); } catch(e) {}
+  const tr = ev.currentTarget;
+  if(tr && tr.style) tr.style.opacity = '.45';
+}
+
+function bkrfqgZiehUeber(ev){
+  if(!_bkrfqgZiehId) return;
+  ev.preventDefault();
+  ev.dataTransfer.dropEffect = 'move';
+  const tr = ev.currentTarget;
+  if(tr && tr.dataset.kt !== _bkrfqgZiehId) tr.style.outline = '2px solid var(--blau)';
+}
+
+function bkrfqgZiehRaus(ev){
+  const tr = ev.currentTarget;
+  if(tr && tr.style) tr.style.outline = '';
+}
+
+function bkrfqgZiehEnde(ev){
+  const tr = ev.currentTarget;
+  if(tr && tr.style) tr.style.opacity = '';
+  document.querySelectorAll('tr[data-kt]').forEach(function(r){ r.style.outline=''; });
+  _bkrfqgZiehId = null;
+}
+
+async function bkrfqgZiehAb(ev, zielId){
+  ev.preventDefault();
+  document.querySelectorAll('tr[data-kt]').forEach(function(r){ r.style.outline=''; r.style.opacity=''; });
+  const quellId = _bkrfqgZiehId;
+  _bkrfqgZiehId = null;
+  if(!quellId || quellId === zielId) return;
+
+  const a = bkrfqgKPKurstage.find(x=>x.id===quellId);
+  const b = bkrfqgKPKurstage.find(x=>x.id===zielId);
+  if(!a || !b) return;
+  if(a.meldung_status==='gemeldet' || b.meldung_status==='gemeldet'){
+    toast('Gemeldete Kurstage können nicht getauscht werden','err');
+    return;
+  }
+
+  // Datum und Meldestatus bleiben, wo sie sind - getauscht wird der Inhalt.
+  const felder = ['gegenstand','kenntnisbereich_kb','unterrichtsleiter_id',
+                  'raum_id','gruppe','stunden','beginn','ende'];
+  const nachA = {}, nachB = {};
+  felder.forEach(function(f){ nachA[f] = b[f]; nachB[f] = a[f]; });
+
+  try {
+    await bkrfqgUpdate('bkrfqg_kurstage', a.id, nachA);
+    await bkrfqgUpdate('bkrfqg_kurstage', b.id, nachB);
+    toast('Kurstage getauscht ✓');
+    await bkrfqgKPOeffnen(a.kursplan_id);
+  } catch(e) {
+    toast('Fehler beim Tauschen: '+e.message,'err');
+  }
 }
 
 function bkrfqgKurstagEdit(id) {
