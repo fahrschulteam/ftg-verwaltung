@@ -7949,8 +7949,10 @@ function _statusBadges(g, gKey){
   const vorbei=String(g.dateTo||g.date||'')<today();
   let out='';
   const sc=_scanStatus(gKey);
-  if(sc.anzahl) out+='<span class="tag green" style="font-size:.72rem" title="'+_esc(sc.titel)+'">📎 Liste gescannt</span>';
-  else if(vorbei) out+='<span class="tag warn" style="font-size:.72rem" title="Für diesen Lehrgang ist keine unterschriebene Anwesenheitsliste hinterlegt">📎 Scan fehlt</span>';
+  // Kein Tag mehr bei vorhandenem Scan: der gruene Haken am Scan-Knopf
+  // zeigt denselben Zustand, der Zeitpunkt steht in dessen Tooltip.
+  // Die Warnung bei fehlendem Scan nach dem Termin bleibt erhalten.
+  if(!sc.anzahl && vorbei) out+='<span class="tag warn" style="font-size:.72rem" title="Für diesen Lehrgang ist keine unterschriebene Anwesenheitsliste hinterlegt">📎 Scan fehlt</span>';
   if(_istBqrPflicht(g)){
     const st=_bqrStatus(g);
     if(st.stufe==='gemeldet') out+='<span class="tag green" style="font-size:.72rem" title="'+_esc('Hochgeladen am '+_zeitpunkt(st.gemeldetAm))+'">🏛 im BQR gemeldet</span>';
