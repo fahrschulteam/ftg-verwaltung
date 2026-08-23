@@ -4122,17 +4122,32 @@ function renderDashboard(){
   // ── Fahrerlaubnis-Ampel: Liste der bald ablaufenden / abgelaufenen FE ─────
   const feCard=document.getElementById('feCard'), feTable=document.getElementById('feTable');
   if(feCard&&feTable){
-    _feDaten = feAlle.filter(x=>_daysUntil(x.fe)<=180);
-    feCard.style.display=_feDaten.length?'':'none';
-    _feZeichnen();
+    const feListe=feAlle.filter(x=>_daysUntil(x.fe)<=180)
+      .sort((a,b)=>a.fe.localeCompare(b.fe)).slice(0,80);
+    feCard.style.display=feListe.length?'':'none';
+    feTable.innerHTML=feListe.length?('<table><thead><tr><th>Fahrer</th><th>Firma</th><th>FE gültig bis</th><th>Tage</th><th></th></tr></thead><tbody>'
+      +feListe.map(x=>{
+        const t=_daysUntil(x.fe);
+        const tag=t<0?'<span class="tag crit">abgelaufen</span>':(t<=90?'<span class="tag warn">'+t+' T.</span>':'<span class="tag green">'+t+' T.</span>');
+        return '<tr><td><strong>'+_esc(pFullName(x.p))+'</strong></td><td>'+_esc(companyName(x.p.companyId)||x.p.company||'—')+'</td><td>'+fmt(x.fe)+'</td><td>'+tag+'</td>'
+          +'<td><button class="btn ghost sm" onclick="openParticipant(\''+x.p.id+'\')">✎</button></td></tr>';
+      }).join('')+'</tbody></table>'):'';
   }
 
   // ── BKF-Ampel: Stichtag (SZ95) in den nächsten 12 Monaten bzw. überschritten ─
   const bkfCard=document.getElementById('bkfCard'), bkfTable=document.getElementById('bkfTable');
   if(bkfCard&&bkfTable){
-    _bkDaten = bkfAlle.filter(x=>x.bs.tage<=365);
-    bkfCard.style.display=_bkDaten.length?'':'none';
-    _bkZeichnen();
+    const bkfListe=bkfAlle.filter(x=>x.bs.tage<=365)
+      .sort((a,b)=>a.bs.sz95.localeCompare(b.bs.sz95)).slice(0,100);
+    bkfCard.style.display=bkfListe.length?'':'none';
+    bkfTable.innerHTML=bkfListe.length?('<table><thead><tr><th>Fahrer</th><th>Firma</th><th>Module</th><th>Stichtag SZ 95</th><th>Tage</th><th></th></tr></thead><tbody>'
+      +bkfListe.map(x=>{
+        const t=x.bs.tage;
+        const mTag='<span class="tag '+x.bs.cls+'">'+x.bs.n+' / 5</span>';
+        const tTag=t<0?'<span class="tag crit">überschritten</span>':(t<=365&&x.bs.n<5?'<span class="tag warn">'+t+' T.</span>':'<span class="tag green">'+t+' T.</span>');
+        return '<tr><td><strong>'+_esc(pFullName(x.p))+'</strong></td><td>'+_esc(companyName(x.p.companyId)||x.p.company||'—')+'</td><td>'+mTag+'</td><td>'+fmt(x.bs.sz95)+'</td><td>'+tTag+'</td>'
+          +'<td><button class="btn ghost sm" onclick="openParticipant(\''+x.p.id+'\')">✎</button></td></tr>';
+      }).join('')+'</tbody></table>'):'';
   }
 
   // ── Einklappbare Karten: Klick auf die Überschrift klappt den Inhalt ein/aus,
@@ -4574,94 +4589,6 @@ function _pSortPfeile(){
     const el = document.getElementById('ps_'+f);
     if(el) el.textContent = (_pSort.feld===f) ? (_pSort.richtung>0 ? ' ▲' : ' ▼') : '';
   });
-}
-
-// ── Sortierung der beiden Ampel-Tabellen im Dashboard ────────────────
-// Die Daten werden beim Rendern abgelegt, damit ein Klick auf einen
-// Spaltenkopf nur diese Tabelle neu zeichnet statt das ganze Dashboard.
-let _feSort = { feld:'fe',   richtung:1 }, _feDaten = [];
-let _bkSort = { feld:'sz95', richtung:1 }, _bkDaten = [];
-
-function _sortVergleich(x, y, richtung){
-  if(!x && !y) return 0;
-  if(!x) return 1;          // Leere Werte immer ans Ende,
-  if(!y) return -1;         // unabhaengig von der Richtung.
-  if(typeof x === 'number' && typeof y === 'number') return (x - y) * richtung;
-  return String(x).localeCompare(String(y), 'de') * richtung;
-}
-
-function _feWert(x, feld){
-  if(feld === 'fahrer') return pFullName(x.p).toLowerCase();
-  if(feld === 'firma')  return (companyName(x.p.companyId) || x.p.company || '').toLowerCase();
-  if(feld === 'tage')   return _daysUntil(x.fe);
-  return x.fe || '';
-}
-
-function _bkWert(x, feld){
-  if(feld === 'fahrer') return pFullName(x.p).toLowerCase();
-  if(feld === 'firma')  return (companyName(x.p.companyId) || x.p.company || '').toLowerCase();
-  if(feld === 'module') return x.bs.n;
-  if(feld === 'tage')   return x.bs.tage;
-  return x.bs.sz95 || '';
-}
-
-function _feSortieren(feld){
-  if(_feSort.feld === feld) _feSort.richtung = -_feSort.richtung;
-  else _feSort = { feld, richtung:1 };
-  _feZeichnen();
-}
-function _bkSortieren(feld){
-  if(_bkSort.feld === feld) _bkSort.richtung = -_bkSort.richtung;
-  else _bkSort = { feld, richtung:1 };
-  _bkZeichnen();
-}
-
-function _sortKopf(feld, text, aktiv, fn){
-  const pfeil = (aktiv.feld === feld) ? (aktiv.richtung > 0 ? ' ▲' : ' ▼') : '';
-  return '<th style="cursor:pointer;user-select:none" onclick="' + fn + '(\'' + feld + '\')">' + text + pfeil + '</th>';
-}
-
-function _feZeichnen(){
-  const feTable = document.getElementById('feTable');
-  if(!feTable) return;
-  // Erst sortieren, dann auf 80 Zeilen begrenzen.
-  const liste = _feDaten.slice()
-    .sort((a,b)=>_sortVergleich(_feWert(a,_feSort.feld), _feWert(b,_feSort.feld), _feSort.richtung))
-    .slice(0,80);
-  feTable.innerHTML = liste.length ? ('<table><thead><tr>'
-    + _sortKopf('fahrer','Fahrer',_feSort,'_feSortieren')
-    + _sortKopf('firma','Firma',_feSort,'_feSortieren')
-    + _sortKopf('fe','FE gültig bis',_feSort,'_feSortieren')
-    + _sortKopf('tage','Tage',_feSort,'_feSortieren')
-    + '<th></th></tr></thead><tbody>'
-    + liste.map(x=>{
-        const t=_daysUntil(x.fe);
-        const tag=t<0?'<span class="tag crit">abgelaufen</span>':(t<=90?'<span class="tag warn">'+t+' T.</span>':'<span class="tag green">'+t+' T.</span>');
-        return '<tr><td><strong>'+_esc(pFullName(x.p))+'</strong></td><td>'+_esc(companyName(x.p.companyId)||x.p.company||'—')+'</td><td>'+fmt(x.fe)+'</td><td>'+tag+'</td>'
-          +'<td><button class="btn ghost sm" onclick="openParticipant(\''+x.p.id+'\')">✎</button></td></tr>';
-      }).join('')+'</tbody></table>') : '';
-}
-
-function _bkZeichnen(){
-  const bkfTable = document.getElementById('bkfTable');
-  if(!bkfTable) return;
-  const liste = _bkDaten.slice()
-    .sort((a,b)=>_sortVergleich(_bkWert(a,_bkSort.feld), _bkWert(b,_bkSort.feld), _bkSort.richtung))
-    .slice(0,100);
-  bkfTable.innerHTML = liste.length ? ('<table><thead><tr>'
-    + _sortKopf('fahrer','Fahrer',_bkSort,'_bkSortieren')
-    + _sortKopf('firma','Firma',_bkSort,'_bkSortieren')
-    + _sortKopf('module','Module',_bkSort,'_bkSortieren')
-    + _sortKopf('sz95','Stichtag SZ 95',_bkSort,'_bkSortieren')
-    + _sortKopf('tage','Tage',_bkSort,'_bkSortieren')
-    + '<th></th></tr></thead><tbody>'
-    + liste.map(x=>{
-        const t=x.bs.tage;
-        const mTag='<span class="tag '+x.bs.cls+'">'+x.bs.n+' / 5</span>';
-        const tTag=t<0?'<span class="tag crit">überschritten</span>':(t<=365&&x.bs.n<5?'<span class="tag warn">'+t+' T.</span>':'<span class="tag green">'+t+' T.</span>');
-        return '<tr><td><strong>'+_esc(pFullName(x.p))+'</strong></td><td>'+_esc(companyName(x.p.companyId)||x.p.company||'—')+'</td><td>'+mTag+'</td><td>'+fmt(x.bs.sz95)+'</td><td>'+tTag+'</td>'
-          +'<td><button class="btn ghost sm" onclick="openParticipant(\''+x.p.id+'\')">✎</button></td></tr>';
-      }).join('')+'</tbody></table>') : '';
 }
 
 function renderParticipants(){
