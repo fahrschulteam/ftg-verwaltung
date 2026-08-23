@@ -1553,6 +1553,127 @@ function erzeugeUnterweisungsSync(cfg){
     aktivieren(){ aktiv=true; },
   };
 }
+// ══════════════════════════════════════════════════════════════════
+//  ANWESENHEITS-SCANS: Datei im Storage-Bucket, Metadaten in der DB.
+//  Vorher lagen die Scans nur als data:-URL in der IndexedDB dieses
+//  Rechners – ein Geraetewechsel oder geleerter Cache liess sie
+//  verschwinden. Jetzt liegen sie zentral und stehen ueberall bereit.
+// ══════════════════════════════════════════════════════════════════
+const SCAN_BUCKET = 'anwesenheit';
+let _scanSyncAktiv = false;
+
+function _scanPfadBauen(groupKey, name){
+  const rein = String(name||'scan').replace(/[^a-zA-Z0-9._-]/g,'_').slice(-80);
+  const grp  = String(groupKey||'ohne').replace(/[^a-zA-Z0-9._-]/g,'_');
+  return grp + '/' + Date.now() + '_' + Math.random().toString(36).slice(2,7) + '_' + rein;
+}
+
+// Datei roh in den Bucket schieben (kein JSON, deshalb eigene Header).
+async function _scanHochladen(pfad, file){
+  const token = getAccessToken() || MAIN_KEY;
+  const r = await fetch(MAIN_URL + '/storage/v1/object/' + SCAN_BUCKET + '/' + pfad, {
+    method:'POST',
+    headers:{ 'apikey':MAIN_KEY, 'Authorization':'Bearer '+token,
+              'Content-Type': file.type || 'application/octet-stream', 'x-upsert':'true' },
+    body:file
+  });
+  if(!r.ok) throw new Error('Storage '+r.status+' '+String(await r.text().catch(()=>'')).slice(0,140));
+  return pfad;
+}
+
+// Signierte URL, damit der private Bucket im Viewer angezeigt werden kann.
+async function _scanSignierteUrl(scan){
+  if(!scan || !scan.path) return null;
+  if(scan._url && scan._urlBis > Date.now()) return scan._url;
+  try{
+    const r = await fetch(MAIN_URL + '/storage/v1/object/sign/' + SCAN_BUCKET + '/' + scan.path,
+      { method:'POST', headers:mainHeaders(), body:JSON.stringify({expiresIn:3600}) });
+    if(!r.ok){ console.error('Scan-URL', r.status, await r.text().catch(()=>'')); return null; }
+    const j = await r.json();
+    scan._url = MAIN_URL + '/storage/v1' + (j.signedURL || j.signedUrl || '');
+    scan._urlBis = Date.now() + 55*60*1000;
+    return scan._url;
+  }catch(e){ console.error('Scan-URL', e); return null; }
+}
+
+async function _scanDbAnlegen(groupKey, scan){
+  const body = {
+    id:_neueUuid(), group_key:groupKey, name:scan.name||'', mime:scan.mime||'',
+    size_kb:+scan.sizeKb||0, storage_path:scan.path,
+    scanned_at:scan.at||new Date().toISOString()
+  };
+  const r = await fetch(MAIN_URL+'/rest/v1/schulung_scans',
+    {method:'POST', headers:mainHeaders(), body:JSON.stringify(body)});
+  if(!r.ok) throw new Error('DB '+r.status+' '+String(await r.text().catch(()=>'')).slice(0,140));
+  return body.id;
+}
+
+async function _scanRemoteLoeschen(scan){
+  if(!scan) return;
+  try{
+    if(scan._dbId) await fetch(MAIN_URL+'/rest/v1/schulung_scans?id=eq.'+scan._dbId,
+      {method:'DELETE', headers:mainHeaders()});
+  }catch(e){ console.warn('Scan-DB-Loeschen', e); }
+  try{
+    if(scan.path){
+      const token = getAccessToken() || MAIN_KEY;
+      await fetch(MAIN_URL+'/storage/v1/object/'+SCAN_BUCKET+'/'+scan.path,
+        {method:'DELETE', headers:{'apikey':MAIN_KEY,'Authorization':'Bearer '+token}});
+    }
+  }catch(e){ console.warn('Scan-Datei-Loeschen', e); }
+}
+
+// Alle Scan-Metadaten laden und nach Lehrgangsschluessel gruppieren.
+async function _scanAlleLaden(){
+  try{
+    const r = await _fetchMitTimeout(MAIN_URL+'/rest/v1/schulung_scans?select=*&order=scanned_at',
+      {headers:mainHeaders()}, 8000);
+    if(!r.ok){ console.warn('Scan-Laden HTTP '+r.status); return null; }
+    const rows = await r.json();
+    const map = {};
+    rows.forEach(x=>{
+      (map[x.group_key] = map[x.group_key] || []).push({
+        _dbId:x.id, name:x.name||'Scan', path:x.storage_path, mime:x.mime||'',
+        at:x.scanned_at, date:String(x.scanned_at||'').slice(0,10),
+        sizeKb:x.size_kb||0, size:(x.size_kb||0)+'KB'
+      });
+    });
+    return map;
+  }catch(e){ console.warn('Scan-Laden', e); return null; }
+}
+
+// Altbestand aus der IndexedDB (data:-URL) einmalig nachziehen.
+async function scansNachtragen(){
+  const lokal = state.attendanceScans || {};
+  const offen = [];
+  Object.keys(lokal).forEach(k => (lokal[k]||[]).forEach(sc => {
+    if(sc && sc.dataUrl && !sc.path) offen.push([k, sc]);
+  }));
+  if(!offen.length){ toast('Keine lokalen Scans zum Nachtragen.'); return; }
+  let ok = 0;
+  for(const [gk, sc] of offen){
+    try{
+      const [kopf, b64] = String(sc.dataUrl).split(',');
+      const typ = (kopf.match(/data:([^;]+)/)||[])[1] || 'application/octet-stream';
+      const roh = atob(b64);
+      const bytes = new Uint8Array(roh.length);
+      for(let i=0;i<roh.length;i++) bytes[i] = roh.charCodeAt(i);
+      const blob = new Blob([bytes], {type:typ});
+      blob.name = sc.name || 'Scan';
+      const pfad = _scanPfadBauen(gk, sc.name);
+      await _scanHochladen(pfad, blob);
+      sc.path = pfad; sc.mime = typ;
+      sc.sizeKb = Math.round(blob.size/1024);
+      sc.at = sc.at || new Date(sc.date||Date.now()).toISOString();
+      sc._dbId = await _scanDbAnlegen(gk, sc);
+      delete sc.dataUrl;
+      ok++;
+    }catch(e){ console.error('Nachtragen fehlgeschlagen', sc && sc.name, e); }
+  }
+  save(); renderAll();
+  toast('\u2713 '+ok+' von '+offen.length+' Scan(s) nachgetragen');
+}
+
 const _instrSync = erzeugeUnterweisungsSync({tabelle:'schulung_instructions', stateKey:'instructions', mitTyp:true});
 const _adrSync   = erzeugeUnterweisungsSync({tabelle:'schulung_adr_instructions', stateKey:'adrInstructions', mitTyp:false});
 
@@ -6417,16 +6538,33 @@ function _scanBlobsFreigeben(){
   _scanBlobUrls.forEach(u=>{try{URL.revokeObjectURL(u)}catch(e){}});
   _scanBlobUrls=[];
 }
-function _scanIstPdf(scan){ return String(scan&&scan.dataUrl||'').startsWith('data:application/pdf'); }
-function scanOeffnen(groupKey, idx){
+function _scanIstPdf(scan){
+  if(!scan) return false;
+  if(/pdf/i.test(scan.mime||'')) return true;
+  if(/\.pdf$/i.test(scan.name||'')) return true;
+  return String(scan.dataUrl||'').startsWith('data:application/pdf');
+}
+function _scanIstBild(scan){
+  if(!scan) return false;
+  if(/^image\//i.test(scan.mime||'')) return true;
+  if(/\.(png|jpe?g|gif|webp|bmp|tiff?)$/i.test(scan.name||'')) return true;
+  return String(scan.dataUrl||'').startsWith('data:image');
+}
+// Liefert eine anzeigbare URL: Storage-Scans signiert, Altbestand als Blob.
+async function _scanAnzeigeUrl(scan){
+  if(!scan) return null;
+  if(scan.path) return await _scanSignierteUrl(scan);
+  return _scanBlobUrl(scan);
+}
+async function scanOeffnen(groupKey, idx){
   const scan=(state.attendanceScans||{})[groupKey]?.[idx];
-  const url=_scanBlobUrl(scan);
+  const url=await _scanAnzeigeUrl(scan);
   if(!url){ toast('Scan konnte nicht geöffnet werden'); return; }
   window.open(url,'_blank');
 }
-function scanHerunterladen(groupKey, idx){
+async function scanHerunterladen(groupKey, idx){
   const scan=(state.attendanceScans||{})[groupKey]?.[idx];
-  const url=_scanBlobUrl(scan);
+  const url=await _scanAnzeigeUrl(scan);
   if(!url){ toast('Scan konnte nicht geladen werden'); return; }
   const a=document.createElement('a');
   a.href=url; a.download=scan.name||'Anwesenheitsliste';
@@ -6434,13 +6572,13 @@ function scanHerunterladen(groupKey, idx){
 }
 // Viewer: zeigt den gewählten Scan groß und darunter die Liste aller Scans
 // dieses Lehrgangs (Dateiname, Upload-Datum, Größe).
-function openScanViewer(groupKey, aktiv){
+async function openScanViewer(groupKey, aktiv){
   _scanBlobsFreigeben();
   const liste=((state.attendanceScans||{})[groupKey])||[];
   if(!liste.length){ toast('Für diesen Lehrgang ist kein Scan hinterlegt.'); return; }
   const i=Math.min(Math.max(+aktiv||0,0), liste.length-1);
   const scan=liste[i];
-  const url=_scanBlobUrl(scan);
+  const url=await _scanAnzeigeUrl(scan);
   const LABEL='font-size:.72rem;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px';
 
   const vorschau = !url
@@ -6483,11 +6621,13 @@ function openScanUpload(groupKey, isInstr){
   const existing = scans[groupKey] || [];
 
   const previewHtml = existing.map((scan, i) => {
-    const isImg = scan.dataUrl.startsWith('data:image');
-    const isPdf = scan.dataUrl.startsWith('data:application/pdf');
+    // Storage-Scans haben keine data:-URL mehr – dann Kachel statt Bild.
+    const isImg = _scanIstBild(scan) && !!scan.dataUrl;
+    const isPdf = _scanIstPdf(scan);
+    const symbol = _scanIstPdf(scan) ? '📄' : (_scanIstBild(scan) ? '🖼' : '📎');
     const thumb = isImg
       ? '<img src="'+scan.dataUrl+'" style="max-width:100%;max-height:160px;border-radius:6px;border:1px solid #ddd;display:block">'
-      : '<div style="padding:20px;background:#f5f5f5;border-radius:6px;border:1px solid #ddd;text-align:center;font-size:.85rem;color:#555">📄 '+scan.name+'</div>';
+      : '<div style="padding:20px;background:#f5f5f5;border-radius:6px;border:1px solid #ddd;text-align:center;font-size:.85rem;color:#555">'+symbol+' '+_esc(scan.name||'Scan')+'</div>';
     return '<div style="border:1px solid var(--bd);border-radius:8px;padding:10px;background:#fafafa;margin-bottom:8px">'
       +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">'
         +'<span style="font-size:.82rem;font-weight:600;flex:1">'+scan.name+'</span>'
@@ -6542,33 +6682,50 @@ function handleScanUpload(groupKey, input){
   handleScanUploadFiles(groupKey, input.files);
 }
 
-function handleScanUploadFiles(groupKey, files){
+async function handleScanUploadFiles(groupKey, files){
   if(!state.attendanceScans) state.attendanceScans = {};
   if(!state.attendanceScans[groupKey]) state.attendanceScans[groupKey] = [];
-  let done = 0;
-  const total = files.length;
-  Array.from(files).forEach(file=>{
-    const reader = new FileReader();
-    reader.onload = e => {
-      state.attendanceScans[groupKey].push({
-        name: file.name,
-        date: today(),
-        // Volle Uhrzeit zusaetzlich zu date: fuer den Tooltip am Scan-Knopf.
-        // date bleibt erhalten, damit aeltere Scans ohne at weiter passen.
-        at: new Date().toISOString(),
-        dataUrl: e.target.result,
-        size: Math.round(file.size/1024)+'KB'
-      });
-      done++;
-      if(done===total){
-        save();
-        toast('\u2713 '+total+' Scan'+(total>1?'s':'')+' gespeichert');
-        renderAll();
-        openScanUpload(groupKey, false);
-      }
+  const liste = Array.from(files);
+  toast('Lade '+liste.length+' Scan'+(liste.length>1?'s':'')+' hoch \u2026');
+  let ok = 0, fehler = 0;
+  for(const file of liste){
+    const eintrag = {
+      name: file.name,
+      date: today(),
+      // Volle Uhrzeit zusaetzlich zu date: fuer den Tooltip am Scan-Knopf.
+      // date bleibt erhalten, damit aeltere Scans ohne at weiter passen.
+      at: new Date().toISOString(),
+      mime: file.type || '',
+      sizeKb: Math.round(file.size/1024),
+      size: Math.round(file.size/1024)+'KB'
     };
-    reader.readAsDataURL(file);
-  });
+    try{
+      const pfad = _scanPfadBauen(groupKey, file.name);
+      await _scanHochladen(pfad, file);
+      eintrag.path = pfad;
+      eintrag._dbId = await _scanDbAnlegen(groupKey, eintrag);
+      ok++;
+    }catch(e){
+      // Zentrale Ablage nicht erreichbar: lokal sichern, damit der Scan
+      // nicht verloren geht. scansNachtragen() holt ihn spaeter nach.
+      console.error('Scan-Upload', e);
+      fehler++;
+      try{
+        eintrag.dataUrl = await new Promise((res,rej)=>{
+          const fr = new FileReader();
+          fr.onload = ev => res(ev.target.result);
+          fr.onerror = () => rej(new Error('Lesefehler'));
+          fr.readAsDataURL(file);
+        });
+      }catch(e2){ console.error('Scan-Fallback', e2); }
+    }
+    state.attendanceScans[groupKey].push(eintrag);
+  }
+  save();
+  renderAll();
+  openScanUpload(groupKey, false);
+  if(fehler) toast('\u26a0 '+ok+' gespeichert, '+fehler+' nur lokal (Cloud nicht erreichbar)');
+  else toast('\u2713 '+ok+' Scan'+(ok>1?'s':'')+' gespeichert');
 }
 
 // Aus dem Upload-Dialog heraus: zeigt den Scan im Viewer statt in einem neuen
@@ -6580,8 +6737,9 @@ function viewScan(groupKey, idx){
 function deleteScan(groupKey, idx){
   const scan=(state.attendanceScans||{})[groupKey]?.[idx];
   const name=scan&&scan.name?scan.name:'Scan';
-  askConfirm('Scan „'+name+'“ wirklich löschen?\n\nDie Datei ist danach unwiderruflich weg – sie liegt nur hier, nicht in der Cloud.',()=>{
+  askConfirm('Scan „'+name+'“ wirklich löschen?\n\nDie Datei wird auch zentral entfernt und ist danach unwiderruflich weg.',()=>{
     if(state.attendanceScans && state.attendanceScans[groupKey]){
+      _scanRemoteLoeschen(scan);
       state.attendanceScans[groupKey].splice(idx, 1);
       const rest=(state.attendanceScans[groupKey]||[]).length;
       if(!rest) delete state.attendanceScans[groupKey];
@@ -13190,6 +13348,28 @@ function hideConfirm(){const bg=document.getElementById('confirmBg');if(bg)bg.cl
     console.error('Rest-Ladefehler:', e);
     syncErgebnis('Rest', false, e.message);
   }
+
+  try {
+    // 4b. Anwesenheits-Scans (Metadaten; Dateien liegen im Storage)
+    setMsg('Lade Anwesenheits-Scans…');
+    const _scans = await _scanAlleLaden();
+    if(_scans !== null){
+      // Lokale Scans ohne zentrale Ablage bleiben erhalten, damit nichts
+      // verschwindet, was noch nicht nachgetragen wurde.
+      const lokal = state.attendanceScans || {};
+      Object.keys(lokal).forEach(k=>{
+        const rest = (lokal[k]||[]).filter(sc => sc && !sc.path);
+        if(rest.length) _scans[k] = (_scans[k]||[]).concat(rest);
+      });
+      state.attendanceScans = _scans;
+      _scanSyncAktiv = true;
+      const _anz = Object.values(_scans).reduce((a,v)=>a+v.length,0);
+      syncErgebnis('Scans['+_anz+']', true);
+    } else {
+      syncErgebnis('Scans', false, 'nicht erreichbar');
+    }
+    renderAll();
+  } catch(e) { console.warn('Scan-Ladefehler:', e); }
 
   try {
     // 5. Online-Anmeldungen (Posteingang) + automatische Kurs-Anlagen – best effort
