@@ -2389,7 +2389,7 @@ function bkrfqgKurstagModalHTML(kpId) {
             </select></div>
           <div class="frow"><label>Beginn</label><input type="time" id="bkt-beginn" value="08:00"></div>
           <div class="frow"><label>Ende (inkl. Pausen)</label><input type="time" id="bkt-ende" value="15:45"></div>
-          <div class="frow"><label>Netto-Std. (ohne Pausen)</label><input type="number" id="bkt-stunden" min="1" max="10" step="0.5" value="7"></div>
+          <div class="frow"><label>Netto-Std. (ohne Pausen)</label><input type="number" id="bkt-stunden" min="0" max="10" step="0.5" value="7"><div style="font-size:10px;color:var(--grau);margin-top:2px">0 = zaehlt nicht mit, z. B. Selbststudium</div></div>
           <div class="frow"><label>Dozent</label>
             <select id="bkt-dozent">
               <option value="">– kein –</option>
@@ -2522,7 +2522,8 @@ function bkrfqgKurstagEdit(id) {
   document.getElementById('bkt-datum').value = k.datum||'';
   document.getElementById('bkt-beginn').value = k.beginn?.slice(0,5)||'08:00';
   document.getElementById('bkt-ende').value = k.ende?.slice(0,5)||'15:30';
-  document.getElementById('bkt-stunden').value = k.stunden||7;
+  // Nicht ||7: sonst wuerde eine gespeicherte 0 als 7 angezeigt.
+  document.getElementById('bkt-stunden').value = (k.stunden==null?7:k.stunden);
   document.getElementById('bkt-gegenstand').value = k.gegenstand||'';
   document.getElementById('bkt-kb').value = k.kenntnisbereich_kb||'';
   document.getElementById('bkt-dozent').value = k.unterrichtsleiter_id||'';
@@ -2556,7 +2557,8 @@ async function bkrfqgKurstagSpeichern() {
     datum: document.getElementById('bkt-datum').value,
     beginn: document.getElementById('bkt-beginn').value+':00',
     ende: document.getElementById('bkt-ende').value+':00',
-    stunden: parseFloat(document.getElementById('bkt-stunden').value)||7,
+    stunden: (function(){ const v=parseFloat(document.getElementById('bkt-stunden').value);
+                          return isNaN(v)?7:v; })(),   // 0 ist gueltig
     gegenstand: document.getElementById('bkt-gegenstand').value,
     kenntnisbereich_kb: document.getElementById('bkt-kb').value||null,
     unterrichtsleiter_id: document.getElementById('bkt-dozent').value||null,
