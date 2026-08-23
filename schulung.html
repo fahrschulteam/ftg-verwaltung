@@ -554,7 +554,7 @@ setTimeout(_hideLoader, 1500);
     <button class="btn ghost sm" id="pFirmFilterClear" onclick="clearFirmFilter()" style="display:none" title="Filter aufheben">✕ Firma</button>
   </div>
   <div class="card" style="padding:0;overflow-x:auto">
-    <table style="min-width:1100px"><thead><tr><th style="min-width:160px">Nachname / Vorname</th><th style="min-width:105px">Geburtsdatum</th><th style="min-width:160px">Firma</th><th style="min-width:180px">Mobil / E-Mail</th><th>Lehrgänge</th><th style="min-width:110px">Nächste Unterweisung</th><th style="min-width:100px">ADR gültig bis</th><th style="min-width:150px"></th></tr></thead>
+    <table style="min-width:1100px"><thead><tr><th style="min-width:160px;cursor:pointer;user-select:none" onclick="_pSortieren('name')" title="Nach Nachname sortieren">Nachname / Vorname<span id="ps_name"></span></th><th style="min-width:105px;cursor:pointer;user-select:none" onclick="_pSortieren('birth')" title="Nach Geburtsdatum sortieren">Geburtsdatum<span id="ps_birth"></span></th><th style="min-width:160px;cursor:pointer;user-select:none" onclick="_pSortieren('firma')" title="Nach Firma sortieren">Firma<span id="ps_firma"></span></th><th style="min-width:180px">Mobil / E-Mail</th><th>Lehrgänge</th><th style="min-width:110px;cursor:pointer;user-select:none" onclick="_pSortieren('due')" title="Nach nächster Unterweisung sortieren">Nächste Unterweisung<span id="ps_due"></span></th><th style="min-width:100px;cursor:pointer;user-select:none" onclick="_pSortieren('adr')" title="Nach ADR-Ablauf sortieren">ADR gültig bis<span id="ps_adr"></span></th><th style="min-width:150px"></th></tr></thead>
     <tbody id="pBody"></tbody></table>
   </div>
 </section>
@@ -4550,6 +4550,47 @@ function renderDashboard(){
   }
 }
 
+// Aktive Sortierung der Teilnehmertabelle. richtung: 1 = aufsteigend.
+let _pSort = { feld:'name', richtung:1 };
+
+function _pSortieren(feld){
+  // Erneuter Klick auf dieselbe Spalte dreht die Richtung um.
+  if(_pSort.feld === feld) _pSort.richtung = -_pSort.richtung;
+  else _pSort = { feld, richtung:1 };
+  renderParticipants();
+}
+
+// Liefert den Wert, nach dem eine Zeile einsortiert wird.
+function _pSortWert(p, feld){
+  if(feld === 'name')  return ((p.lastName || p.name || '') + ' ' + (p.firstName || '')).toLowerCase();
+  if(feld === 'firma') return (companyName(p.companyId) || p.company || '').toLowerCase();
+  if(feld === 'birth') return p.birth || '';
+  if(feld === 'due')   return nextDue(p.id) || '';
+  if(feld === 'adr'){ const a = adrExpiry(p.id); return (a && a.expiry) || ''; }
+  return '';
+}
+
+function _pSortAnwenden(rows){
+  const { feld, richtung } = _pSort;
+  return rows.sort((a,b)=>{
+    const x = _pSortWert(a, feld), y = _pSortWert(b, feld);
+    // Leere Werte immer ans Ende, unabhaengig von der Richtung - sonst
+    // fuellen bei absteigender Sortierung die Striche den Anfang.
+    if(!x && !y) return 0;
+    if(!x) return 1;
+    if(!y) return -1;
+    return String(x).localeCompare(String(y), 'de') * richtung;
+  });
+}
+
+// Pfeil an der aktiven Spalte, die uebrigen leeren.
+function _pSortPfeile(){
+  ['name','birth','firma','due','adr'].forEach(f=>{
+    const el = document.getElementById('ps_'+f);
+    if(el) el.textContent = (_pSort.feld===f) ? (_pSort.richtung>0 ? ' ▲' : ' ▼') : '';
+  });
+}
+
 function renderParticipants(){
   const q=(document.getElementById('pSearch').value||'').toLowerCase();
   const firmSel=document.getElementById('pFirmFilter');
@@ -4563,6 +4604,10 @@ function renderParticipants(){
   const b=document.getElementById('pBody');
   let rows=state.participants.filter(p=>((p.name||'')+(p.firstName||'')+(p.lastName||'')+(p.company||'')+p.phone+p.email).toLowerCase().includes(q));
   if(firmId) rows=rows.filter(p=>p.companyId===firmId);
+  // Erst sortieren, dann begrenzen – sonst zeigt die Liste je nach Spalte
+  // einen anderen Ausschnitt statt der wirklich ersten 250.
+  rows = _pSortAnwenden(rows);
+  _pSortPfeile();
   if(!rows.length){b.innerHTML='<tr><td colspan="8"><div class="empty">Noch keine Teilnehmer angelegt.</div></td></tr>';return}
   // Bei sehr vielen Teilnehmern nur die ersten 250 anzeigen – die Suche und der
   // Firmen-Filter durchsuchen weiterhin ALLE Teilnehmer.
