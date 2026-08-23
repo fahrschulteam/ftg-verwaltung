@@ -7934,13 +7934,15 @@ function _bqrKnoepfe(g){
       : st.stufe==='erzeugt'
       ? 'Datei erzeugt am '+_zeitpunkt(st.dateiAm)+' – Upload ins KBA-Portal noch nicht bestätigt'+offenTxt
       : 'KBA-Upload-Datei für das Berufskraftfahrerqualifikationsregister erzeugen';
+  // Der Schalter erscheint nur, solange der Upload noch nicht bestaetigt
+  // ist. Danach genuegt der gruene Haken am BQR-Knopf – dreifache Anzeige
+  // desselben Zustands verwirrt mehr, als sie hilft. Zuruecknehmen laesst
+  // sich die Bestaetigung im BQR-Dialog.
   return '<button class="btn sm bqr-btn" style="'+stil+'" title="'+_esc(titel)+'">🏛 BQR-Meldung'+marke+'</button>'
-    +(st.stufe==='leer' ? '' :
-      '<button class="btn sm bqr-upload-btn'+(st.stufe==='gemeldet'?' ghost':' btn-primary')+'" title="'
-      +_esc(st.stufe==='gemeldet'
-        ?'Bestätigt am '+_zeitpunkt(st.gemeldetAm)+' – klicken zum Zurücknehmen'
-        :'Erst klicken, wenn die Datei bei kba-online.de tatsächlich hochgeladen wurde')
-      +'">'+(st.stufe==='gemeldet'?'☑':'☐')+' Im BQR hochgeladen</button>');
+    +(st.stufe!=='erzeugt' ? '' :
+      '<button class="btn sm bqr-upload-btn btn-primary" title="'
+      +_esc('Erst klicken, wenn die Datei bei kba-online.de tatsächlich hochgeladen wurde')
+      +'">☐ Im BQR hochgeladen</button>');
 }
 // Etiketten fuer den Kartenkopf - der Zustand soll in der Kursliste stehen,
 // ohne dass man die Karte oeffnen muss. Fehlendes wird nur bei bereits
@@ -7955,8 +7957,9 @@ function _statusBadges(g, gKey){
   if(!sc.anzahl && vorbei) out+='<span class="tag warn" style="font-size:.72rem" title="Für diesen Lehrgang ist keine unterschriebene Anwesenheitsliste hinterlegt">📎 Scan fehlt</span>';
   if(_istBqrPflicht(g)){
     const st=_bqrStatus(g);
-    if(st.stufe==='gemeldet') out+='<span class="tag green" style="font-size:.72rem" title="'+_esc('Hochgeladen am '+_zeitpunkt(st.gemeldetAm))+'">🏛 im BQR gemeldet</span>';
-    else if(st.stufe==='erzeugt') out+='<span class="tag warn" style="font-size:.72rem" title="'+_esc('Datei erzeugt am '+_zeitpunkt(st.dateiAm)+' – Upload noch nicht bestätigt')+'">🏛 Datei erzeugt · Upload offen</span>';
+    // Kein Etikett bei bestaetigtem Upload: der gruene Haken am BQR-Knopf
+    // zeigt das bereits, der Zeitpunkt steht in dessen Tooltip.
+    if(st.stufe==='erzeugt') out+='<span class="tag warn" style="font-size:.72rem" title="'+_esc('Datei erzeugt am '+_zeitpunkt(st.dateiAm)+' – Upload noch nicht bestätigt')+'">🏛 Datei erzeugt · Upload offen</span>';
     else if(vorbei) out+='<span class="tag crit" style="font-size:.72rem" title="Termin gelaufen, aber noch keine BQR-Datei erzeugt. Meldefrist: unverzüglich nach dem Termin.">🏛 BQR-Meldung offen</span>';
     if(st.stufe!=='leer'&&st.offen) out+='<span class="tag crit" style="font-size:.72rem" title="Diese Teilnehmer stehen in keiner erzeugten Datei – für sie ist noch eine Meldung nötig">🏛 '+st.offen+' nicht gemeldet</span>';
   }
@@ -8004,6 +8007,8 @@ function openBqrDialog(g){
         : '● Datei erzeugt am '+_zeitpunkt(_st.dateiAm)+' – Upload ins KBA-Portal noch nicht bestätigt')
     +(_st.offen?'<br>⚠ '+_st.offen+' Teilnehmer dieses Termins stehen in keiner Datei und sind ungemeldet.':'')
     +'</div></div>';
+  // Kontext merken, damit die Ruecknahme aus dem Dialog heraus geht.
+  window._bqrKontext = g;
   document.getElementById('modalContent').innerHTML=`
     <h3>🏛 BQR-Meldung ans KBA</h3>
     <p class="hint" style="margin:4px 0 12px"><b>${_esc(g.type)}</b> · ${fmt(datum)} · Kenntnisbereiche ${kbs.join(', ')} (Codes ${kbs.map(k=>BQR_KB[k]).join(', ')}) · ${liste.length} Teilnehmer</p>
@@ -8023,6 +8028,7 @@ function openBqrDialog(g){
     <div id="bqr_fehler"></div>
     <div class="modal-actions">
       <button class="btn ghost" onclick="closeModal()">Abbrechen</button>
+      ${_st.stufe==='gemeldet'?'<button class="btn ghost" onclick="closeModal();bqrUploadSchalter(window._bqrKontext)" title="Upload-Bestätigung wieder aufheben">Bestätigung zurücknehmen</button>':''}
       <button class="btn" onclick="bqrErzeugen('${g.entries.find(e=>e.participant)?g.entries.find(e=>e.participant).id:g.entries[0].id}')">${_st.stufe==='leer'?'XML-Datei erzeugen':'Datei erneut erzeugen'}</button>
     </div>`;
   showModal();
@@ -8133,6 +8139,9 @@ function bqrErzeugen(courseId){
   document.body.appendChild(a); a.click(); a.remove();
   setTimeout(()=>{try{URL.revokeObjectURL(a.href);}catch(e){}},5000);
   closeModal();
+  // Ohne dieses renderAll() erschien der Schalter "Im BQR hochgeladen"
+  // erst nach einem Neuladen der Seite.
+  renderAll();
   toast('✓ BQR-Datei erzeugt: '+nr+' Teilnehmer'+(uebersprungen.length?' · übersprungen ('+uebersprungen.length+'): '+uebersprungen.join(', '):'')
     +' · noch nicht gemeldet – nach dem Upload bei kba-online.de am Lehrgang „☐ Im BQR hochgeladen" bestätigen'
     +(_certSenden?'':' · Bescheinigungsversand übersprungen'));
