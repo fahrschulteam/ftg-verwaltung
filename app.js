@@ -270,7 +270,7 @@ async function onAuthenticated(user) {
       await window.ladeMitarbeiter();
     }
     const f = document.getElementById('schulungFrame');
-    if (f && !f.getAttribute('src')) f.setAttribute('src', 'schulung.html?v=20260718');
+    if (f && !f.getAttribute('src')) f.setAttribute('src', 'schulung.html?v=20260719');
     // Fahrzeugkalender wird lazy geladen (nur bei Tab-Klick) → kein Hintergrund-Polling
   }, 1500);
 }
@@ -380,7 +380,7 @@ function showView(view) {
   if (view === 'schulung') {
     const f = document.getElementById('schulungFrame');
     if (f && !f.getAttribute('src')) {
-      f.setAttribute('src', 'schulung.html?v=20260718');
+      f.setAttribute('src', 'schulung.html?v=20260719');
       // src neu gesetzt → load-Event feuert, Handler sendet dann
     } else {
       // iframe bereits geladen → sofort senden (z.B. nach Tab-Wechsel zurück)
@@ -389,7 +389,7 @@ function showView(view) {
   }
   if (view === 'teilnehmer') {
     const f = document.getElementById('teilnehmerFrame');
-    if (f && !f.getAttribute('src')) f.setAttribute('src', 'teilnehmer.html?v=20260708a');
+    if (f && !f.getAttribute('src')) f.setAttribute('src', 'teilnehmer.html?v=20260709a');
   }
   if (view === 'kalender') {
     const f = document.getElementById('kalenderFrame');
