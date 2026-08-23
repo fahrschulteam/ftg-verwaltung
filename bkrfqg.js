@@ -2633,7 +2633,16 @@ async function bkrfqgKursmeldung(el) {
       order:'datum'
     });
     window._bkrfqgKurstage=kurstage;
-    const offene=kurstage.filter(k=>k.meldung_status==='ausstehend');
+    // Tage ohne Unterrichtsstunden (z. B. Selbststudium) sind kein
+    // Praesenzunterricht nach BKrFQV und duerfen der Behoerde nicht als
+    // solcher gemeldet werden.
+    const ausstehend=kurstage.filter(k=>k.meldung_status==='ausstehend');
+    // Nur eine ausdrueckliche 0 gilt als unterrichtsfrei. Fehlt der Wert,
+    // wird gemeldet - eine versaeumte Meldung waegt schwerer als eine
+    // ueberfluessige.
+    const istFrei=k=>k.stunden!=null&&Number(k.stunden)===0;
+    const offene=ausstehend.filter(k=>!istFrei(k));
+    const ohneStd=ausstehend.filter(istFrei);
     const heute=new Date();
     const w5=(datum)=>{const d=new Date(datum+'T12:00');let wt=0;while(wt<5){d.setDate(d.getDate()-1);if(d.getDay()>0&&d.getDay()<6)wt++;}return d;};
 
@@ -2657,11 +2666,17 @@ async function bkrfqgKursmeldung(el) {
                    <td class="tbl-actions"><button class="btn btn-primary btn-sm" onclick="bkrfqgMelden('${k.id}')">📨 Melden</button></td>
                  </tr>`;
                }).join('')}</tbody></table>`}
-        </div>`;
+        </div>
+        ${ohneStd.length===0 ? '' : `<div class="card" style="padding:10px 14px;font-size:12px;color:var(--grau);margin-top:12px">
+          ${ohneStd.length} Kurstag${ohneStd.length===1?'':'e'} ohne Unterrichtsstunden (z. B. Selbststudium) &ndash; nicht meldepflichtig:
+          ${ohneStd.map(k=>bfmtD(k.datum)+' '+(k.gegenstand||'')).join(' \u00b7 ')}
+        </div>`}`;
   } catch(e){ el.innerHTML=bKopf('📨 Kursmeldung')+`<div class="card" style="padding:20px;color:var(--rot)">Fehler: ${e.message}</div>`; }
 }
 async function bkrfqgMelden(id) {
   const k=window._bkrfqgKurstage?.find(x=>x.id===id); if(!k)return;
+  // Sicherheitsnetz: auch bei direktem Aufruf nichts ohne Unterricht melden.
+  if(k.stunden!=null&&Number(k.stunden)===0){toast('Tage ohne Unterrichtsstunden werden nicht gemeldet','err');return;}
   const email=k.bkrfqg_standorte?.behoerde_email;
   if(!email){toast('Keine Behörden-E-Mail hinterlegt!','err');return;}
   toast('KI formuliert Kursmeldung …','',10000);
