@@ -8013,6 +8013,13 @@ function openBqrDialog(g){
       <div class="hint">Max. ${BQR_MAXLEN.sachbearbeiterkennung} Zeichen (Vorgabe des KBA-XML-Schemas). Dauerhaft änderbar unter <b>Einstellungen → Schulungen → Schulungsbetrieb</b>.</div></div>
     ${rows}
     <div class="hint" style="margin-top:8px">Teilnehmer mit fehlenden Pflichtangaben werden <b>nicht</b> in die Datei aufgenommen (rotes Etikett anklicken zum Ergänzen). Die fertige Datei lädst du bei kba-online.de unter „Dateiübermittlung" hoch. Meldefrist: unverzüglich nach dem Termin.</div>
+    <label style="display:flex;align-items:flex-start;gap:8px;margin-top:12px;padding:10px 12px;border:1px solid var(--border);border-radius:6px;cursor:pointer">
+      <input type="checkbox" id="bqr_cert_mail" checked style="margin-top:2px;flex:none">
+      <span>
+        <span style="font-size:11px;font-weight:600;color:var(--grau);letter-spacing:.04em;text-transform:uppercase;display:block">Teilnahmebescheinigung versenden</span>
+        <span class="hint" style="margin:2px 0 0">Verschickt die Bescheinigung per E-Mail an alle gemeldeten Teilnehmer mit hinterlegter Adresse. Bereits versendete werden nie doppelt geschickt. <b>Beim Nachtragen älterer Termine abwählen.</b></span>
+      </span>
+    </label>
     <div id="bqr_fehler"></div>
     <div class="modal-actions">
       <button class="btn ghost" onclick="closeModal()">Abbrechen</button>
@@ -8026,6 +8033,9 @@ function bqrErzeugen(courseId){
   const kbs=(BQR_MODUL_KB[typ]||[]).map(k=>BQR_KB[k]).filter(Boolean);
   const _fehlerBox=document.getElementById('bqr_fehler');
   if(_fehlerBox)_fehlerBox.innerHTML='';
+  // Haken aus dem Dialog: standardmaessig gesetzt. Fehlt das Element (etwa
+  // bei einem Aufruf ausserhalb des Dialogs), wird versendet wie bisher.
+  const _certSenden=(document.getElementById('bqr_cert_mail')||{checked:true}).checked;
   const fehler=[];
   const sb=((document.getElementById('bqr_sb')||{}).value||'').trim();
   if(!sb){toast('Bitte Sachbearbeiterkennung eintragen');return;}
@@ -8098,7 +8108,10 @@ function bqrErzeugen(courseId){
   gruppe.forEach(c=>{
     if(!c.participant||_bqrSeen.has(c.participant))return; _bqrSeen.add(c.participant);
     if(c.passed!==true) c.passed=true;   // Teilnahme = mit BQR-Meldung bestätigt
-    sendBescheinigungMail(c);
+    // Versand nur, wenn im Dialog angehakt (Vorgabe: ja). Beim Nachtragen
+    // alter Termine bleibt der Haken weg – die Teilnahme wird trotzdem
+    // gesetzt und gemeldet, nur ohne erneute E-Mail.
+    if(_certSenden) sendBescheinigungMail(c);
   });
   // Meldestatus Stufe 1 (Migration 31): "Datei erzeugt" - mehr ist es noch
   // nicht. Alle Zeilen des Teilnehmers stempeln, nicht nur die erste, damit
@@ -8121,7 +8134,8 @@ function bqrErzeugen(courseId){
   setTimeout(()=>{try{URL.revokeObjectURL(a.href);}catch(e){}},5000);
   closeModal();
   toast('✓ BQR-Datei erzeugt: '+nr+' Teilnehmer'+(uebersprungen.length?' · übersprungen ('+uebersprungen.length+'): '+uebersprungen.join(', '):'')
-    +' · noch nicht gemeldet – nach dem Upload bei kba-online.de am Lehrgang „☐ Im BQR hochgeladen" bestätigen');
+    +' · noch nicht gemeldet – nach dem Upload bei kba-online.de am Lehrgang „☐ Im BQR hochgeladen" bestätigen'
+    +(_certSenden?'':' · Bescheinigungsversand übersprungen'));
 }
 
 // ── Reservierungen mit Namen: kleiner Dialog an der Kurs-Karte ────────────
