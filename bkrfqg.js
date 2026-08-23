@@ -1688,16 +1688,21 @@ function bkrfqgKPDetailView(el) {
     // Gemeldete Tage bleiben liegen - ein Tausch wuerde die Meldung ans
     // KBA nachtraeglich unrichtig machen.
     const _fest = k.meldung_status==='gemeldet';
-    return `<tr style="${bg}" data-kt="${k.id}" ${_fest?'':'draggable="true"'}
-      ondragstart="bkrfqgZiehStart(event,'${k.id}')"
+    return `<tr style="${bg}" data-kt="${k.id}"
       ondragover="bkrfqgZiehUeber(event)"
       ondragleave="bkrfqgZiehRaus(event)"
       ondrop="bkrfqgZiehAb(event,'${k.id}')"
       ondragend="bkrfqgZiehEnde(event)">
-      <td style="font-weight:600;white-space:nowrap;font-size:12px" title="${_fest?'Bereits gemeldet – nicht verschiebbar':'Zum Tauschen auf einen anderen Kurstag ziehen'}">${_fest?'':'<span style="color:var(--grau);cursor:grab;margin-right:5px">⠿</span>'}${bfmtD(k.datum)}<br><span style="color:var(--grau);font-weight:400;font-size:10px">${wt}</span></td>
+      <td style="font-weight:600;white-space:nowrap;font-size:12px">${_fest?'':'<span draggable="true" ondragstart="bkrfqgZiehStart(event,\''+k.id+'\')" style="color:var(--grau);cursor:grab;margin-right:5px" title="Zum Tauschen auf einen anderen Kurstag ziehen">⠿</span>'}${bfmtD(k.datum)}<br><span style="color:var(--grau);font-weight:400;font-size:10px">${wt}</span></td>
       <td style="white-space:nowrap;font-size:11px">${k.beginn?.slice(0,5)||'–'}<br>${k.ende?.slice(0,5)||'–'}</td>
       <td style="font-size:12px;max-width:260px">
-        <div>${(k.gegenstand||'–').replace(/^Band [^:]+:\s*/,'')}</div>
+        <div ${_fest?'':'contenteditable="true" spellcheck="false"'}
+          onfocus="bkrfqgThemaFokus(this)"
+          onblur="bkrfqgThemaSpeichern(this,'${k.id}')"
+          onkeydown="bkrfqgThemaTaste(event,this)"
+          style="${_fest?'':'cursor:text;border-radius:4px;padding:1px 3px;margin:-1px -3px'}"
+          title="${_fest?'Bereits gemeldet – nicht änderbar':'Zum Ändern anklicken'}"
+          >${(k.gegenstand||'–').replace(/^Band [^:]+:\s*/,'')}</div>
         ${(()=>{
           const m=(k.gegenstand||'').match(/^Band ([^:]+):/);
           const bn=m?m[1].trim():null;
@@ -2407,6 +2412,45 @@ function bkrfqgKurstagModalHTML(kpId) {
       </div>
     </div>
   </div>`;
+}
+
+// Thema direkt in der Tabelle aendern.
+// Der urspruengliche Text wird gemerkt: Escape stellt ihn wieder her,
+// und ein unveraendertes Feld loest keinen Schreibvorgang aus.
+let _bkrfqgThemaVorher = '';
+
+function bkrfqgThemaFokus(el){
+  _bkrfqgThemaVorher = el.textContent.trim();
+  el.style.background = '#fffbea';
+  el.style.outline = '1px solid var(--blau)';
+}
+
+function bkrfqgThemaTaste(ev, el){
+  if(ev.key === 'Enter'){ ev.preventDefault(); el.blur(); }
+  if(ev.key === 'Escape'){ ev.preventDefault(); el.textContent = _bkrfqgThemaVorher; el.blur(); }
+}
+
+async function bkrfqgThemaSpeichern(el, id){
+  el.style.background = '';
+  el.style.outline = '';
+  const neu = el.textContent.trim();
+  const k = bkrfqgKPKurstage.find(x=>x.id===id);
+  if(!k) return;
+  if(neu === _bkrfqgThemaVorher) return;
+  if(!neu){ el.textContent = _bkrfqgThemaVorher; return; }
+  // "Band 3: " bleibt erhalten - daran haengen die Unterthemen-Anzeige
+  // und die Zuordnung abweichender Dozenten.
+  const m = (k.gegenstand||'').match(/^Band [^:]+:\s*/);
+  const praefix = m ? m[0] : '';
+  try {
+    await bkrfqgUpdate('bkrfqg_kurstage', id, { gegenstand: praefix + neu });
+    k.gegenstand = praefix + neu;
+    _bkrfqgThemaVorher = neu;
+    toast('Thema gespeichert');
+  } catch(e) {
+    el.textContent = _bkrfqgThemaVorher;
+    toast('Fehler: '+e.message,'err');
+  }
 }
 
 // ── Kurstage per Ziehen tauschen ─────────────────────────────────────
