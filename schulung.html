@@ -4837,8 +4837,9 @@ function renderCourses(){
             // Hochladen bleibt der 📎-Knopf - jetzt mit gruenem Haken und dem
             // Zeitpunkt des juengsten Scans im Tooltip. Das Ansehen behaelt
             // seinen eigenen Knopf mit der Anzahl.
-            return '<button class="btn ghost sm instr-scan-btn" data-scan-key="'+gKey+'" title="'+_esc(st.titel)+'">'+_scanKnopfInhalt(st)+'</button>'
-              +(st.anzahl?'<button class="btn ghost sm scan-view-btn" data-scan-key="'+gKey+'" title="'+_esc(st.titel)+'">🔍 Scan ansehen ('+st.anzahl+')</button>':'');})()+
+            // Kein eigener Ansehen-Knopf mehr: der 📎-Knopf oeffnet den
+            // Dialog, in dem die Listen angesehen und gedruckt werden.
+            return '<button class="btn ghost sm instr-scan-btn" data-scan-key="'+gKey+'" title="'+_esc(st.titel)+'">'+_scanKnopfInhalt(st)+'</button>';})()+
           '<button class="btn sm instr-cert-btn" style="background:#16a34a">📄 Bescheinigungen</button>'+(isKurs&&(g.type==='Gabelstapler'||g.type==='Ladekran'||g.type==='Baumaschinen')?'<button class="btn sm fa-group-btn" style="background:#0e7490">🪪 '+(g.type==='Gabelstapler'?'Fahrausweise':'Befähigungsnachweise')+'</button>':'')+
           '<button class="btn sm instr-inv-btn" style="background:#1d4ed8">🧾 Rechnungen</button>'+
           (isKurs?_bqrKnoepfe(g):'')+
@@ -5167,8 +5168,9 @@ function renderInstructions(){
             // Hochladen bleibt der 📎-Knopf - jetzt mit gruenem Haken und dem
             // Zeitpunkt des juengsten Scans im Tooltip. Das Ansehen behaelt
             // seinen eigenen Knopf mit der Anzahl.
-            return '<button class="btn ghost sm instr-scan-btn" data-scan-key="'+gKey+'" title="'+_esc(st.titel)+'">'+_scanKnopfInhalt(st)+'</button>'
-              +(st.anzahl?'<button class="btn ghost sm scan-view-btn" data-scan-key="'+gKey+'" title="'+_esc(st.titel)+'">🔍 Scan ansehen ('+st.anzahl+')</button>':'');})()+
+            // Kein eigener Ansehen-Knopf mehr: der 📎-Knopf oeffnet den
+            // Dialog, in dem die Listen angesehen und gedruckt werden.
+            return '<button class="btn ghost sm instr-scan-btn" data-scan-key="'+gKey+'" title="'+_esc(st.titel)+'">'+_scanKnopfInhalt(st)+'</button>';})()+
           '<button class="btn sm instr-cert-btn" style="background:#16a34a">📄 Bescheinigungen</button>'+(isKurs&&(g.type==='Gabelstapler'||g.type==='Ladekran'||g.type==='Baumaschinen')?'<button class="btn sm fa-group-btn" style="background:#0e7490">🪪 '+(g.type==='Gabelstapler'?'Fahrausweise':'Befähigungsnachweise')+'</button>':'')+
           '<button class="btn sm instr-inv-btn" style="background:#1d4ed8">🧾 Rechnungen</button>'+
           '<button class="btn ghost sm instr-edit-btn">\u270e Bearbeiten</button>'+
