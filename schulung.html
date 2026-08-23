@@ -160,7 +160,8 @@ textarea{resize:vertical;min-height:64px}
 .btn.steel:hover{background:var(--ink);border-color:var(--ink)}
 .btn.sm{padding:var(--btn-pad-sm);font-size:var(--fs-mini)}
 /* Loeschen: roter Rand statt roter Flaeche - erkennbar, aber nicht laut. */
-.btn.danger{background:#fff;color:var(--rot);border-color:var(--rot)}
+/* Symbol-Knoepfe brauchen etwas mehr Luft, sonst klebt das Zeichen am Rand. */
+.btn.danger{background:#fff;color:var(--rot);border-color:var(--rot);padding-left:11px;padding-right:11px}
 .btn.danger:hover{background:var(--red-light);border-color:var(--rot)}
 .btn:disabled{opacity:.5;cursor:default}
 .row-actions{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
@@ -231,7 +232,7 @@ tr:hover td{background:#fafafa}
 .search-bar input{flex:1;min-width:200px}
 .bar{height:7px;border-radius:4px;background:var(--border);overflow:hidden;margin-top:4px}
 .bar>div{height:100%;border-radius:4px}
-.tab-bar{display:flex;gap:5px;margin-bottom:16px;flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;scrollbar-width:thin;scrollbar-color:var(--red) #e5e7eb;padding-bottom:6px;padding-right:18px;transition:mask-image .15s,-webkit-mask-image .15s}
+.tab-bar{display:flex;gap:5px;margin-bottom:16px;flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;scrollbar-width:thin;scrollbar-color:var(--ink-4) #f0f0f0;padding-bottom:6px;padding-right:18px;transition:mask-image .15s,-webkit-mask-image .15s}
 .tab-bar.has-more-right{
   -webkit-mask-image:linear-gradient(to right,#000 calc(100% - 26px),transparent 100%);
   mask-image:linear-gradient(to right,#000 calc(100% - 26px),transparent 100%);}
@@ -7987,13 +7988,14 @@ function _bqrKnoepfe(g){
   if(!_istBqrPflicht(g)) return '';
   const st=_bqrStatus(g);
   const offenTxt=st.offen?' · '+st.offen+' Teilnehmer noch nicht in der Meldung':'';
-  // Statusfarben bleiben: sie tragen Information (violett = offen,
-  // orange = Datei erzeugt, gruen = gemeldet). Seit die Grundform neutral
-  // ist, muessen Schrift- und Randfarbe mitgegeben werden.
-  const stil = st.stufe==='gemeldet' ? 'background:var(--gruen);border-color:var(--gruen);color:#fff'
+  // Erledigt sieht aus wie beim Scan-Knopf: neutrale Flaeche, gruene
+  // Plakette. Farbe bleibt den Stufen vorbehalten, bei denen noch etwas
+  // zu tun ist - violett = nichts erzeugt, orange = Upload offen.
+  const stil = st.stufe==='gemeldet' ? ''
              : st.stufe==='erzeugt'  ? 'background:var(--orange);border-color:var(--orange);color:#fff'
              : 'background:#7c3aed;border-color:#7c3aed;color:#fff';
-  const marke = st.stufe==='gemeldet' ? ' ✓' : st.stufe==='erzeugt' ? ' ●' : '';
+  const _bqrPlakette = '<span style="background:var(--gruen);color:#fff;border-radius:10px;font-size:.7rem;font-weight:700;padding:1px 6px;margin-left:2px">✓</span>';
+  const marke = st.stufe==='gemeldet' ? ' '+_bqrPlakette : st.stufe==='erzeugt' ? ' ●' : '';
   const titel = st.stufe==='gemeldet'
       ? 'Im BQR hochgeladen am '+_zeitpunkt(st.gemeldetAm)+' · Datei erzeugt am '+_zeitpunkt(st.dateiAm)+offenTxt
       : st.stufe==='erzeugt'
