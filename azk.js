@@ -4,6 +4,7 @@
 //  Diff Monat = Ist - Soll, Diff gesamt verkettet über Monate.
 // ════════════════════════════════════════════════════════════════════
 const azkState = {
+  ansicht: 'tabelle',   // 'tabelle' oder 'urlaub'
   jahr: 2026,
   monat: new Date().getMonth() + 1,
   monate: [],      // azk_monate-Einträge
@@ -26,6 +27,233 @@ async function ladeAZK() {
 // Holt alle aktiven, für AZK sichtbaren Mitarbeiter (aus Personal-Modul)
 // Standard: alle aktiven Mitarbeiter AUSSER Bereich "sonstige" (Aushilfen).
 // Über azk_sichtbar (true/false) lässt sich das pro Person manuell überschreiben.
+
+// ════════════════════════════════════════════════════════════════════
+// URLAUBSÜBERSICHT – Jahresansicht mit Balken je Mitarbeiter
+// Rein visuell: keine Verrechnung mit den Monatswerten im AZK-Modul.
+// ════════════════════════════════════════════════════════════════════
+let urlaubState = { jahr: new Date().getFullYear(), eintraege: [], geladen: false };
+
+// Wechselt zwischen Arbeitszeittabelle und Urlaubsuebersicht.
+async function azkSetAnsicht(v) {
+  azkState.ansicht = v;
+  if (v === 'urlaub' && !urlaubState.geladen) await urlaubLaden();
+  renderAZK();
+}
+
+async function urlaubLaden() {
+  const { data, error } = await sb.from('urlaub').select('*').order('von');
+  if (error) { toast('Urlaub konnte nicht geladen werden: ' + error.message, 'err'); return; }
+  urlaubState.eintraege = data || [];
+  urlaubState.geladen = true;
+}
+
+function urlaubJahrWechsel(d) {
+  urlaubState.jahr += d;
+  renderAZK();
+}
+
+// Tag im Jahr (0-basiert) – Grundlage für die Position im Balken.
+function _uTagImJahr(d) {
+  const start = new Date(d.getFullYear(), 0, 1);
+  return Math.round((d - start) / 86400000);
+}
+function _uTageImJahr(j) {
+  return ((j % 4 === 0 && j % 100 !== 0) || j % 400 === 0) ? 366 : 365;
+}
+
+function renderUrlaub() {
+  const jahr = urlaubState.jahr;
+  const tage = _uTageImJahr(jahr);
+  const jStart = new Date(jahr, 0, 1), jEnde = new Date(jahr, 11, 31);
+
+  // Dieselben Personen wie in der Arbeitszeittabelle - azkMitarbeiter()
+  // beruecksichtigt die Sichtbarkeitsregel und sortiert bereits.
+  const liste = azkMitarbeiter();
+
+  const monate = ['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
+  const farbe = { urlaub:'#2A6CAE', sonderurlaub:'#0e7490', unbezahlt:'#6B7280' };
+
+  // Monatsraster als Hintergrund
+  let raster = '';
+  for (let m = 0; m < 12; m++) {
+    const l = _uTagImJahr(new Date(jahr, m, 1)) / tage * 100;
+    raster += '<div style="position:absolute;left:' + l + '%;top:0;bottom:0;width:1px;background:#e5e7eb"></div>';
+  }
+
+  const kopf = monate.map(function (nm, m) {
+    const l = _uTagImJahr(new Date(jahr, m, 1)) / tage * 100;
+    const b = (new Date(jahr, m + 1, 0).getDate()) / tage * 100;
+    return '<div style="position:absolute;left:' + l + '%;width:' + b + '%;text-align:center;font-size:10px;color:var(--grau);font-weight:600">' + nm + '</div>';
+  }).join('');
+
+  // Heute-Markierung nur im laufenden Jahr
+  const heute = new Date();
+  const heuteLinie = (heute.getFullYear() === jahr)
+    ? '<div style="position:absolute;left:' + (_uTagImJahr(heute) / tage * 100) + '%;top:0;bottom:0;width:2px;background:var(--rot);opacity:.5"></div>'
+    : '';
+
+  const zeilen = liste.map(function (m) {
+    const eig = urlaubState.eintraege.filter(function (u) {
+      if (u.mitarbeiter_id !== m.id) return false;
+      return new Date(u.bis) >= jStart && new Date(u.von) <= jEnde;
+    });
+
+    const balken = eig.map(function (u) {
+      // Zeiträume über den Jahreswechsel am Jahresrand abschneiden
+      const v = new Date(u.von) < jStart ? jStart : new Date(u.von);
+      const b = new Date(u.bis) > jEnde ? jEnde : new Date(u.bis);
+      const l = _uTagImJahr(v) / tage * 100;
+      const w = Math.max((_uTagImJahr(b) - _uTagImJahr(v) + 1) / tage * 100, 0.4);
+      const anz = Math.round((b - v) / 86400000) + 1;
+      const c = farbe[u.art] || farbe.urlaub;
+      const offen = u.status !== 'genehmigt';
+      return '<div onclick="urlaubDialog(\'' + u.id + '\')" title="' + _uEsc(m.vorname + ' ' + m.nachname) + ': '
+        + _uDat(u.von) + ' – ' + _uDat(u.bis) + ' (' + anz + ' Tage' + (offen ? ', beantragt' : '') + ')'
+        + (u.notiz ? ' · ' + _uEsc(u.notiz) : '') + '" '
+        + 'style="position:absolute;left:' + l + '%;width:' + w + '%;top:5px;bottom:5px;border-radius:3px;cursor:pointer;'
+        + (offen ? 'background:repeating-linear-gradient(45deg,' + c + ',' + c + ' 4px,#fff 4px,#fff 8px);border:1px solid ' + c
+                 : 'background:' + c) + '"></div>';
+    }).join('');
+
+    const summe = eig.reduce(function (s, u) {
+      const v = new Date(u.von) < jStart ? jStart : new Date(u.von);
+      const b = new Date(u.bis) > jEnde ? jEnde : new Date(u.bis);
+      return s + Math.round((b - v) / 86400000) + 1;
+    }, 0);
+
+    return '<div style="display:flex;align-items:stretch;border-bottom:1px solid #f0f0f0">'
+      + '<div style="flex:0 0 190px;padding:7px 10px;font-size:13px;display:flex;align-items:center;gap:6px">'
+        + '<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'
+        + _uEsc((m.nachname || '') + ', ' + (m.vorname || '')) + '</span>'
+        + (eig.length ? '<span style="font-size:11px;color:var(--grau);flex:none">' + summe + ' T.</span>'
+                      : '<span style="font-size:11px;color:var(--gelb);flex:none" title="Für dieses Jahr wurde noch kein Urlaub eingetragen">nichts</span>')
+      + '</div>'
+      + '<div style="flex:1;position:relative;min-height:34px;background:' + (eig.length ? '#fff' : '#fffdf5') + '" '
+        + 'ondblclick="urlaubDialog(null,\'' + m.id + '\')" title="Doppelklick: Eintrag anlegen">'
+        + raster + heuteLinie + balken
+      + '</div></div>';
+  }).join('');
+
+  const ohne = liste.filter(function (m) {
+    return !urlaubState.eintraege.some(function (u) {
+      return u.mitarbeiter_id === m.id && new Date(u.bis) >= jStart && new Date(u.von) <= jEnde;
+    });
+  }).length;
+
+  return '<div class="toolbar">'
+    + '<h2>Urlaubsjahr</h2>'
+    + '<button class="btn btn-outline btn-sm" onclick="azkSetAnsicht(\'tabelle\')">\u2190 Arbeitszeit</button>'
+    + '<button class="btn btn-outline btn-sm" onclick="urlaubJahrWechsel(-1)">‹</button>'
+    + '<strong style="font-size:16px;margin:0 4px">' + jahr + '</strong>'
+    + '<button class="btn btn-outline btn-sm" onclick="urlaubJahrWechsel(1)">›</button>'
+    + '<button class="btn btn-primary btn-sm" style="margin-left:12px" onclick="urlaubDialog(null)">+ Urlaub</button>'
+    + '<span style="flex:1"></span>'
+    + (ohne ? '<span style="font-size:12px;color:var(--gelb);font-weight:600">' + ohne + ' ohne Eintrag</span>' : '')
+    + '</div>'
+    + '<div class="card" style="padding:0;overflow:hidden">'
+      + '<div style="display:flex;border-bottom:1px solid var(--border);background:#fafafa">'
+        + '<div style="flex:0 0 190px;padding:6px 10px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--grau)">Mitarbeiter</div>'
+        + '<div style="flex:1;position:relative;height:26px">' + kopf + '</div>'
+      + '</div>'
+      + (liste.length ? zeilen : '<div style="padding:24px;text-align:center;color:var(--grau);font-size:13px">Keine Mitarbeiter in dieser Auswahl.</div>')
+    + '</div>'
+    + '<div style="display:flex;gap:16px;margin-top:10px;font-size:11px;color:var(--grau);align-items:center;flex-wrap:wrap">'
+      + '<span><span style="display:inline-block;width:22px;height:10px;background:#2A6CAE;border-radius:2px;vertical-align:-1px"></span> Urlaub</span>'
+      + '<span><span style="display:inline-block;width:22px;height:10px;background:#0e7490;border-radius:2px;vertical-align:-1px"></span> Sonderurlaub</span>'
+      + '<span><span style="display:inline-block;width:22px;height:10px;background:#6B7280;border-radius:2px;vertical-align:-1px"></span> unbezahlt</span>'
+      + '<span><span style="display:inline-block;width:22px;height:10px;border:1px solid #2A6CAE;background:repeating-linear-gradient(45deg,#2A6CAE,#2A6CAE 4px,#fff 4px,#fff 8px);border-radius:2px;vertical-align:-1px"></span> beantragt, noch nicht genehmigt</span>'
+      + '<span style="margin-left:auto">Doppelklick in eine Zeile legt einen Eintrag an</span>'
+    + '</div>';
+}
+
+function _uEsc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;'); }
+function _uDat(d) { const p = String(d).split('-'); return p.length === 3 ? p[2] + '.' + p[1] + '.' + p[0] : d; }
+
+function urlaubDialog(id, maVor) {
+  const u = id ? urlaubState.eintraege.find(function (x) { return x.id === id; }) : null;
+  const liste = azkMitarbeiter();
+
+  const opt = liste.map(function (m) {
+    const sel = (u ? u.mitarbeiter_id : maVor) === m.id ? ' selected' : '';
+    return '<option value="' + m.id + '"' + sel + '>' + _uEsc((m.nachname || '') + ', ' + (m.vorname || '')) + '</option>';
+  }).join('');
+
+  const artOpt = [['urlaub', 'Urlaub'], ['sonderurlaub', 'Sonderurlaub'], ['unbezahlt', 'Unbezahlt']]
+    .map(function (a) { return '<option value="' + a[0] + '"' + (u && u.art === a[0] ? ' selected' : '') + '>' + a[1] + '</option>'; }).join('');
+
+  const titel = u ? 'Urlaub bearbeiten' : 'Urlaub eintragen';
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay open';
+  modal.id = 'urlaub-modal';
+  modal.innerHTML = ''
+    + '<div class="modal" style="width:min(560px,96vw)">'
+    + '<div class="modal-header"><h3>' + titel + '</h3>'
+      + '<button class="close-btn" onclick="urlaubModalZu()">\u2715</button></div>'
+    + '<div class="modal-body">'
+      + '<div class="frow"><label>Mitarbeiter</label><select id="ul-ma">' + opt + '</select></div>'
+      + '<div class="fgrid">'
+        + '<div class="frow"><label>Von</label><input type="date" id="ul-von" value="' + (u ? u.von : '') + '"></div>'
+        + '<div class="frow"><label>Bis</label><input type="date" id="ul-bis" value="' + (u ? u.bis : '') + '"></div>'
+      + '</div>'
+      + '<div class="fgrid">'
+        + '<div class="frow"><label>Art</label><select id="ul-art">' + artOpt + '</select></div>'
+        + '<div class="frow"><label>Status</label><select id="ul-status">'
+          + '<option value="beantragt"' + (u && u.status === 'beantragt' ? ' selected' : '') + '>beantragt</option>'
+          + '<option value="genehmigt"' + (!u || u.status === 'genehmigt' ? ' selected' : '') + '>genehmigt</option>'
+        + '</select></div>'
+      + '</div>'
+      + '<div class="frow"><label>Notiz</label><input id="ul-notiz" value="' + _uEsc(u ? u.notiz : '') + '" placeholder="optional"></div>'
+    + '</div>'
+    + '<div class="modal-footer">'
+      + (u ? '<button class="btn btn-outline btn-sm" style="color:var(--rot);border-color:var(--rot)" onclick="urlaubLoeschen(\'' + u.id + '\')">L\u00f6schen</button>' : '')
+      + '<span style="flex:1"></span>'
+      + '<button class="btn btn-outline btn-sm" onclick="urlaubModalZu()">Abbrechen</button>'
+      + '<button class="btn btn-primary btn-sm" onclick="urlaubSpeichern(' + (u ? "'" + u.id + "'" : 'null') + ')">Speichern</button>'
+    + '</div></div>';
+  document.body.appendChild(modal);
+}
+
+function urlaubModalZu() { const m = document.getElementById('urlaub-modal'); if (m) m.remove(); }
+
+async function urlaubSpeichern(id) {
+  const g = function (x) { const e = document.getElementById(x); return e ? e.value : ''; };
+  const von = g('ul-von'), bis = g('ul-bis');
+  if (!von || !bis) { toast('Bitte Von und Bis angeben', 'err'); return; }
+  if (bis < von) { toast('Das Ende liegt vor dem Beginn', 'err'); return; }
+
+  const daten = {
+    mitarbeiter_id: g('ul-ma'),
+    von: von, bis: bis,
+    art: g('ul-art'), status: g('ul-status'),
+    notiz: g('ul-notiz') || null
+  };
+  const res = id ? await sb.from('urlaub').update(daten).eq('id', id)
+                 : await sb.from('urlaub').insert(daten);
+  if (res.error) { toast('Fehler: ' + res.error.message, 'err'); return; }
+  urlaubModalZu();
+  await urlaubLaden();
+  renderAZK();
+  toast('Gespeichert');
+}
+
+async function urlaubLoeschen(id) {
+  if (!confirm('Diesen Urlaubseintrag löschen?')) return;
+  const { error } = await sb.from('urlaub').delete().eq('id', id);
+  if (error) { toast('Fehler: ' + error.message, 'err'); return; }
+  urlaubModalZu();
+  await urlaubLaden();
+  renderAZK();
+  toast('Gelöscht');
+}
+
+window.azkSetAnsicht = azkSetAnsicht;
+window.urlaubJahrWechsel = urlaubJahrWechsel;
+window.urlaubDialog = urlaubDialog;
+window.urlaubModalZu = urlaubModalZu;
+window.urlaubSpeichern = urlaubSpeichern;
+window.urlaubLoeschen = urlaubLoeschen;
+
 function azkMitarbeiter() {
   const liste = ((typeof personalState!=='undefined' && personalState.mitarbeiter) || []).filter(m => {
     if (m.status !== 'aktiv') return false;
@@ -125,6 +353,13 @@ window.renderAZK = async function() {
     if (typeof personalState!=='undefined' && !personalState.loaded && typeof ladeMitarbeiter==='function') await ladeMitarbeiter();
     await ladeAZK();
   }
+  // Urlaubsuebersicht statt Arbeitszeittabelle - erst hier, damit die
+  // Mitarbeiterdaten geladen sind.
+  if (azkState.ansicht === 'urlaub') {
+    if (!urlaubState.geladen) await urlaubLaden();
+    view.innerHTML = renderUrlaub();
+    return;
+  }
   const mas = azkMitarbeiter();
   const monat = azkState.monat;
 
@@ -196,6 +431,7 @@ window.renderAZK = async function() {
       <span style="color:var(--grau);font-size:13px">${azkState.jahr}</span>
       ${canWrite()?'<button class="btn btn-outline btn-sm" onclick="azkStartwerte()">⚙ Startwerte</button>':''}
       <button class="btn btn-outline btn-sm" onclick="azkBerichte()">🖨 Berichte</button>
+      <button class="btn btn-outline btn-sm" onclick="azkSetAnsicht('urlaub')">🏖 Urlaubsjahr</button>
       ${canWrite()?'<button class="btn btn-primary btn-sm" onclick="azkMitarbeiterHinzufuegen()">＋ Mitarbeiter</button>':''}
     </div>
     ${mas.length===0 ? '<div class="module-placeholder"><div class="ph-icon">⏱</div><h3>Keine Mitarbeiter</h3><p>Lege zuerst im Personal-Modul Mitarbeiter an.</p></div>' : `
