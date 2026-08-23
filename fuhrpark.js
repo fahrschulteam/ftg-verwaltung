@@ -73,9 +73,9 @@ window.renderFuhrpark = async function() {
       <div class="mod-shell" id="fuhrpark-mod-shell">
         <aside class="mod-side"><nav>
           <div class="mod-side-label">Fuhrpark</div>
-          <button class="mod-side-btn" data-fv="bestellt" onclick="setFuhrparkFilter('bestellt')"><span style="font-size:16px;width:20px;text-align:center">📦</span><span class="mod-lbl">Bestellt (<span id="fz-cnt-bestellt">0</span>)</span></button>
-          <button class="mod-side-btn" data-fv="aktiv" onclick="setFuhrparkFilter('aktiv')"><span style="font-size:16px;width:20px;text-align:center">🚗</span><span class="mod-lbl">Aktuell (<span id="fz-cnt-aktiv">0</span>)</span></button>
-          <button class="mod-side-btn" data-fv="archiviert" onclick="setFuhrparkFilter('archiviert')"><span style="font-size:16px;width:20px;text-align:center">📁</span><span class="mod-lbl">Archiv (<span id="fz-cnt-archiv">0</span>)</span></button>
+          <button class="mod-side-btn" data-fv="bestellt" onclick="setFuhrparkFilter('bestellt')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px;flex-shrink:0"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg><span class="mod-lbl">Bestellt (<span id="fz-cnt-bestellt">0</span>)</span></button>
+          <button class="mod-side-btn" data-fv="aktiv" onclick="setFuhrparkFilter('aktiv')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px;flex-shrink:0"><path d="M1 16V9h13v7"/><path d="M14 11h4l3 3v2h-7z"/><circle cx="5.5" cy="17.5" r="2"/><circle cx="17.5" cy="17.5" r="2"/></svg><span class="mod-lbl">Aktuell (<span id="fz-cnt-aktiv">0</span>)</span></button>
+          <button class="mod-side-btn" data-fv="archiviert" onclick="setFuhrparkFilter('archiviert')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px;flex-shrink:0"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg><span class="mod-lbl">Archiv (<span id="fz-cnt-archiv">0</span>)</span></button>
         </nav></aside>
         <div class="mod-main" id="fuhrpark-content"></div>
       </div>`;

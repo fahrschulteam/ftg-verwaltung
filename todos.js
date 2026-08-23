@@ -79,14 +79,14 @@ window.renderTodos = async function() {
       <div class="mod-shell" id="todos-mod-shell">
         <aside class="mod-side"><nav>
           <div class="mod-side-label">To-Dos</div>
-          <button class="mod-side-btn" data-ts="offen" onclick="setTodoStatus('offen')"><span style="font-size:16px;width:20px;text-align:center">🔔</span><span class="mod-lbl">Offen (<span id="t-cnt-offen">0</span>)</span></button>
-          <button class="mod-side-btn" data-ts="erledigt" onclick="setTodoStatus('erledigt')"><span style="font-size:16px;width:20px;text-align:center">✅</span><span class="mod-lbl">Erledigt (<span id="t-cnt-erledigt">0</span>)</span></button>
-          <button class="mod-side-btn" data-ts="alle" onclick="setTodoStatus('alle')"><span style="font-size:16px;width:20px;text-align:center">📋</span><span class="mod-lbl">Alle (<span id="t-cnt-alle">0</span>)</span></button>
+          <button class="mod-side-btn" data-ts="offen" onclick="setTodoStatus('offen')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px;flex-shrink:0"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg><span class="mod-lbl">Offen (<span id="t-cnt-offen">0</span>)</span></button>
+          <button class="mod-side-btn" data-ts="erledigt" onclick="setTodoStatus('erledigt')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px;flex-shrink:0"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg><span class="mod-lbl">Erledigt (<span id="t-cnt-erledigt">0</span>)</span></button>
+          <button class="mod-side-btn" data-ts="alle" onclick="setTodoStatus('alle')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px;flex-shrink:0"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg><span class="mod-lbl">Alle (<span id="t-cnt-alle">0</span>)</span></button>
           ${canWrite() ? `
           <div class="mod-side-divider"></div>
           <div class="mod-side-label">Ansicht</div>
-          <button class="mod-side-btn" data-ta="mir" onclick="setTodoAnsicht('mir')"><span style="font-size:16px;width:20px;text-align:center">👤</span><span class="mod-lbl">Für mich</span></button>
-          <button class="mod-side-btn" data-ta="vergeben" onclick="setTodoAnsicht('vergeben')"><span style="font-size:16px;width:20px;text-align:center">↗</span><span class="mod-lbl">Von mir vergeben</span></button>
+          <button class="mod-side-btn" data-ta="mir" onclick="setTodoAnsicht('mir')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px;flex-shrink:0"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span class="mod-lbl">Für mich</span></button>
+          <button class="mod-side-btn" data-ta="vergeben" onclick="setTodoAnsicht('vergeben')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px;flex-shrink:0"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg><span class="mod-lbl">Von mir vergeben</span></button>
           ` : ''}
         </nav></aside>
         <div class="mod-main" id="todos-content"></div>
