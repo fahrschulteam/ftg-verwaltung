@@ -378,7 +378,7 @@ function bAmpel(t){
   if(t<0)  return `<span style="color:var(--rot);font-weight:600">⚠ ${Math.abs(t)}d überfällig</span>`;
   if(t<30) return `<span style="color:var(--rot);font-weight:600">⚠ in ${t} Tagen</span>`;
   if(t<90) return `<span style="color:var(--gelb);font-weight:600">${t} Tage</span>`;
-  return `<span style="color:#059669;font-weight:600">✓ ${bfmtD(new Date(Date.now()+t*86400000).toISOString())}</span>`;
+    return `<span style="color:#059669;font-weight:600">✓ ${bfmtD(new Date(Date.now()+t*86400000).toISOString().slice(0,10))}</span>`;
 }
 
 // Einheitliche Status-Badges (nutzt .bdot Prinzip der App)
