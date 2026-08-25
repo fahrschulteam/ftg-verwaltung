@@ -2962,9 +2962,9 @@ function bkrfqgAntrag(el) {
           </div>
           <div class="card" style="padding:14px 16px">
             <div class="card-titel" style="margin-bottom:10px">2. Aktionen</div>
-            <div style="display:flex;flex-direction:column;gap:8px">
-              <button class="btn btn-sm" style="background:#6A1B9A;color:#fff;border-color:#6A1B9A" onclick="bkrfqgAntragPruefen()">✨ KI-Vollständigkeitsprüfung</button>
-              <button class="btn btn-primary btn-sm" onclick="bkrfqgAntragSenden()">📧 Antrag per E-Mail senden</button>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <button class="btn btn-outline btn-sm" onclick="bkrfqgAntragPruefen()">Vollständigkeit prüfen</button>
+              <button class="btn btn-primary btn-sm" onclick="bkrfqgAntragSenden()">An Behörde senden</button>
             </div>
             <div id="ba-pruef-result" style="margin-top:12px"></div>
           </div>
