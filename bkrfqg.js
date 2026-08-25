@@ -1,4 +1,4 @@
-// ════════════════════════════════════════════════════════════════════
+﻿// ════════════════════════════════════════════════════════════════════
 //  MODUL BKrFQG – Anerkennungsverwaltung
 //  Einheitliches Design mit App-Klassen (.card, .ma-table, .btn, .frow …)
 //  Nutzt window.sb + globale toast() Funktion
@@ -2945,6 +2945,11 @@ async function bkrfqgDokOeffnen(path) {
 // von hier aus nicht beruehrt.
 
 // Kenntnisbereich-Codes des KBA je BKrFQV-Nummer (Anlage 1).
+// HINWEIS zur XSD vom KBA: dort widersprechen sich Muster und Aufzaehlung -
+// das Muster 0[0-9]|1[0-8]|7[12]|9[89] laesst 19 und 20 nicht zu, die
+// Aufzaehlung listet sie. Eine lokale Schemapruefung schlaegt deshalb fehl.
+// Das Portal selbst nimmt 19 an (Modul 2G ist durchgelaufen), das Muster in
+// der veroeffentlichten XSD ist also veraltet. Nicht "korrigieren".
 // 05 und 18 sind laut XSD ungueltig: 05 lief zum 31.03.2025 aus und wurde
 // in 19 (1.4) und 20 (1.6) getrennt.
 const BGQ_KB_CODE = {'1.1':'01','1.2':'02','1.3':'03','1.3a':'04','1.4':'19','1.5':'06','1.6':'20',
