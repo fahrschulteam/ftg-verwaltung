@@ -11,6 +11,7 @@ const BKRFQG_VERSION = '20260825c';
 const bkrfqgState = {
   standorte: [], raeume: [], fahrlehrer: [], kursplaene: [],
   dozentBaender: [], dozentUnterthemen: [],
+  maDokumente: [], fortbildungen: [],
   aktuellerTab: 'dashboard', loaded: false, antragStandortId: null,
 };
 
@@ -435,6 +436,18 @@ async function bkrfqgLadeAlles() {
     try {
       bkrfqgState.dozentUnterthemen = await bkrfqgSB('bkrfqg_dozent_unterthemen', { select:'*' });
     } catch(e) { bkrfqgState.dozentUnterthemen = []; }
+    // Quellen fuer die Anlagen einer Aenderungsmitteilung. Beides wird im
+    // Personal-Modul gepflegt und hier nur gelesen.
+    try {
+      const { data: md } = await sb.from('mitarbeiter_dokumente').select('*');
+      bkrfqgState.maDokumente = md || [];
+    } catch(e) { bkrfqgState.maDokumente = []; }
+    try {
+      const { data: fb } = await sb.from('fortbildungen')
+        .select('id,mitarbeiter_id,art,datum,thema,dateiname,storage_path')
+        .not('storage_path','is',null).order('datum',{ascending:false});
+      bkrfqgState.fortbildungen = fb || [];
+    } catch(e) { bkrfqgState.fortbildungen = []; }
     bkrfqgState.loaded = true;
   } catch(e) {
     toast('BKrFQG Ladefehler: ' + e.message, 'err');
@@ -2736,6 +2749,23 @@ async function bkrfqgMelden(id) {
       standort:{name:k.bkrfqg_standorte?.name||'',strasse:k.bkrfqg_standorte?.strasse||'',plz:k.bkrfqg_standorte?.plz||'',ort:k.bkrfqg_standorte?.ort||'',behoerde_name:k.bkrfqg_standorte?.behoerde_name||'',behoerde_ort:k.bkrfqg_standorte?.behoerde_ort||''},
       fahrlehrer:k.mitarbeiter?k.mitarbeiter.vorname+' '+k.mitarbeiter.nachname:'–',
     });
+    // Anlagen als signierte Links: Brevo holt die Dateien selbst ab.
+    // Base64 durch die Netlify-Funktion zu schicken scheitert an deren
+    // Groessengrenze, sobald mehrere Urkunden zusammenkommen.
+    const anhaenge = [];
+    for (const c of document.querySelectorAll('.ba-anlage:checked')) {
+      const maId = document.getElementById('ba-ma')?.value || '';
+      const a = bkrfqgAnlagenFuer(maId).find(x => x.id === c.value);
+      if (!a) continue;
+      const { data, error } = await sb.storage.from(a.bucket)
+        .createSignedUrl(a.pfad, 60 * 60 * 24);
+      if (error) {
+        toast('Anlage „'+a.name+'“ nicht lesbar: '+error.message, 'err');
+        return;
+      }
+      anhaenge.push({ url: data.signedUrl, name: a.name });
+    }
+
     await fetch('/.netlify/functions/send-email',{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({to:email,toName:k.bkrfqg_standorte?.behoerde_name||'Behörde',subject:result.betreff,htmlContent:result.text_html})});
     await bkrfqgUpdate('bkrfqg_kurstage',id,{meldung_status:'gemeldet',gemeldet_am:new Date().toISOString()});
@@ -2803,6 +2833,78 @@ Fahrschulteam Lingen GmbH · Rheiner Str. 158 · 49809 Lingen · AZAV-Nr. 0333-1
 // ════════════════════════════════════════════════════════════════════
 // ANTRAG
 // ════════════════════════════════════════════════════════════════════
+// Welche Unterlagen die Behoerde je Anlass erwartet. Die Zuordnung ist
+// eine Annahme aus § 9 BKrFQG i.V.m. § 7 BKrFQV - was die Stadt Lingen
+// im Einzelfall verlangt, kann abweichen. Deshalb laesst sich jede
+// Anlage ab- und jede weitere zuwaehlen.
+const BKRFQG_ANLAGEN_SOLL = {
+  hinzufuegen: ['Fahrlehrerschein','Didaktik-Nachweis','Führungszeugnis','BKF-Fortbildung'],
+  abmelden: [],
+};
+
+// Alle verfuegbaren Anlagen einer Person, aus beiden Quellen.
+function bkrfqgAnlagenFuer(maId){
+  const aus = [];
+  (bkrfqgState.maDokumente||[]).filter(d => d.mitarbeiter_id === maId).forEach(d => {
+    aus.push({
+      id: 'md:'+d.id, bucket: 'dokumente', pfad: d.storage_path,
+      name: d.dateiname || d.kategorie, kategorie: d.kategorie,
+      datum: d.hochgeladen_am,
+    });
+  });
+  (bkrfqgState.fortbildungen||[]).filter(f => f.mitarbeiter_id === maId).forEach(f => {
+    aus.push({
+      id: 'fb:'+f.id, bucket: 'dokumente', pfad: f.storage_path,
+      name: f.dateiname || ('Fortbildung ' + bfmtD(f.datum)),
+      kategorie: f.art === 'bkf' ? 'BKF-Fortbildung' : 'Fortbildung',
+      datum: f.datum,
+    });
+  });
+  return aus;
+}
+
+// Anlagenliste mit Soll-Abgleich: vorhandene zum Ankreuzen und Ansehen,
+// fehlende deutlich benannt.
+function bkrfqgAnlagenListe(){
+  const maId = document.getElementById('ba-ma')?.value || '';
+  const anlass = document.querySelector('input[name=ba-anlass]:checked')?.value || 'hinzufuegen';
+  if (!maId) return '<div style="font-size:12px;color:var(--grau)">Bitte zuerst einen Fahrlehrer wählen.</div>';
+
+  const vorhanden = bkrfqgAnlagenFuer(maId);
+  const soll = BKRFQG_ANLAGEN_SOLL[anlass] || [];
+  const fehlend = soll.filter(k => !vorhanden.some(a => a.kategorie === k));
+
+  const zeilen = vorhanden.map(a => {
+    const pflicht = soll.includes(a.kategorie);
+    return `<label style="display:flex;align-items:center;gap:8px;padding:5px 0;
+      border-bottom:1px solid var(--border);font-size:12px;cursor:pointer">
+      <input type="checkbox" class="ba-anlage" value="${a.id}"
+        ${pflicht?'checked':''} style="width:15px;height:15px;flex:none;margin:0">
+      <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+        <strong>${a.kategorie}</strong> · ${a.name}</span>
+      <button type="button" class="btn btn-outline btn-sm"
+        onclick="event.preventDefault();bkrfqgAnlageOeffnen('${a.pfad}')">📄</button>
+    </label>`;
+  }).join('');
+
+  const fehlendHtml = fehlend.length
+    ? `<div style="margin-top:10px;padding:8px 10px;background:#fef2f2;border:1px solid #fecaca;
+        border-radius:6px;font-size:12px;color:#b91c1c">
+        Fehlt noch: ${fehlend.join(', ')}<br>
+        <span style="color:#7f1d1d">Im Modul Personal beim Mitarbeiter hinterlegen.</span>
+      </div>` : '';
+
+  return (zeilen || '<div style="font-size:12px;color:var(--grau)">Keine Dokumente hinterlegt.</div>') + fehlendHtml;
+}
+
+async function bkrfqgAnlageOeffnen(pfad){
+  try {
+    const { data, error } = await sb.storage.from('dokumente').createSignedUrl(pfad, 3600);
+    if (error) throw new Error(error.message);
+    window.open(data.signedUrl, '_blank');
+  } catch(e){ toast('Fehler: '+e.message,'err'); }
+}
+
 function bkrfqgNachweisUebersicht(){
   const liste = bkrfqgState.fahrlehrer || [];
   if (!liste.length) return '<div style="font-size:12px;color:var(--grau)">Keine BKF-Dozenten hinterlegt.</div>';
@@ -2836,7 +2938,21 @@ function bkrfqgAntrag(el) {
                 <option value="Erweiterung">Erweiterung</option>
                 <option value="Aenderung">Änderungsmitteilung</option>
               </select></div>
-            <div class="frow"><label>Kurstypen</label>
+            <div id="ba-aenderung" style="display:none">
+              <div class="frow"><label>Fahrlehrer</label>
+                <select id="ba-ma" onchange="bkrfqgAntragUpdate()">
+                  <option value="">– auswählen –</option>
+                  ${(bkrfqgState.fahrlehrer||[]).map(f=>`<option value="${f.id}">${f.vorname} ${f.nachname}</option>`).join('')}
+                </select></div>
+              <div class="frow"><label>Anlass</label>
+                <div class="chip-grid" style="margin-top:4px">
+                  <label class="chip"><input type="radio" name="ba-anlass" value="hinzufuegen" checked onchange="bkrfqgAntragUpdate()">Zur Anerkennung hinzufügen</label>
+                  <label class="chip"><input type="radio" name="ba-anlass" value="abmelden" onchange="bkrfqgAntragUpdate()">Von der Anerkennung abmelden</label>
+                </div></div>
+              <div class="frow"><label>Anlagen</label>
+                <div id="ba-anlagen" style="margin-top:4px"></div></div>
+            </div>
+            <div class="frow" id="ba-kurstypen-block"><label>Kurstypen</label>
               <div class="chip-grid" style="margin-top:4px">
                 <label class="chip"><input type="checkbox" id="ba-au-g" onchange="bkrfqgAntragUpdate()">BGQ Güterkraftverkehr</label>
                 <label class="chip"><input type="checkbox" id="ba-au-p" onchange="bkrfqgAntragUpdate()">BGQ Personenverkehr</label>
@@ -2866,11 +2982,78 @@ function bkrfqgAntrag(el) {
       </div>`;
   if(vorausgewählt)bkrfqgAntragUpdate();
 }
+// Anschreiben fuer die Aenderungsmitteilung. Bewusst knapp: die Behoerde
+// braucht Anlass, Person und die Anlagen - nicht den ganzen Antrag.
+function bkrfqgAendText(s, heute){
+  const maId = document.getElementById('ba-ma')?.value || '';
+  const f = (bkrfqgState.fahrlehrer||[]).find(x => x.id === maId);
+  const anlass = document.querySelector('input[name=ba-anlass]:checked')?.value || 'hinzufuegen';
+  const gewaehlt = Array.from(document.querySelectorAll('.ba-anlage:checked'));
+  const alle = f ? bkrfqgAnlagenFuer(f.id) : [];
+  const anlagen = gewaehlt.map(c => alle.find(a => a.id === c.value)).filter(Boolean);
+
+  const wer = f ? `${f.vorname} ${f.nachname}` : '(bitte Fahrlehrer wählen)';
+  const betreff = anlass === 'hinzufuegen'
+    ? 'Änderungsmitteilung – Aufnahme einer Lehrkraft'
+    : 'Änderungsmitteilung – Abmeldung einer Lehrkraft';
+  const satz = anlass === 'hinzufuegen'
+    ? `hiermit teilen wir Ihnen mit, dass ${wer} künftig als Lehrkraft in der`
+      + ' o.g. anerkannten Ausbildungsstätte eingesetzt wird.'
+      + `\nDie Nachweise nach § 7 BKrFQV sind beigefügt.`
+    : `hiermit teilen wir Ihnen mit, dass ${wer} nicht mehr als Lehrkraft in der`
+      + ' o.g. anerkannten Ausbildungsstätte eingesetzt wird.';
+
+  return `Fahrschulteam Lingen
+Rheiner Str. 158 · 49809 Lingen (Ems)
+Tel: 0591 / 912340 · info@fahrschulteam.info
+
+${s.behoerde_name||'Zuständige Behörde'}
+${s.behoerde_abteilung||''}
+${s.behoerde_strasse||''}
+${s.behoerde_plz||''} ${s.behoerde_ort||''}
+${s.behoerde_ansprechpartner?'z.Hd. '+s.behoerde_ansprechpartner:''}
+
+Lingen, ${heute}
+
+Betreff: ${betreff}
+         gem. § 9 BKrFQG i.V.m. § 7 BKrFQV
+         Ausbildungsstätte: ${s.name}, ${s.strasse||''}, ${s.plz||''} ${s.ort||''}
+         ${s.aktenzeichen?'Aktenzeichen: '+s.aktenzeichen:''}
+
+Sehr geehrte Damen und Herren,
+
+${satz}
+
+${anlagen.length ? 'Anlagen:\n' + anlagen.map((a,i)=>`  ${i+1}. ${a.kategorie} (${a.name})`).join('\n') : 'Anlagen: keine'}
+
+Mit freundlichen Grüßen
+
+Thorsten Gels
+Inhaber Fahrschulteam Lingen
+AZAV: 0333-10660-AZAV-T`;
+}
+
 function bkrfqgAntragUpdate() {
   const sid=document.getElementById('ba-standort').value;
   const s=bkrfqgState.standorte.find(x=>x.id===sid); if(!s)return;
   const heute=new Date().toLocaleDateString('de-DE');
   const typ=document.getElementById('ba-typ')?.value||'Erstantrag';
+  // Bei einer Aenderungsmitteilung geht es um eine Person, nicht um den
+  // Anerkennungsumfang - deshalb wird umgeschaltet statt beides zu zeigen.
+  const istAend = (typ === 'Aenderungsmitteilung');
+  const bAend = document.getElementById('ba-aenderung');
+  const bKurs = document.getElementById('ba-kurstypen-block');
+  if (bAend) bAend.style.display = istAend ? '' : 'none';
+  if (bKurs) bKurs.style.display = istAend ? 'none' : '';
+  if (istAend) {
+    const box = document.getElementById('ba-anlagen');
+    if (box) box.innerHTML = bkrfqgAnlagenListe();
+    const v = bkrfqgAendText(s, heute);
+    const el = document.getElementById('ba-vorschau');
+    if (el) el.textContent = v;
+    return;
+  }
+
   const umfang=[];
   if(document.getElementById('ba-au-g')?.checked)umfang.push('BGQ Güterkraftverkehr (Klasse C)');
   if(document.getElementById('ba-au-p')?.checked)umfang.push('BGQ Personenverkehr (Klasse D)');
@@ -2979,7 +3162,7 @@ async function bkrfqgAntragSenden() {
   const typ=document.getElementById('ba-typ')?.value||'Erstantrag';
   try {
     await fetch('/.netlify/functions/send-email',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({to:s.behoerde_email,toName:s.behoerde_name||'Behörde',subject:`${typ} § 9 BKrFQG – ${s.name}`,htmlContent:`<pre style="font-family:Arial;font-size:13px;line-height:1.7;white-space:pre-wrap">${text}</pre>`})});
+      body:JSON.stringify({to:s.behoerde_email,toName:s.behoerde_name||'Behörde',attachments:anhaenge,subject:`${typ} § 9 BKrFQG – ${s.name}`,htmlContent:`<pre style="font-family:Arial;font-size:13px;line-height:1.7;white-space:pre-wrap">${text}</pre>`})});
     await bkrfqgInsert('bkrfqg_antraege',{standort_id:sid,typ,status:'eingereicht',eingereicht_am:new Date().toISOString().split('T')[0]});
     toast('Antrag versendet und gespeichert ✓');
   } catch(e){toast('Fehler: '+e.message,'err');}
