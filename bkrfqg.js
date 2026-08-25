@@ -6,7 +6,7 @@
 
 // Versionsstempel des Moduls. Muss mit dem ?v= am <script src="bkrfqg.js">
 // in index.html uebereinstimmen – beim Aendern beide Stellen anfassen.
-const BKRFQG_VERSION = '20260824a';
+const BKRFQG_VERSION = '20260825a';
 
 const bkrfqgState = {
   standorte: [], raeume: [], fahrlehrer: [], kursplaene: [],
@@ -1653,6 +1653,7 @@ function bkrfqgKPDetailView(el) {
            liest und ohne Erfassung nur leere Meldungen erzeugen wuerde.
            Beides kommt zurueck, sobald der Export auf die Lehrgangsteilnehmer
            umgebaut ist. -->
+      ${bkrfqgIstBgq(kp.kurstyp) ? `<button class="btn btn-outline btn-sm" onclick="bkrfqgTnSuchDialog()">👥 Teilnehmer (${bkrfqgKPTeilnehmer.length})</button>` : ''}
       ${bkrfqgIstBgq(kp.kurstyp) ? `<button class="btn btn-outline btn-sm" onclick="bkrfqgBgqDialog('${kp.id}')">🏛 BQR-Meldung</button>` : ''}
       <button class="btn btn-primary btn-sm" onclick="bkrfqgKurstagNeu('${kp.id}')">＋ Kurstag</button>
     </div>`
@@ -1751,6 +1752,8 @@ function bkrfqgKPDetailView(el) {
     </tr>`;
   }).join('');
 
+  el.innerHTML += bkrfqgTnKarteHTML(kp);
+
   el.innerHTML += `
     <div class="card" style="padding:0;overflow-x:auto">
       <table class="ma-table" style="min-width:700px">
@@ -1763,7 +1766,6 @@ function bkrfqgKPDetailView(el) {
         <tbody>${tagRows}</tbody>
       </table>
     </div>
-    ${bkrfqgTnKarteHTML(kp)}
     ${bkrfqgKurstagModalHTML(kp.id)}
     ${bkrfqgKPModalHTML()}
     ${bkrfqgTnModalHTML()}`;
@@ -3066,7 +3068,7 @@ function bkrfqgTnKarteHTML(kp){
     </tr>`;
   }).join('');
   return `
-    <div class="card" style="padding:0;margin-top:16px">
+    <div class="card" id="bgq-tn-karte" style="padding:0;margin-bottom:16px">
       <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid var(--border)">
         <div class="card-titel">👥 Teilnehmer (${liste.length})</div>
         <button class="btn btn-outline btn-sm" onclick="bkrfqgTnSuchDialog()">＋ Teilnehmer</button>
