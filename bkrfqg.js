@@ -6,7 +6,7 @@
 
 // Versionsstempel des Moduls. Muss mit dem ?v= am <script src="bkrfqg.js">
 // in index.html uebereinstimmen – beim Aendern beide Stellen anfassen.
-const BKRFQG_VERSION = '20260825a';
+const BKRFQG_VERSION = '20260825b';
 
 const bkrfqgState = {
   standorte: [], raeume: [], fahrlehrer: [], kursplaene: [],
@@ -3186,7 +3186,40 @@ async function bkrfqgTnPruefungsart(sel){
   } catch(e) { toast('Fehler: '+e.message, 'err'); }
 }
 
-// ── Meldedialog ───────────────────────────────────────────────────────
+// Meldezeitraum. Die Kurstage haben Vorrang vor den Kursplan-Feldern:
+// gemeldet wird, wann tatsaechlich unterrichtet wurde. Sind noch keine
+// Kurstage angelegt, greifen Start- und Enddatum des Kursplans.
+function bgqZeitraum(kp){
+  const tage = bkrfqgKPKurstage
+    .map(k => String(k.datum||'').slice(0,10))
+    .filter(d => /^20\d\d-\d\d-\d\d$/.test(d))
+    .sort();
+  const kpVon = String(kp.startdatum||'').slice(0,10);
+  const kpBis = String(kp.enddatum||'').slice(0,10);
+  return {
+    von: tage[0] || kpVon,
+    bis: tage.length ? tage[tage.length-1] : (kpBis || kpVon),
+    ausKurstagen: tage.length > 0,
+    tage: tage.length,
+    kpBisFehlt: !kpBis,
+  };
+}
+
+// Traegt das aus den Kurstagen ermittelte Enddatum am Kursplan nach.
+async function bkrfqgBgqEndeUebernehmen(kursplanId){
+  const kp = bkrfqgState.kursplaene.find(x => x.id === kursplanId);
+  if (!kp) return;
+  const z = bgqZeitraum(kp);
+  if (!z.bis) { toast('Kein Datum aus den Kurstagen ermittelbar.', 'err'); return; }
+  try {
+    await bkrfqgUpdate('bkrfqg_kursplaene', kursplanId, { enddatum: z.bis });
+    kp.enddatum = z.bis;
+    toast('Enddatum übernommen: '+bfmtD(z.bis));
+    bkrfqgBgqDialog(kursplanId);
+  } catch(e) { toast('Fehler: '+e.message, 'err'); }
+}
+
+// ── Meldedialog ──────────────────────────────────────────────────────
 function bkrfqgBgqDialog(kursplanId){
   const kp = bkrfqgState.kursplaene.find(x => x.id === kursplanId);
   if (!kp) return;
@@ -3194,6 +3227,7 @@ function bkrfqgBgqDialog(kursplanId){
   const liste = bkrfqgKPTeilnehmer;
   if (!liste.length) { toast('Diesem Kursplan sind noch keine Teilnehmer zugeordnet.'); return; }
 
+  const zr = bgqZeitraum(kp);
   const codes = BGQ_KB_TYP[kp.kurstyp] || [];
   // Gegenprobe: was steht tatsaechlich in den Kurstagen? Weicht der Plan ab,
   // wird gemeldet, was der Rahmenplan vorsieht - aber sichtbar angemerkt.
@@ -3232,13 +3266,18 @@ function bkrfqgBgqDialog(kursplanId){
       </div>
       <div class="modal-body">
         <div style="font-size:13px;color:var(--grau);margin-bottom:12px">
-          <strong>${bEsc(bKursTypLabel(kp.kurstyp))}</strong> · ${bfmtD(kp.startdatum)} – ${bfmtD(kp.enddatum)}<br>
+          <strong>${bEsc(bKursTypLabel(kp.kurstyp))}</strong> · ${bfmtD(zr.von)} – ${bfmtD(zr.bis)}
+          ${zr.ausKurstagen?`<span style="font-size:11px">(aus ${zr.tage} Kurstagen)</span>`:''}<br>
           Kenntnisbereiche ${codes.join(', ')} · ${bereit.length} von ${liste.length} Teilnehmern vollständig
         </div>
         ${fehlenImPlan.length?`<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:6px;padding:9px 12px;margin-bottom:12px;font-size:12px">
           ⚠ Laut Rahmenplan zu melden, aber in keinem Kurstag hinterlegt: ${fehlenImPlan.join(', ')}.
           Gemeldet wird trotzdem der volle Rahmenplan – prüfe, ob die Kurstage vollständig erfasst sind.
         </div>`:''}
+        ${zr.kpBisFehlt && zr.ausKurstagen ? `<div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:6px;padding:9px 12px;margin-bottom:12px;font-size:12px">
+          Am Kursplan fehlt das Enddatum. Gemeldet wird der letzte Kurstag, der ${bfmtD(zr.bis)}.
+          <button class="btn btn-outline btn-sm" style="margin-left:8px" onclick="bkrfqgBgqEndeUebernehmen('${kp.id}')">Am Kursplan nachtragen</button>
+        </div>` : ''}
         <div class="fgrid">
           <div class="frow"><label>Sachbearbeiterkennung</label>
             <input id="bgq-sb" maxlength="10" value="${bEsc(sb0)}"></div>
@@ -3282,10 +3321,14 @@ async function bkrfqgBgqErzeugen(kursplanId){
 
   const codes   = BGQ_KB_TYP[kp.kurstyp] || [];
   const klassen = BGQ_KLASSEN[kp.kurstyp] || [];
-  const beginn  = String(kp.startdatum||'').slice(0,10);
-  const ende    = String(kp.enddatum||kp.startdatum||'').slice(0,10);
+  const zr      = bgqZeitraum(kp);
+  const beginn  = zr.von;
+  const ende    = zr.bis;
   if (!/^20\d\d-\d\d-\d\d$/.test(beginn) || !/^20\d\d-\d\d-\d\d$/.test(ende)) {
-    zeig(['Beginn oder Ende des Kursplans fehlt oder ist ungültig.']); return;
+    zeig(['Es liegen weder Kurstage noch Start-/Enddatum am Kursplan vor.']); return;
+  }
+  if (ende < beginn) {
+    zeig(['Das Ende liegt vor dem Beginn – bitte die Kurstage prüfen.']); return;
   }
 
   const fehler = [];
