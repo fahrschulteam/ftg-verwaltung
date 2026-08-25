@@ -740,7 +740,11 @@ function bkrfqgChipStil(){
       accent-color:var(--blau);cursor:pointer;
     }
     .chip:has(input:checked){color:var(--blau);font-weight:600}
-    .mini-check{margin:0 8px 0 0 !important}
+    .mini-check{margin:0 8px 0 0 !important;width:16px !important;height:16px !important;
+      min-width:16px !important;max-width:16px !important}
+    .ba-anlage-zeile:hover{border-color:var(--blau) !important}
+    .ba-anlage-zeile:has(input:checked){
+      border-color:var(--blau) !important;background:#eff6ff !important}
   `;
   document.head.appendChild(s);
 }
@@ -2877,17 +2881,27 @@ function bkrfqgAnlagenListe(){
 
   const zeilen = vorhanden.map(a => {
     const pflicht = soll.includes(a.kategorie);
-    return `<label style="display:flex;align-items:center;gap:8px;padding:5px 0;
-      border-bottom:1px solid var(--border);font-size:12px;cursor:pointer">
+    // Die Auswahl muss auf einen Blick erkennbar sein - es entscheidet,
+    // was tatsaechlich an die Behoerde geht.
+    return `<label class="ba-anlage-zeile" style="
+      display:flex;align-items:center;gap:10px;
+      padding:9px 11px;margin-bottom:6px;
+      border:1px solid var(--border);border-radius:6px;
+      background:#fff;font-size:12px;cursor:pointer">
       <input type="checkbox" class="ba-anlage mini-check" value="${a.id}"
-        ${pflicht?'checked':''}>
-      <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
-        <strong>${a.kategorie}</strong> · ${a.name}</span>
+        ${pflicht?'checked':''} onchange="bkrfqgAntragUpdate()">
+      <span style="flex:1;min-width:0">
+        <span style="display:block;font-weight:600;color:var(--dunkel)">${a.kategorie}
+          ${pflicht?'<span style="font-weight:500;color:var(--grau)"> · für die Meldung erforderlich</span>':''}</span>
+        <span style="display:block;color:var(--grau);overflow:hidden;
+          text-overflow:ellipsis;white-space:nowrap">${a.name}
+          ${a.datum?' · '+bfmtD(String(a.datum).slice(0,10)):''}</span>
+      </span>
       <button type="button" class="btn btn-outline btn-sm"
-        onclick="event.preventDefault();bkrfqgAnlageOeffnen('${a.pfad}')">📄</button>
+        onclick="event.preventDefault();event.stopPropagation();bkrfqgAnlageOeffnen('${a.pfad}')"
+        title="Dokument ansehen">Ansehen</button>
     </label>`;
   }).join('');
-
   const fehlendHtml = fehlend.length
     ? `<div style="margin-top:10px;padding:8px 10px;background:#fef2f2;border:1px solid #fecaca;
         border-radius:6px;font-size:12px;color:#b91c1c">
