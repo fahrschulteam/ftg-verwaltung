@@ -1,5 +1,9 @@
 const https = require('https');
 
+// Kurz unter der Netlify-Grenze aus netlify.toml (26 s): lieber selbst
+// abbrechen und eine verstaendliche Meldung senden, als abgewuergt werden.
+const KI_TIMEOUT_MS = 22000;
+
 // Anthropic API Anfrage
 function anthropicRequest(payload) {
   return new Promise((resolve, reject) => {
@@ -23,6 +27,12 @@ function anthropicRequest(payload) {
       });
     });
     req.on('error', reject);
+    req.setTimeout(KI_TIMEOUT_MS, () => {
+      req.destroy();
+      reject(new Error('Zeitüberschreitung: Die KI hat nach '
+        + Math.round(KI_TIMEOUT_MS/1000) + ' Sekunden nicht geantwortet. '
+        + 'Bitte mit weniger Daten erneut versuchen.'));
+    });
     req.write(data);
     req.end();
   });
@@ -311,6 +321,7 @@ Unterrichtsart: ${kurstag.unterrichtsart || 'Präsenz'}
 Max. Teilnehmer: ${kurstag.max_teilnehmer || '–'}
 
 Schreibe ein formelles, korrektes Anschreiben auf Deutsch.
+Fasse dich knapp: hoechstens sechs Punkte, je Text maximal 25 Woerter.
 Antworte NUR mit JSON, kein Markdown:
 {
   "betreff": "Betreff des Schreibens",
@@ -361,7 +372,7 @@ Antworte NUR mit JSON, kein Markdown:
 
       const result = await anthropicRequest({
         model: 'claude-sonnet-4-6',
-        max_tokens: 2000,
+        max_tokens: 1200,
         messages: [{ role: 'user', content: prompt }],
       });
 

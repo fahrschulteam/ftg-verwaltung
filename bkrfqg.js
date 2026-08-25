@@ -317,7 +317,18 @@ async function bkrfqgKI(aktion, daten) {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ aktion, daten })
   });
-  const d = await res.json();
+  // Bei einem Timeout oder Absturz liefert Netlify eine HTML-Seite.
+  // Ohne diese Pruefung scheiterte res.json() daran und meldete einen
+  // Parserfehler statt der eigentlichen Ursache.
+  const roh = await res.text();
+  let d;
+  try { d = JSON.parse(roh); }
+  catch (e) {
+    if (res.status === 504 || res.status === 502) {
+      throw new Error('Zeitüberschreitung (' + res.status + '): Die Prüfung hat zu lange gedauert.');
+    }
+    throw new Error('Server antwortete mit ' + res.status + ' (kein JSON): ' + roh.slice(0, 120));
+  }
   if (!d.ok && !d.kurstage && !d.pruefung) throw new Error(d.error || 'KI-Fehler');
   return d;
 }
