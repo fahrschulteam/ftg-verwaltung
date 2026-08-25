@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="de">
 <head>
 <meta charset="UTF-8">
@@ -6,7 +6,7 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
-  <title>Fahrschulteam Lingen – Verwaltung</title>
+  <title>Fahrschulteam Lingen � Verwaltung</title>
   <meta name="build-version" content="20260708a">
   <script>window.__BUILD__='20260708b';</script>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -27,7 +27,7 @@
   a { color:var(--blau); }
   button { font-family:inherit; cursor:pointer; }
 
-  /* ── Einheitliche Checkboxen (rotes Kästchen mit weißem Haken) ── */
+  /* -- Einheitliche Checkboxen (rotes K�stchen mit wei�em Haken) -- */
   input[type="checkbox"] {
     -webkit-appearance:none; appearance:none;
     width:20px; height:20px; min-width:20px;
@@ -45,7 +45,7 @@
     transform:rotate(-45deg) translate(1px,-1px);
   }
 
-  /* ── Buttons ── */
+  /* -- Buttons -- */
   .btn { display:inline-flex; align-items:center; gap:6px; padding:8px 14px;
     border-radius:var(--radius); border:1px solid var(--border); background:var(--weiss);
     font-size:13px; font-weight:500; color:var(--dunkel); transition:.12s; }
@@ -57,7 +57,7 @@
   .btn-danger:hover { background:var(--rot-dark); }
   .btn-outline { background:var(--weiss); }
 
-  /* ── LOGIN ── */
+  /* -- LOGIN -- */
   #login-screen {
     position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
     background:linear-gradient(135deg,#3F4B57,#2A6CAE); z-index:1000;
@@ -81,7 +81,7 @@
   .login-toggle { text-align:center; font-size:12px; margin-top:16px; color:var(--grau); }
   .login-toggle a { cursor:pointer; font-weight:600; }
 
-  /* ── HEADER ── */
+  /* -- HEADER -- */
   header { background:#fff; border-bottom:3px solid var(--rot); position:fixed; top:0; left:0; right:0; z-index:200; }
   .header-inner { max-width:none; margin:0; display:flex; align-items:center; gap:20px; padding:10px 28px; }
   .header-logo img { height:48px; }
@@ -92,7 +92,7 @@
   .user-avatar { width:34px; height:34px; border-radius:50%; background:linear-gradient(135deg,#2A6CAE,#1e5a96); color:#fff;
     display:flex; align-items:center; justify-content:center; font-weight:600; font-size:12px; }
 
-  /* ── NAV ── */
+  /* -- NAV -- */
   nav.haupt-nav { background:#fff; border-bottom:1px solid var(--border); position:fixed; top:70px; left:0; right:0; z-index:199;
     box-shadow:0 1px 3px rgba(0,0,0,.04); overflow-x:auto; overflow-y:visible;
     scrollbar-width:none; }
@@ -110,7 +110,7 @@
   .hnav.active { color:var(--rot); font-weight:700; border-bottom-color:transparent; }
   .nav-spacer { margin-left:auto; display:flex; align-items:center; padding:0 12px; }
 
-  /* ── MAIN ── */
+  /* -- MAIN -- */
   main { max-width:none; margin:0; padding:24px 0 80px 0; }
   #app { padding-top:115px; }
   .view { display:none; }
@@ -118,14 +118,14 @@
   #view-kva, #view-schulung, #view-teilnehmer, #view-kalender { padding:0 !important; }
 
   .toolbar { display:flex; align-items:center; gap:12px; margin-bottom:18px; }
-  /* Modul-Titel ausgeblendet – das aktive Modul ist bereits in Kopfzeile und Navigation sichtbar. */
+  /* Modul-Titel ausgeblendet � das aktive Modul ist bereits in Kopfzeile und Navigation sichtbar. */
   .toolbar h2, .modul-titel { display:none; }
 
   .card { background:#fff; border:1px solid var(--border); border-radius:10px; box-shadow:var(--shadow); }
 
-  /* ── Loading ── */
+  /* -- Loading -- */
 
-  /* ── MODUL-INNERE SIDEBAR (wie schulung.html, aber innerhalb des Moduls) ── */
+  /* -- MODUL-INNERE SIDEBAR (wie schulung.html, aber innerhalb des Moduls) -- */
   .mod-shell { display:block; width:100%; margin:-24px -28px 0;
     min-height:calc(100vh - 115px); overflow-x:clip; }
   .mod-side { width:192px; background:#fff; border-right:1px solid var(--border);
@@ -161,12 +161,12 @@
     border-radius:50%; animation:spin .8s linear infinite; margin:0 auto 14px; }
   @keyframes spin { to { transform:rotate(360deg); } }
 
-  /* ── Placeholder ── */
+  /* -- Placeholder -- */
   .module-placeholder { text-align:center; padding:80px 20px; color:var(--grau); }
   .module-placeholder .ph-icon { font-size:48px; margin-bottom:16px; }
   .module-placeholder h3 { font-size:18px; color:var(--dunkel); margin-bottom:8px; }
 
-  /* ── Sub-Nav (für aktuell/archiviert) ── */
+  /* -- Sub-Nav (f�r aktuell/archiviert) -- */
   .sub-tabs { display:flex; gap:4px; border-bottom:2px solid var(--border); margin-bottom:18px; }
   .sub-tab { padding:9px 18px; border-radius:6px 6px 0 0; border:1px solid transparent; border-bottom:none;
     background:transparent; font-size:13px; font-weight:500; color:var(--grau); position:relative; bottom:-2px; }
@@ -181,7 +181,7 @@
   .toast.ok  { background:#166534; }
 
 
-  /* ── Mitarbeiter-Tabelle ── */
+  /* -- Mitarbeiter-Tabelle -- */
   .ma-table { width:100%; border-collapse:collapse; font-size:13px; }
   .ma-table thead th { background:var(--hell); padding:10px 14px; text-align:left;
     font-size:11px; font-weight:600; color:var(--grau); text-transform:uppercase;
@@ -202,7 +202,7 @@
   .tbl-actions { display:flex; gap:5px; justify-content:flex-end; }
 
 
-  /* ── MODAL ── */
+  /* -- MODAL -- */
   .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.5); display:none;
     align-items:center; justify-content:center; z-index:500; padding:20px; }
   .modal-overlay.open { display:flex; }
@@ -218,7 +218,7 @@
   .modal-footer { display:flex; gap:10px; justify-content:flex-end; padding:14px 20px;
     border-top:1px solid var(--border); }
 
-  /* ── FORMULAR ── */
+  /* -- FORMULAR -- */
   .fsec { font-size:10px; font-weight:700; color:var(--blau); text-transform:uppercase;
     letter-spacing:.07em; border-bottom:1px solid var(--border); padding-bottom:4px; margin:18px 0 10px; }
   .fgrid { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:9px 14px; }
@@ -250,12 +250,12 @@
   .cf-row .cf-label { width:200px; padding:7px 10px; border:1px solid var(--border); border-radius:var(--radius); font-family:inherit; font-size:12px; }
   .cf-row .cf-val { flex:1; padding:7px 10px; border:1px solid var(--border); border-radius:var(--radius); font-family:inherit; font-size:12px; }
 
-  /* ── AKTE ── */
+  /* -- AKTE -- */
   .akte-table { width:100%; border-collapse:collapse; font-size:13px; }
   .akte-table td { padding:8px 12px; border-bottom:1px solid var(--border); }
   .akte-table td:first-child { color:var(--grau); width:200px; }
 
-  /* ── JUBILÄUM ── */
+  /* -- JUBIL�UM -- */
   .jub-badge { font-size:10px; padding:1px 7px; border-radius:10px; background:#FEF3C7;
     color:#92400E; border:1px solid #F59E0B; margin-left:6px; font-weight:600; }
   .jub-badge.heute { background:#DCFCE7; color:#166534; border-color:#22C55E; }
@@ -264,7 +264,7 @@
     font-size:13px; font-weight:600; }
   .jub-info.heute { background:linear-gradient(135deg,#DCFCE7,#BBF7D0); color:#166534; border-color:#22C55E; }
 
-  /* ── DASHBOARD ── */
+  /* -- DASHBOARD -- */
   .dash-kpi { padding:18px 20px; transition:.12s; }
   .dash-kpi:hover { box-shadow:0 4px 16px rgba(0,0,0,.12); transform:translateY(-1px); }
   .dash-card-head { display:flex; align-items:center; justify-content:space-between;
@@ -287,7 +287,7 @@
   .pw-banner .pw-banner-close:hover { opacity:1; }
 
 
-  /* ── FORTBILDUNG ── */
+  /* -- FORTBILDUNG -- */
   .fb-mini-dot { display:inline-block; width:9px; height:9px; border-radius:50%; margin-right:6px; vertical-align:middle; }
   .fb-ampel { display:flex; flex-direction:column; gap:6px; margin-bottom:10px; }
   .fb-pflicht-row { display:flex; align-items:center; gap:8px; font-size:12px; padding:6px 10px; background:var(--hell); border-radius:var(--radius); }
@@ -420,7 +420,7 @@ body.schulung-active main{padding:0;max-width:none;}
 </head>
 <body>
 
-<!-- ═══ LOGIN ═══ -->
+<!-- --- LOGIN --- -->
 <div id="login-screen">
   <div class="login-card">
     <div class="login-logo"><img id="login-logo-img" alt="Fahrschulteam Lingen"></div>
@@ -430,7 +430,7 @@ body.schulung-active main{padding:0;max-width:none;}
     <label>E-Mail</label>
     <input type="email" id="login-email" placeholder="name@fahrschulteam.info" autocomplete="username">
     <label>Passwort</label>
-    <input type="password" id="login-password" placeholder="••••••••" autocomplete="current-password">
+    <input type="password" id="login-password" placeholder="��������" autocomplete="current-password">
 
     <button class="btn btn-primary" id="login-btn" onclick="doLogin()">Anmelden</button>
     <div id="login-error"></div>
@@ -440,20 +440,20 @@ body.schulung-active main{padding:0;max-width:none;}
   </div>
 </div>
 
-<!-- ═══ APP ═══ -->
+<!-- --- APP --- -->
 <div id="app" style="display:none">
   <header>
     <div class="header-inner">
       <div class="header-logo"><img id="header-logo-img" alt="Fahrschulteam Lingen"></div>
       <div class="header-title" aria-hidden="true"></div>
       <div class="header-user">
-        <div class="user-avatar" id="user-avatar">–</div>
+        <div class="user-avatar" id="user-avatar">�</div>
         <div>
-          <div id="user-name" style="font-weight:600">–</div>
-          <div id="user-rolle" style="font-size:11px;color:var(--grau)">–</div>
+          <div id="user-name" style="font-weight:600">�</div>
+          <div id="user-rolle" style="font-size:11px;color:var(--grau)">�</div>
         </div>
-        <button class="btn btn-sm btn-outline" onclick="oeffnePasswortModal()" style="margin-left:8px">🔑 Passwort festlegen</button>
-        <button id="btn-einstellungen" class="btn btn-sm btn-outline" onclick="showView('einstellungen')" style="margin-left:8px;display:none" title="Einstellungen">⚙</button>
+        <button class="btn btn-sm btn-outline" onclick="oeffnePasswortModal()" style="margin-left:8px">?? Passwort festlegen</button>
+        <button id="btn-einstellungen" class="btn btn-sm btn-outline" onclick="showView('einstellungen')" style="margin-left:8px;display:none" title="Einstellungen">?</button>
         <button class="btn btn-sm btn-outline" onclick="doLogout()" style="margin-left:4px">Abmelden</button>
       </div>
     </div>
@@ -477,17 +477,17 @@ body.schulung-active main{padding:0;max-width:none;}
   </nav>
 
   <div class="pw-banner" id="pw-banner" style="display:none">
-    <span class="pw-banner-ico">🔑</span>
-    <span class="pw-banner-txt">Tipp: Richte dir ein eigenes Passwort ein – dann musst du dich nicht mehr jedes Mal per E-Mail-Link anmelden.</span>
+    <span class="pw-banner-ico">??</span>
+    <span class="pw-banner-txt">Tipp: Richte dir ein eigenes Passwort ein � dann musst du dich nicht mehr jedes Mal per E-Mail-Link anmelden.</span>
     <button class="pw-banner-cta" onclick="oeffnePasswortModal()">Jetzt einrichten</button>
-    <button class="pw-banner-close" onclick="verbergePasswortBanner()" title="Ausblenden">✕</button>
+    <button class="pw-banner-close" onclick="verbergePasswortBanner()" title="Ausblenden">?</button>
   </div>
 
   <main>
     <!-- Personal -->
     <div class="view active" id="view-dashboard" style="padding:0 28px"></div>
     <div class="view" id="view-personal">
-      <div class="loading"><div class="spinner"></div>Lade Personaldaten …</div>
+      <div class="loading"><div class="spinner"></div>Lade Personaldaten �</div>
     </div>
     <div class="view" id="view-schulungsstand" style="padding:0 28px"></div>
     <!-- AZK -->
@@ -516,7 +516,7 @@ body.schulung-active main{padding:0;max-width:none;}
     </div>
   </main>
 
-  <footer>Verwaltungsprogramm für Fahrschulen &nbsp;·&nbsp; copyright by: Thorsten Gels</footer>
+  <footer>Verwaltungsprogramm f�r Fahrschulen &nbsp;�&nbsp; copyright by: Thorsten Gels</footer>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -544,7 +544,7 @@ body.schulung-active main{padding:0;max-width:none;}
 <script src="kva.js?v=20260708b"></script>
 <script src="dokumente.js?v=20260630c"></script>
 <script src="einstellungen.js?v=20260703q"></script>
-<script src="bkrfqg.js?v=20260825n"></script>
+<script src="bkrfqg.js?v=20260825o"></script>
 </body>
 </html>
 
