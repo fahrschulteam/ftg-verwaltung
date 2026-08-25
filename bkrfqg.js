@@ -646,9 +646,9 @@ function bkrfqgStandortModalHTML() {
             </div>
             <div class="frow"><label>Anerkennungsumfang</label>
               <div class="chip-grid" style="margin-top:4px">
-                <label class="chip"><input type="checkbox" id="bs-au-g">🚛 BGQ Güter</label>
-                <label class="chip"><input type="checkbox" id="bs-au-p">🚌 BGQ Person</label>
-                <label class="chip"><input type="checkbox" id="bs-au-w">📚 Weiterbildung</label>
+                <label class="chip"><input type="checkbox" id="bs-au-g">BGQ Güterkraftverkehr</label>
+                <label class="chip"><input type="checkbox" id="bs-au-p">BGQ Personenverkehr</label>
+                <label class="chip"><input type="checkbox" id="bs-au-w">BKF-Weiterbildung</label>
               </div>
             </div>
             <div class="frow"><label>Status</label>
@@ -689,8 +689,35 @@ function bkrfqgStandortModalHTML() {
     </div>
   </div>`;
 }
+// Definiert .chip und .chip-grid im Design der App. Wird beim ersten
+// Aufruf einmalig in den <head> gehaengt - die Klassen kommen an
+// mehreren Stellen im Modul vor.
+function bkrfqgChipStil(){
+  if (document.getElementById('bkrfqg-chip-stil')) return;
+  const s = document.createElement('style');
+  s.id = 'bkrfqg-chip-stil';
+  s.textContent = `
+    .chip-grid{display:flex;flex-wrap:wrap;gap:8px}
+    .chip{
+      display:inline-flex;align-items:center;gap:8px;
+      padding:7px 12px;border:1px solid var(--border);border-radius:6px;
+      background:#fff;font-size:13px;font-weight:500;cursor:pointer;
+      user-select:none;line-height:1.2;white-space:nowrap;
+      transition:border-color .12s, background .12s;
+    }
+    .chip:hover{border-color:var(--blau)}
+    .chip input[type=checkbox]{
+      width:15px;height:15px;margin:0;flex:none;accent-color:var(--blau);cursor:pointer;
+    }
+    .chip:has(input:checked){
+      border-color:var(--blau);background:#eff6ff;color:var(--blau);
+    }
+  `;
+  document.head.appendChild(s);
+}
+
 function bkrfqgCloseModal(id){ document.getElementById(id).classList.remove('open'); }
-function bkrfqgOpenModal(id){ document.getElementById(id).classList.add('open'); }
+function bkrfqgOpenModal(id){ bkrfqgChipStil(); document.getElementById(id).classList.add('open'); }
 
 function bkrfqgStandortNeu() {
   ['bs-id','bs-name','bs-strasse','bs-plz','bs-ort','bs-az','bs-notizen','bs-bname','bs-babt','bs-bap','bs-bstr','bs-bplz','bs-bort','bs-bemail','bs-btel','bs-adatum','bs-pruefung'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
@@ -2762,6 +2789,7 @@ Fahrschulteam Lingen GmbH · Rheiner Str. 158 · 49809 Lingen · AZAV-Nr. 0333-1
 // ANTRAG
 // ════════════════════════════════════════════════════════════════════
 function bkrfqgAntrag(el) {
+  bkrfqgChipStil();
   const vorausgewählt=bkrfqgState.antragStandortId||'';
   el.innerHTML = bKopf('📋 Anerkennungsantrag','§ 9 BKrFQG i.V.m. § 5 BKrFQV')
     + `<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
@@ -2781,9 +2809,9 @@ function bkrfqgAntrag(el) {
               </select></div>
             <div class="frow"><label>Kurstypen</label>
               <div class="chip-grid" style="margin-top:4px">
-                <label class="chip"><input type="checkbox" id="ba-au-g" onchange="bkrfqgAntragUpdate()">🚛 BGQ Güter</label>
-                <label class="chip"><input type="checkbox" id="ba-au-p" onchange="bkrfqgAntragUpdate()">🚌 BGQ Person</label>
-                <label class="chip"><input type="checkbox" id="ba-au-w" onchange="bkrfqgAntragUpdate()">📚 Weiterbildung</label>
+                <label class="chip"><input type="checkbox" id="ba-au-g" onchange="bkrfqgAntragUpdate()">BGQ Güterkraftverkehr</label>
+                <label class="chip"><input type="checkbox" id="ba-au-p" onchange="bkrfqgAntragUpdate()">BGQ Personenverkehr</label>
+                <label class="chip"><input type="checkbox" id="ba-au-w" onchange="bkrfqgAntragUpdate()">BKF-Weiterbildung</label>
               </div></div>
           </div>
           <div class="card" style="padding:14px 16px">
