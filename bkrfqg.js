@@ -697,27 +697,23 @@ function bkrfqgChipStil(){
   const s = document.createElement('style');
   s.id = 'bkrfqg-chip-stil';
   s.textContent = `
-    .chip-grid{display:flex;flex-wrap:wrap;gap:8px}
+    .chip-grid{display:flex;flex-direction:column;gap:2px;align-items:flex-start}
     .chip{
-      display:inline-flex;align-items:center;gap:8px;
-      padding:7px 12px;border:1px solid var(--border);border-radius:6px;
-      background:#fff;font-size:13px;font-weight:500;cursor:pointer;
-      user-select:none;line-height:1.2;white-space:nowrap;
-      transition:border-color .12s, background .12s;
+      display:flex !important;align-items:center;
+      padding:5px 0;border:0;background:none;
+      font-size:13px;font-weight:500;color:var(--ink);
+      cursor:pointer;user-select:none;line-height:1.3;
     }
-    .chip:hover{border-color:var(--blau)}
     .chip input[type=checkbox]{
       -webkit-appearance:checkbox;appearance:checkbox;
       width:15px !important;height:15px !important;
       min-width:15px !important;max-width:15px !important;
-      padding:0 !important;margin:0 !important;border:0 !important;
+      padding:0 !important;border:0 !important;box-shadow:none !important;
+      margin:0 10px 0 0 !important;
       flex:0 0 auto !important;display:inline-block !important;
-      accent-color:var(--blau);cursor:pointer;box-shadow:none !important;
+      accent-color:var(--blau);cursor:pointer;
     }
-    .chip{max-width:100%}
-    .chip:has(input:checked){
-      border-color:var(--blau);background:#eff6ff;color:var(--blau);
-    }
+    .chip:has(input:checked){color:var(--blau);font-weight:600}
   `;
   document.head.appendChild(s);
 }
