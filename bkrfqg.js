@@ -739,16 +739,7 @@ function bkrfqgChipStil(){
       flex:0 0 auto !important;display:inline-block !important;
       accent-color:var(--blau);cursor:pointer;
     }
-        .chip input[type=checkbox].ba-anlage{
-      -webkit-appearance:none !important;appearance:none !important;
-      border-radius:50% !important;
-      border:1.5px solid #94a3b8 !important;
-      background:#fff !important;
-      position:relative;
-    }
-    .chip input[type=checkbox].ba-anlage:checked{
-      border-color:var(--blau) !important;
-    }
+           .chip input[type=checkbox].ba-anlage{border-radius:50% !important}
     .chip input[type=checkbox].ba-anlage:checked::after{
       content:'';position:absolute;inset:3px;
       border-radius:50%;background:var(--blau);
