@@ -670,7 +670,7 @@ const MA_DOK_KATEGORIEN = [
 
 async function ladeMaDokumente() {
   try {
-    const { data, error } = await sb.from('mitarbeiter_dokumente')
+    const { data, error } = await sb.from('ma_dokumente')
       .select('*').order('hochgeladen_am', { ascending: false });
     if (error) { console.warn('MA-Dokumente laden:', error.message); maDokumenteCache = []; return; }
     maDokumenteCache = data || [];
@@ -726,7 +726,7 @@ async function ladeMaDokumentHoch(input, maId) {
     const storage_path = `mitarbeiter/${maId}/${Date.now()}.${ext}`;
     const { error: upErr } = await sb.storage.from('dokumente').upload(storage_path, datei);
     if (upErr) throw new Error(upErr.message);
-    const { error } = await sb.from('mitarbeiter_dokumente').insert({
+    const { error } = await sb.from('ma_dokumente').insert({
       mitarbeiter_id: maId, kategorie, dateiname: datei.name,
       storage_path, mime_type: datei.type || null,
     });
@@ -751,7 +751,7 @@ async function loescheMaDokument(id, maId) {
   if (!confirm('Dokument „'+(d?.dateiname||'')+'“ wirklich löschen?')) return;
   try {
     if (d?.storage_path) await sb.storage.from('dokumente').remove([d.storage_path]);
-    const { error } = await sb.from('mitarbeiter_dokumente').delete().eq('id', id);
+    const { error } = await sb.from('ma_dokumente').delete().eq('id', id);
     if (error) throw new Error(error.message);
     await ladeMaDokumente();
     document.getElementById('ma-akte-modal')?.remove();
