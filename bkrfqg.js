@@ -3040,7 +3040,7 @@ function bkrfqgAntragUpdate() {
   const typ=document.getElementById('ba-typ')?.value||'Erstantrag';
   // Bei einer Aenderungsmitteilung geht es um eine Person, nicht um den
   // Anerkennungsumfang - deshalb wird umgeschaltet statt beides zu zeigen.
-  const istAend = (typ === 'Aenderungsmitteilung');
+  const istAend = /^Aenderung/.test(typ);
   const bAend = document.getElementById('ba-aenderung');
   const bKurs = document.getElementById('ba-kurstypen-block');
   if (bAend) bAend.style.display = istAend ? '' : 'none';
