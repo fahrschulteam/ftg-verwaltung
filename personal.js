@@ -201,6 +201,23 @@ function oeffneMaForm(id) {
             <div class="frow"><label>Fristablauf ASF-Seminarerlaubnis §53 (2) FahrlG</label><input type="number" id="mf-frist-asf" value="${m?.frist_asf||''}" min="2018" max="2040" placeholder="z.B. 2027"></div>
             <div class="frow"><label>Fristablauf FES-Seminarerlaubnis §53 (2) FahrlG</label><input type="number" id="mf-frist-fes" value="${m?.frist_fes||''}" min="2018" max="2040" placeholder="z.B. 2027"></div>
           </div>
+
+          <div class="fsec">Nachweise BKrFQG-Anerkennung § 5 Abs. 1 BKrFQV</div>
+          <div style="font-size:11px;color:var(--grau);margin:-6px 0 10px">
+            Wird für den Anerkennungsantrag der Ausbildungsstätte benötigt. Die Qualifikationen oben zählen automatisch mit.
+          </div>
+          <div class="fgrid">
+            <div class="frow"><label>Didaktik-Nachweis</label>
+              <input id="mf-bkf-didaktik" value="${m?.bkf_didaktik_nachweis||''}" placeholder="z.B. Fahrlehrerlaubnis oder Lehrgang"></div>
+            <div class="frow"><label>Didaktik-Nachweis vom</label>
+              <input type="date" id="mf-bkf-didaktik-datum" value="${m?.bkf_didaktik_datum||''}"></div>
+          </div>
+          <div class="fgrid">
+            <div class="frow"><label>Führungszeugnis erteilt am</label>
+              <input type="date" id="mf-bkf-fz" value="${m?.bkf_fuehrungszeugnis||''}"></div>
+            <div class="frow"><label>Berufserfahrung BKF</label>
+              <label class="chip" style="margin-top:4px"><input type="checkbox" id="mf-bkf-erfahrung" ${m?.bkf_berufserfahrung?'checked':''}>vorhanden</label></div>
+          </div>
         </div>
         <div class="fsec">Buchhaltung / Lohnabrechnung</div>
         <div class="fgrid">
@@ -264,6 +281,10 @@ async function speichereMa() {
     frist_fahrlg: parseInt(v('mf-frist-fahrlg'))||null,
     frist_bkf: parseInt(v('mf-frist-bkf'))||null,
     frist_afl: parseInt(v('mf-frist-afl'))||null,
+    bkf_didaktik_nachweis: v('mf-bkf-didaktik')||null,
+    bkf_didaktik_datum: v('mf-bkf-didaktik-datum')||null,
+    bkf_fuehrungszeugnis: v('mf-bkf-fz')||null,
+    bkf_berufserfahrung: !!document.getElementById('mf-bkf-erfahrung')?.checked,
     frist_asf: parseInt(v('mf-frist-asf'))||null,
     frist_fes: parseInt(v('mf-frist-fes'))||null,
     steuerklasse: v('mf-steuerklasse')||null,
@@ -332,6 +353,9 @@ async function oeffneMaAkte(id) {
     m.frist_fahrlg && `<tr><td>Fristablauf §53 (1) FahrlG</td><td>31.12.${m.frist_fahrlg}</td></tr>`,
     m.frist_bkf && `<tr><td>Fristablauf §7 BKrFQV</td><td>31.12.${m.frist_bkf}</td></tr>`,
     m.frist_afl && `<tr><td>Fristablauf AFL §53 (3) FahrlG</td><td>31.12.${m.frist_afl}</td></tr>`,
+    m.bkf_didaktik_nachweis && `<tr><td>Didaktik-Nachweis</td><td>${m.bkf_didaktik_nachweis}${m.bkf_didaktik_datum?' ('+new Date(m.bkf_didaktik_datum).toLocaleDateString('de-DE')+')':''}</td></tr>`,
+    m.bkf_fuehrungszeugnis && `<tr><td>Führungszeugnis erteilt</td><td>${new Date(m.bkf_fuehrungszeugnis).toLocaleDateString('de-DE')}</td></tr>`,
+    m.bkf_berufserfahrung && `<tr><td>Berufserfahrung BKF</td><td>vorhanden</td></tr>`,
     m.frist_asf && `<tr><td>Fristablauf ASF §53 (2) FahrlG</td><td>31.12.${m.frist_asf}</td></tr>`,
     m.frist_fes && `<tr><td>Fristablauf FES §53 (2) FahrlG</td><td>31.12.${m.frist_fes}</td></tr>`,
     (m.klassen||[]).length && `<tr><td>Klassen</td><td>${m.klassen.join(', ')}</td></tr>`,

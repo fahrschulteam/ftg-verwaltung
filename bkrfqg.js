@@ -422,7 +422,9 @@ async function bkrfqgLadeAlles() {
     bkrfqgState.raeume = raeume;
     bkrfqgState.kursplaene = kursplaene;
     const { data: ma } = await sb.from('mitarbeiter')
-      .select('id,vorname,nachname,qual_bkf,frist_afl,bereich')
+      .select('id,vorname,nachname,bereich,frist_afl,frist_bkf'
+        + ',qual_bkf,qual_ausb,qual_asf,qual_fes,qual_adr'
+        + ',bkf_didaktik_nachweis,bkf_didaktik_datum,bkf_berufserfahrung,bkf_fuehrungszeugnis')
       .eq('qual_bkf', true).eq('status', 'aktiv').order('nachname');
     bkrfqgState.fahrlehrer = ma || [];
     // Dozenten-Bänder-Zuweisungen laden
@@ -2801,6 +2803,20 @@ Fahrschulteam Lingen GmbH · Rheiner Str. 158 · 49809 Lingen · AZAV-Nr. 0333-1
 // ════════════════════════════════════════════════════════════════════
 // ANTRAG
 // ════════════════════════════════════════════════════════════════════
+function bkrfqgNachweisUebersicht(){
+  const liste = bkrfqgState.fahrlehrer || [];
+  if (!liste.length) return '<div style="font-size:12px;color:var(--grau)">Keine BKF-Dozenten hinterlegt.</div>';
+  return liste.map(f => {
+    const l = bkrfqgNachweisLuecken(f);
+    return `<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;
+      padding:6px 0;border-bottom:1px solid var(--border);font-size:12px">
+      <span>${f.vorname} ${f.nachname}</span>
+      ${l.length ? `<span style="color:var(--rot);text-align:right">fehlt: ${l.join(', ')}</span>`
+                 : '<span style="color:#059669">vollständig</span>'}
+    </div>`;
+  }).join('');
+}
+
 function bkrfqgAntrag(el) {
   bkrfqgChipStil();
   const vorausgewählt=bkrfqgState.antragStandortId||'';
@@ -2834,6 +2850,13 @@ function bkrfqgAntrag(el) {
               <button class="btn btn-primary btn-sm" onclick="bkrfqgAntragSenden()">📧 Antrag per E-Mail senden</button>
             </div>
             <div id="ba-pruef-result" style="margin-top:12px"></div>
+          </div>
+          <div class="card" style="padding:14px 16px">
+            <div class="card-titel" style="margin-bottom:4px">Nachweise Lehrpersonal</div>
+            <div style="font-size:11px;color:var(--grau);margin-bottom:10px">
+              Gepflegt wird im Modul Personal beim jeweiligen Mitarbeiter.
+            </div>
+            ${bkrfqgNachweisUebersicht()}
           </div>
         </div>
         <div class="card" style="padding:14px 16px">
@@ -2888,6 +2911,42 @@ Inhaber Fahrschulteam Lingen
 AZAV: 0333-10660-AZAV-T`;
   const v=document.getElementById('ba-vorschau'); if(v)v.textContent=text;
 }
+// Leitet die Qualifikationen aus den vorhandenen Haken im Personal-Modul
+// ab - sie werden dort gepflegt und nicht hier ein zweites Mal.
+const BKF_QUAL_LABEL = {
+  qual_bkf:  'BKF-Dozent (§ 7 BKrFQV)',
+  qual_ausb: 'Ausbildungsfahrlehrer (§ 53 Abs. 3 FahrlG)',
+  qual_asf:  'ASF-Moderator',
+  qual_fes:  'FES-Moderator',
+  qual_adr:  'ADR / Gefahrgut',
+};
+function bkrfqgQualListe(f){
+  return Object.keys(BKF_QUAL_LABEL).filter(k => f[k]).map(k => BKF_QUAL_LABEL[k]);
+}
+
+// Bringt die Mitarbeiterdaten in die Form, die der Prompt erwartet.
+function bkrfqgLehrpersonal(){
+  return (bkrfqgState.fahrlehrer||[]).map(f => ({
+    vorname: f.vorname, nachname: f.nachname,
+    qualifikationen: bkrfqgQualListe(f),
+    didaktik_nachweis: f.bkf_didaktik_nachweis
+      ? f.bkf_didaktik_nachweis + (f.bkf_didaktik_datum ? ' vom ' + bfmtD(f.bkf_didaktik_datum) : '')
+      : '',
+    berufserfahrung_bkf: !!f.bkf_berufserfahrung,
+    fuehrungszeugnis_datum: f.bkf_fuehrungszeugnis ? bfmtD(f.bkf_fuehrungszeugnis) : '',
+  }));
+}
+
+// Was fuer den Antrag noch fehlt - je Person.
+function bkrfqgNachweisLuecken(f){
+  const l = [];
+  if (!bkrfqgQualListe(f).length) l.push('Qualifikation');
+  if (!f.bkf_didaktik_nachweis) l.push('Didaktik');
+  if (!f.bkf_berufserfahrung) l.push('BKF-Erfahrung');
+  if (!f.bkf_fuehrungszeugnis) l.push('Führungszeugnis');
+  return l;
+}
+
 async function bkrfqgAntragPruefen() {
   const sid=document.getElementById('ba-standort').value;
   const s=bkrfqgState.standorte.find(x=>x.id===sid);
@@ -2899,7 +2958,7 @@ async function bkrfqgAntragPruefen() {
     if(document.getElementById('ba-au-g')?.checked)kurstypen.push('BGQ_Gueter');
     if(document.getElementById('ba-au-p')?.checked)kurstypen.push('BGQ_Person');
     if(document.getElementById('ba-au-w')?.checked)kurstypen.push('Weiterbildung');
-    const result=await bkrfqgKI('antrag_pruefen',{standort:s,fahrlehrer:bkrfqgState.fahrlehrer,raeume,dokumente:[],kurstypen});
+    const result=await bkrfqgKI('antrag_pruefen',{standort:s,fahrlehrer:bkrfqgLehrpersonal(),raeume,dokumente:[],kurstypen});
     const p=result.pruefung;
     const farbe={vollstaendig:'#059669',unvollstaendig:'var(--gelb)',kritisch:'var(--rot)'}[p.gesamtstatus]||'var(--grau)';
     document.getElementById('ba-pruef-result').innerHTML=`
