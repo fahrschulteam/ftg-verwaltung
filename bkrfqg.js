@@ -707,8 +707,14 @@ function bkrfqgChipStil(){
     }
     .chip:hover{border-color:var(--blau)}
     .chip input[type=checkbox]{
-      width:15px;height:15px;margin:0;flex:none;accent-color:var(--blau);cursor:pointer;
+      -webkit-appearance:checkbox;appearance:checkbox;
+      width:15px !important;height:15px !important;
+      min-width:15px !important;max-width:15px !important;
+      padding:0 !important;margin:0 !important;border:0 !important;
+      flex:0 0 auto !important;display:inline-block !important;
+      accent-color:var(--blau);cursor:pointer;box-shadow:none !important;
     }
+    .chip{max-width:100%}
     .chip:has(input:checked){
       border-color:var(--blau);background:#eff6ff;color:var(--blau);
     }
