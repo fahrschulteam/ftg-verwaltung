@@ -6,7 +6,7 @@
 
 // Versionsstempel des Moduls. Muss mit dem ?v= am <script src="bkrfqg.js">
 // in index.html uebereinstimmen – beim Aendern beide Stellen anfassen.
-const BKRFQG_VERSION = '20260821a';
+const BKRFQG_VERSION = '20260824a';
 
 const bkrfqgState = {
   standorte: [], raeume: [], fahrlehrer: [], kursplaene: [],
@@ -813,6 +813,8 @@ async function bkrfqgOeffneMitarbeiter(id) {
 let bkrfqgDozKurstyp = 'bgq_g';
 let bkrfqgKPSelected = null;   // geöffneter Kursplan (id)
 let bkrfqgKPKurstage  = [];    // geladene Kurstage für Detail-Ansicht
+let bkrfqgKPTeilnehmer = [];   // Teilnehmer des geöffneten Kursplans
+let bkrfqgTnSuche      = [];   // Trefferliste der Teilnehmersuche
 const bkrfqgExpandedBands = new Set();
 
 function bkrfqgDozenten(el) {
@@ -1616,6 +1618,7 @@ async function bkrfqgKPOeffnen(id) {
       eq: { kursplan_id: id },
       order: 'datum'
     });
+    await bkrfqgTnLaden(id);
     bkrfqgKursplaene(el);
   } catch(e) { el.innerHTML = `<div class="card" style="color:var(--rot)">Fehler: ${e.message}</div>`; }
 }
@@ -1650,6 +1653,7 @@ function bkrfqgKPDetailView(el) {
            liest und ohne Erfassung nur leere Meldungen erzeugen wuerde.
            Beides kommt zurueck, sobald der Export auf die Lehrgangsteilnehmer
            umgebaut ist. -->
+      ${bkrfqgIstBgq(kp.kurstyp) ? `<button class="btn btn-outline btn-sm" onclick="bkrfqgBgqDialog('${kp.id}')">🏛 BQR-Meldung</button>` : ''}
       <button class="btn btn-primary btn-sm" onclick="bkrfqgKurstagNeu('${kp.id}')">＋ Kurstag</button>
     </div>`
   );
@@ -1759,8 +1763,10 @@ function bkrfqgKPDetailView(el) {
         <tbody>${tagRows}</tbody>
       </table>
     </div>
+    ${bkrfqgTnKarteHTML(kp)}
     ${bkrfqgKurstagModalHTML(kp.id)}
-    ${bkrfqgKPModalHTML()}`;
+    ${bkrfqgKPModalHTML()}
+    ${bkrfqgTnModalHTML()}`;
 }
 
 
@@ -2923,3 +2929,455 @@ async function bkrfqgDokOeffnen(path) {
     window.open(data.signedUrl,'_blank');
   } catch(e){toast('Fehler: '+e.message,'err');}
 }
+
+
+// ════════════════════════════════════════════════════════════════════
+// BGQ-TEILNEHMER + BQR-MELDUNG ANS KBA (§ 5 BKrFQG)
+// ════════════════════════════════════════════════════════════════════
+// Die Teilnehmerliste haelt KEINE Personendaten, sondern nur die
+// Verknuepfung auf schulung_participants plus die kursbezogenen Angaben
+// (Pruefungsart, Meldestatus). Eine Korrektur am Geburtsdatum wirkt damit
+// ueberall - bei einer KBA-Meldung ist genau das entscheidend.
+//
+// Die Weiterbildungs-Meldung liegt weiterhin in schulung.html und wird
+// von hier aus nicht beruehrt.
+
+// Kenntnisbereich-Codes des KBA je BKrFQV-Nummer (Anlage 1).
+// 05 und 18 sind laut XSD ungueltig: 05 lief zum 31.03.2025 aus und wurde
+// in 19 (1.4) und 20 (1.6) getrennt.
+const BGQ_KB_CODE = {'1.1':'01','1.2':'02','1.3':'03','1.3a':'04','1.4':'19','1.5':'06','1.6':'20',
+                     '2.1':'07','2.2':'08','2.3':'09','3.1':'10','3.2':'11','3.3':'12','3.4':'13',
+                     '3.5':'14','3.6':'15','3.7':'16','3.8':'17'};
+
+// Kenntnisbereiche je Kurstyp nach dem DEGENER-Rahmenplan.
+// Guetertransport: Band 4G deckt nur 1.4 ab (Code 19).
+// Personenverkehr: Band 4P deckt 1.5 UND 1.6 ab (Codes 06 und 20) -
+// die Ladungssicherung im Omnibus gehoert dorthin, nicht zum Gueterverkehr.
+const BGQ_KB_TYP = {
+  BGQ_Gueter: ['01','02','03','04','07','08','10','11','12','13','14','15','16','19'],
+  BGQ_Person: ['01','02','03','04','06','07','09','10','11','12','13','14','15','17','20'],
+  BGQ_Kombi:  ['01','02','03','04','06','07','08','09','10','11','12','13','14','15','16','17','19','20'],
+};
+const BGQ_KLASSEN = {
+  BGQ_Gueter: ['C1','C1E','C','CE'],
+  BGQ_Person: ['D1','D1E','D','DE'],
+  BGQ_Kombi:  ['C1','C1E','C','CE','D1','D1E','D','DE'],
+};
+// Anzurechnende Stunden. Das Schema laesst nur ganze Zahlen bis 140 zu.
+const BGQ_DAUER = { BGQ_Gueter:140, BGQ_Person:140, BGQ_Kombi:140 };
+
+// Exakte Schreibweise laut XSD - Umlaute inbegriffen. Weicht ein Zeichen ab,
+// weist das KBA die KOMPLETTE Datei zurueck.
+const BGQ_PRUEFUNGSARTEN = [
+  'Regelprüfung',
+  'Umsteigerprüfung',
+  'Quereinsteigerprüfung',
+  'Ausbildung zum Berufskraftfahrer',
+  'Ausbildung zur Fachkraft im Fahrbetrieb',
+];
+
+// Stammdaten aus dem Anerkennungsbescheid. Strasse und Hausnummer stehen
+// bewusst zusammen in einem Feld - genau so nimmt das KBA die
+// Weiterbildungsmeldungen seit Jahren an.
+const BGQ_STAMM = {
+  name:'Fahrschulteam Thorsten Gels', strasse:'Rheiner Straße 158',
+  plz:'49809', ort:'Lingen', aktenzeichen:'32/HAR', behoerde:'Stadt Lingen (Ems)'
+};
+
+// Feldlaengen laut qualifikationenRequest.xsd.
+const BGQ_MAXLEN = {
+  sachbearbeiterkennung:10, vorname:1000, familiennameUnstrukturiert:1000,
+  geburtsnameUnstrukturiert:1000, geburtsort:70, geschlecht:1, geburtsdatum:8,
+  ausbildungsstaette:1000, strasse:55, ort:44, postleitzahl:12,
+  aktenzeichenAnerkennungsbescheid:1000, anerkennungsbehoerde:1000,
+  ueberwachungsbehoerde:1000, kenntnisbereich:2, beginn:10, ende:10,
+};
+const BGQ_SB_DEFAULT = 'TGels';
+
+function bkrfqgIstBgq(typ){ return typ==='BGQ_Gueter'||typ==='BGQ_Person'||typ==='BGQ_Kombi'; }
+function bEsc(s){ return String(s==null?'':s).replace(/[<>&'"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;',"'":'&apos;','"':'&quot;'}[c])); }
+
+// Sammelt Laengenverstoesse, statt sie erst vom KBA-Portal zu erfahren.
+function bgqFeld(feld, wert, fehler, wer){
+  const v = String(wert==null?'':wert);
+  const max = BGQ_MAXLEN[feld];
+  if (max && v.length > max) {
+    fehler.push((wer?wer+' – ':'')+'Feld '+feld+' ist '+v.length+' Zeichen lang, erlaubt sind '+max);
+  }
+  return bEsc(v);
+}
+
+// ── Teilnehmerliste ───────────────────────────────────────────────────
+async function bkrfqgTnLaden(kursplanId){
+  try {
+    bkrfqgKPTeilnehmer = await bkrfqgSB('bkrfqg_kursplan_teilnehmer', {
+      select: '*,schulung_participants(id,first_name,last_name,birth,birthplace,ext_dates)',
+      eq: { kursplan_id: kursplanId },
+      order: 'created_at'
+    });
+  } catch(e) { bkrfqgKPTeilnehmer = []; console.warn('bkrfqgTnLaden', e.message); }
+}
+
+// Liefert die Personendaten eines Listeneintrags oder null, wenn die
+// Verknuepfung fehlt (Altzeilen aus der Zeit vor der Umstellung).
+function bgqPerson(t){ return t.schulung_participants || null; }
+function bgqName(t){
+  const p = bgqPerson(t);
+  if (p) return ((p.last_name||'')+', '+(p.first_name||'')).replace(/^, |, $/,'');
+  return ((t.nachname||'')+', '+(t.vorname||'')).replace(/^, |, $/,'') || '(ohne Namen)';
+}
+
+// Pruefung auf die Pflichtangaben der Meldung. Fehlt eine, wird der
+// Teilnehmer uebersprungen statt die ganze Datei zu gefaehrden.
+function bgqFehlend(t){
+  const p = bgqPerson(t);
+  if (!p) return ['Verknüpfung zum Teilnehmerstamm'];
+  const ext = p.ext_dates || {};
+  const f = [];
+  if (!p.first_name && !p.last_name) f.push('Name');
+  if (!p.birth) f.push('Geburtsdatum');
+  if (!p.birthplace) f.push('Geburtsort');
+  if (!ext.GESCHLECHT) f.push('Geschlecht');
+  if (!t.pruefungsart) f.push('Prüfungsart');
+  return f;
+}
+
+function bkrfqgTnKarteHTML(kp){
+  if (!bkrfqgIstBgq(kp.kurstyp)) return '';
+  const liste = bkrfqgKPTeilnehmer;
+  const rows = liste.map(t => {
+    const fehlt = bgqFehlend(t);
+    const p = bgqPerson(t);
+    const gemeldet = t.bqr_gemeldet_am ? '<span class="tag" style="background:#dcfce7;color:#166534">✓ im BQR</span>'
+                   : t.bqr_datei_am    ? '<span class="tag" style="background:#ffedd5;color:#9a3412">● Datei erzeugt</span>'
+                   : '';
+    return `<tr>
+      <td><strong>${bEsc(bgqName(t))}</strong></td>
+      <td style="font-size:11px">${p&&p.birth?bfmtD(p.birth):'<span style="color:var(--rot)">–</span>'}</td>
+      <td>
+        <select class="bgq-pa" data-id="${t.id}" onchange="bkrfqgTnPruefungsart(this)" style="font-size:12px;padding:3px 6px">
+          <option value="">– Prüfungsart –</option>
+          ${BGQ_PRUEFUNGSARTEN.map(a=>`<option value="${bEsc(a)}" ${t.pruefungsart===a?'selected':''}>${bEsc(a)}</option>`).join('')}
+        </select>
+      </td>
+      <td>${fehlt.length?`<span class="tag" style="background:#fee2e2;color:#b91c1c">fehlt: ${bEsc(fehlt.join(', '))}</span>`:'<span class="tag" style="background:#dcfce7;color:#166534">vollständig</span>'}</td>
+      <td>${gemeldet}</td>
+      <td style="text-align:right"><button class="btn btn-outline btn-sm" style="color:var(--rot)" onclick="bkrfqgTnEntfernen('${t.id}')">🗑</button></td>
+    </tr>`;
+  }).join('');
+  return `
+    <div class="card" style="padding:0;margin-top:16px">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid var(--border)">
+        <div class="card-titel">👥 Teilnehmer (${liste.length})</div>
+        <button class="btn btn-outline btn-sm" onclick="bkrfqgTnSuchDialog()">＋ Teilnehmer</button>
+      </div>
+      ${liste.length ? `<div style="overflow-x:auto"><table class="ma-table" style="min-width:720px">
+        <thead><tr><th>Name</th><th>geboren</th><th>Prüfungsart</th><th>Status</th><th>Meldung</th><th></th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table></div>` : '<div style="padding:16px;color:var(--grau);font-size:13px">Noch keine Teilnehmer zugeordnet.</div>'}
+    </div>`;
+}
+
+// ── Teilnehmer suchen und verknuepfen ─────────────────────────────────
+function bkrfqgTnModalHTML(){
+  return `
+  <div class="modal-overlay" id="bkrfqg-tn-modal">
+    <div class="modal" style="width:560px">
+      <div class="modal-header">
+        <h3>Teilnehmer zuordnen</h3>
+        <button class="close-btn" onclick="bkrfqgCloseModal('bkrfqg-tn-modal')">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="frow"><label>Name suchen</label>
+          <input id="bgq-suche" placeholder="Nachname oder Vorname" oninput="bkrfqgTnSuchen()"></div>
+        <div style="font-size:11px;color:var(--grau);margin:-4px 0 10px">
+          Gesucht wird im Teilnehmerstamm der Schulungen. Wer sich online angemeldet hat, steht dort nach der Übernahme.
+        </div>
+        <div id="bgq-treffer"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="bkrfqgCloseModal('bkrfqg-tn-modal')">Schließen</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function bkrfqgTnSuchDialog(){
+  const e = document.getElementById('bgq-suche'); if (e) e.value = '';
+  const tr = document.getElementById('bgq-treffer');
+  if (tr) tr.innerHTML = '<div style="color:var(--grau);font-size:13px">Mindestens zwei Zeichen eingeben.</div>';
+  bkrfqgOpenModal('bkrfqg-tn-modal');
+}
+
+let _bgqSuchTimer = null;
+function bkrfqgTnSuchen(){
+  clearTimeout(_bgqSuchTimer);
+  _bgqSuchTimer = setTimeout(bkrfqgTnSuchenJetzt, 250);
+}
+async function bkrfqgTnSuchenJetzt(){
+  const q = (document.getElementById('bgq-suche')||{}).value||'';
+  const box = document.getElementById('bgq-treffer'); if (!box) return;
+  if (q.trim().length < 2) { box.innerHTML = '<div style="color:var(--grau);font-size:13px">Mindestens zwei Zeichen eingeben.</div>'; return; }
+  box.innerHTML = '<div style="color:var(--grau);font-size:13px">Suche …</div>';
+  try {
+    const t = q.trim().replace(/[%,()]/g, "");
+    const { data, error } = await sb.from('schulung_participants')
+      .select('id,first_name,last_name,birth,birthplace,ext_dates')
+      .or(`last_name.ilike.%${t}%,first_name.ilike.%${t}%`)
+      .order('last_name').limit(25);
+    if (error) throw new Error(error.message);
+    bkrfqgTnSuche = data || [];
+    const drin = new Set(bkrfqgKPTeilnehmer.map(x => x.participant_id).filter(Boolean));
+    if (!bkrfqgTnSuche.length) {
+      box.innerHTML = '<div style="color:var(--grau);font-size:13px">Kein Treffer.</div>'; return;
+    }
+    box.innerHTML = bkrfqgTnSuche.map(p => {
+      const ext = p.ext_dates || {};
+      const luecken = [];
+      if (!p.birth) luecken.push('Geburtsdatum');
+      if (!p.birthplace) luecken.push('Geburtsort');
+      if (!ext.GESCHLECHT) luecken.push('Geschlecht');
+      const schon = drin.has(p.id);
+      return `<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;border:1px solid var(--border);border-radius:6px;padding:7px 10px;margin-bottom:6px">
+        <div><strong>${bEsc((p.last_name||'')+', '+(p.first_name||''))}</strong>
+        <div style="font-size:11px;color:var(--grau)">${p.birth?bfmtD(p.birth):'ohne Geburtsdatum'}${luecken.length?' · fehlt: '+bEsc(luecken.join(', ')):''}</div></div>
+        ${schon?'<span class="tag" style="background:#e5e7eb;color:#374151">bereits zugeordnet</span>'
+               :`<button class="btn btn-primary btn-sm" onclick="bkrfqgTnZuordnen('${p.id}')">Zuordnen</button>`}
+      </div>`;
+    }).join('');
+  } catch(e) {
+    box.innerHTML = '<div style="color:var(--rot);font-size:13px">Fehler: '+bEsc(e.message)+'</div>';
+  }
+}
+
+async function bkrfqgTnZuordnen(participantId){
+  if (!bkrfqgKPSelected) return;
+  try {
+    await bkrfqgInsert('bkrfqg_kursplan_teilnehmer', {
+      kursplan_id: bkrfqgKPSelected,
+      participant_id: participantId
+    });
+    await bkrfqgTnLaden(bkrfqgKPSelected);
+    bkrfqgKursplaene(document.getElementById('bkrfqg-content'));
+    toast('Teilnehmer zugeordnet ✓');
+  } catch(e) { toast('Fehler: '+e.message, 'err'); }
+}
+
+async function bkrfqgTnEntfernen(id){
+  const t = bkrfqgKPTeilnehmer.find(x => x.id === id);
+  if (t && t.bqr_gemeldet_am && !confirm('Dieser Teilnehmer ist bereits im BQR gemeldet.\n\nWirklich aus der Liste entfernen? Die Meldung beim KBA bleibt bestehen und müsste dort storniert werden.')) return;
+  try {
+    await bkrfqgDelete('bkrfqg_kursplan_teilnehmer', id);
+    await bkrfqgTnLaden(bkrfqgKPSelected);
+    bkrfqgKursplaene(document.getElementById('bkrfqg-content'));
+    toast('Teilnehmer entfernt');
+  } catch(e) { toast('Fehler: '+e.message, 'err'); }
+}
+
+async function bkrfqgTnPruefungsart(sel){
+  const id = sel.getAttribute('data-id');
+  try {
+    await bkrfqgUpdate('bkrfqg_kursplan_teilnehmer', id, { pruefungsart: sel.value || null });
+    const t = bkrfqgKPTeilnehmer.find(x => x.id === id);
+    if (t) t.pruefungsart = sel.value || null;
+    bkrfqgKursplaene(document.getElementById('bkrfqg-content'));
+  } catch(e) { toast('Fehler: '+e.message, 'err'); }
+}
+
+// ── Meldedialog ───────────────────────────────────────────────────────
+function bkrfqgBgqDialog(kursplanId){
+  const kp = bkrfqgState.kursplaene.find(x => x.id === kursplanId);
+  if (!kp) return;
+  if (!bkrfqgIstBgq(kp.kurstyp)) { toast('Für diesen Kurstyp ist keine BGQ-Meldung vorgesehen.'); return; }
+  const liste = bkrfqgKPTeilnehmer;
+  if (!liste.length) { toast('Diesem Kursplan sind noch keine Teilnehmer zugeordnet.'); return; }
+
+  const codes = BGQ_KB_TYP[kp.kurstyp] || [];
+  // Gegenprobe: was steht tatsaechlich in den Kurstagen? Weicht der Plan ab,
+  // wird gemeldet, was der Rahmenplan vorsieht - aber sichtbar angemerkt.
+  const geplant = new Set();
+  bkrfqgKPKurstage.forEach(k => {
+    String(k.kenntnisbereich_kb||'').replace(/KB/gi,'').split(/[,;]/).forEach(s => {
+      const c = BGQ_KB_CODE[s.trim()];
+      if (c) geplant.add(c);
+    });
+  });
+  const fehlenImPlan = codes.filter(c => geplant.size && !geplant.has(c));
+
+  const bereit = liste.filter(t => !bgqFehlend(t).length);
+  const offen  = liste.filter(t =>  bgqFehlend(t).length);
+  const sb0 = localStorage.getItem('bgqSachbearbeiter') || BGQ_SB_DEFAULT;
+
+  const rows = liste.map(t => {
+    const f = bgqFehlend(t);
+    return `<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:13px;margin-bottom:5px">
+      <span><strong>${bEsc(bgqName(t))}</strong>
+      ${t.pruefungsart?`<span style="color:var(--grau);font-size:11px"> · ${bEsc(t.pruefungsart)}</span>`:''}</span>
+      ${f.length?`<span class="tag" style="background:#fee2e2;color:#b91c1c">fehlt: ${bEsc(f.join(', '))}</span>`
+               :'<span class="tag" style="background:#dcfce7;color:#166534">wird gemeldet</span>'}
+    </div>`;
+  }).join('');
+
+  const el = document.getElementById('bkrfqg-bgq-modal');
+  if (el) el.remove();
+  const wrap = document.createElement('div');
+  wrap.innerHTML = `
+  <div class="modal-overlay open" id="bkrfqg-bgq-modal">
+    <div class="modal" style="width:640px">
+      <div class="modal-header">
+        <h3>🏛 BGQ-Meldung ans KBA</h3>
+        <button class="close-btn" onclick="bkrfqgCloseModal('bkrfqg-bgq-modal')">×</button>
+      </div>
+      <div class="modal-body">
+        <div style="font-size:13px;color:var(--grau);margin-bottom:12px">
+          <strong>${bEsc(bKursTypLabel(kp.kurstyp))}</strong> · ${bfmtD(kp.startdatum)} – ${bfmtD(kp.enddatum)}<br>
+          Kenntnisbereiche ${codes.join(', ')} · ${bereit.length} von ${liste.length} Teilnehmern vollständig
+        </div>
+        ${fehlenImPlan.length?`<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:6px;padding:9px 12px;margin-bottom:12px;font-size:12px">
+          ⚠ Laut Rahmenplan zu melden, aber in keinem Kurstag hinterlegt: ${fehlenImPlan.join(', ')}.
+          Gemeldet wird trotzdem der volle Rahmenplan – prüfe, ob die Kurstage vollständig erfasst sind.
+        </div>`:''}
+        <div class="fgrid">
+          <div class="frow"><label>Sachbearbeiterkennung</label>
+            <input id="bgq-sb" maxlength="10" value="${bEsc(sb0)}"></div>
+          <div class="frow"><label>Anzurechnende Stunden</label>
+            <input type="number" id="bgq-dauer" min="1" max="140" value="${BGQ_DAUER[kp.kurstyp]||140}"></div>
+        </div>
+        <div style="font-size:11px;color:var(--grau);margin:-4px 0 12px">Max. 10 Zeichen bzw. max. 140 Stunden – beides Vorgabe des KBA-Schemas.</div>
+        ${rows}
+        ${offen.length?`<div style="font-size:12px;color:var(--grau);margin-top:8px">Teilnehmer mit fehlenden Angaben werden <b>nicht</b> in die Datei aufgenommen und bleiben ungemeldet.</div>`:''}
+        <div id="bgq-fehler"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="bkrfqgCloseModal('bkrfqg-bgq-modal')">Abbrechen</button>
+        <button class="btn btn-primary" onclick="bkrfqgBgqErzeugen('${kp.id}')">XML-Datei erzeugen</button>
+      </div>
+    </div>
+  </div>`;
+  document.body.appendChild(wrap.firstElementChild);
+}
+
+// ── XML erzeugen ──────────────────────────────────────────────────────
+async function bkrfqgBgqErzeugen(kursplanId){
+  const kp = bkrfqgState.kursplaene.find(x => x.id === kursplanId);
+  if (!kp) return;
+  const sbk = ((document.getElementById('bgq-sb')||{}).value||'').trim();
+  const dauer = parseInt((document.getElementById('bgq-dauer')||{}).value, 10);
+  const box = document.getElementById('bgq-fehler');
+  if (box) box.innerHTML = '';
+
+  const zeig = (liste) => {
+    if (box) box.innerHTML = `<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:6px;padding:9px 12px;margin-top:10px">
+      <div style="font-weight:700;color:#b91c1c;font-size:13px;margin-bottom:5px">⚠ Keine Datei erzeugt</div>
+      <ul style="margin:0;padding-left:18px;font-size:12px;color:#7f1d1d">${liste.map(t=>'<li>'+bEsc(t)+'</li>').join('')}</ul></div>`;
+    toast('⚠ '+liste[0], 'err');
+  };
+
+  if (!sbk) { zeig(['Bitte Sachbearbeiterkennung eintragen.']); return; }
+  if (sbk.length > BGQ_MAXLEN.sachbearbeiterkennung) { zeig(['Sachbearbeiterkennung ist '+sbk.length+' Zeichen lang, erlaubt sind 10.']); return; }
+  if (!(dauer >= 1 && dauer <= 140)) { zeig(['Anzurechnende Stunden müssen zwischen 1 und 140 liegen.']); return; }
+  localStorage.setItem('bgqSachbearbeiter', sbk);
+
+  const codes   = BGQ_KB_TYP[kp.kurstyp] || [];
+  const klassen = BGQ_KLASSEN[kp.kurstyp] || [];
+  const beginn  = String(kp.startdatum||'').slice(0,10);
+  const ende    = String(kp.enddatum||kp.startdatum||'').slice(0,10);
+  if (!/^20\d\d-\d\d-\d\d$/.test(beginn) || !/^20\d\d-\d\d-\d\d$/.test(ende)) {
+    zeig(['Beginn oder Ende des Kursplans fehlt oder ist ungültig.']); return;
+  }
+
+  const fehler = [];
+  const gemeldet = [];
+  let nr = 0;
+  let xml = '<?xml version="1.0" encoding="UTF-8"?>\n'
+          + '<Qualifikationen-Request xmlns="http://www.kba.de/bqr/qualifikation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">\n';
+
+  for (const t of bkrfqgKPTeilnehmer) {
+    if (bgqFehlend(t).length) continue;
+    const p = bgqPerson(t);
+    const ext = p.ext_dates || {};
+    nr++; gemeldet.push(t);
+    const wer = bgqName(t);
+    const F = (feld, wert) => bgqFeld(feld, wert, fehler, wer);
+    const gd = String(p.birth).split('-');
+    const gebname = String(ext.GEBURTSNAME||'').trim();
+    // Klassen des Teilnehmers, falls gepflegt - sonst die des Kurstyps.
+    const eigene = String(ext.KLASSEN||'').split(',').map(s=>s.trim())
+      .filter(k => /^(C1E|C1|CE|C|D1E|D1|DE|D)$/.test(k));
+    const kl = (eigene.length ? eigene : klassen).slice(0, 8);
+
+    xml += '  <Qualifikation>\n'
+        +  '    <satznummer>'+nr+'</satznummer>\n'
+        +  '    <sachbearbeiterkennung>'+F('sachbearbeiterkennung',sbk)+'</sachbearbeiterkennung>\n'
+        +  '    <BeschleunigteGrundqualifikationAusbildungsstaette>\n'
+        +  codes.map(c=>'      <kenntnisbereich>'+F('kenntnisbereich',c)+'</kenntnisbereich>\n').join('')
+        +  '      <pruefungsart>'+bEsc(t.pruefungsart)+'</pruefungsart>\n'
+        +  '      <beginn>'+F('beginn',beginn)+'</beginn>\n'
+        +  '      <ende>'+F('ende',ende)+'</ende>\n'
+        +  '      <dauer>'+dauer+'</dauer>\n'
+        +  kl.map(k=>'      <fahrerlaubnisklasse>'+bEsc(k)+'</fahrerlaubnisklasse>\n').join('')
+        +  '      <Ausbildungsstaette>\n'
+        +  '        <ausbildungsstaette>'+F('ausbildungsstaette',BGQ_STAMM.name)+'</ausbildungsstaette>\n'
+        +  '        <strasse>'+F('strasse',BGQ_STAMM.strasse)+'</strasse>\n'
+        +  '        <postleitzahl>'+F('postleitzahl',BGQ_STAMM.plz)+'</postleitzahl>\n'
+        +  '        <ort>'+F('ort',BGQ_STAMM.ort)+'</ort>\n'
+        +  '      </Ausbildungsstaette>\n'
+        +  '      <aktenzeichenAnerkennungsbescheid>'+F('aktenzeichenAnerkennungsbescheid',BGQ_STAMM.aktenzeichen)+'</aktenzeichenAnerkennungsbescheid>\n'
+        +  '      <anerkennungsbehoerde>'+F('anerkennungsbehoerde',BGQ_STAMM.behoerde)+'</anerkennungsbehoerde>\n'
+        +  '      <ueberwachungsbehoerde>'+F('ueberwachungsbehoerde',BGQ_STAMM.behoerde)+'</ueberwachungsbehoerde>\n'
+        +  '    </BeschleunigteGrundqualifikationAusbildungsstaette>\n'
+        +  '    <Personendaten>\n'
+        +  '      <geburtsdatum>'+F('geburtsdatum',gd[2]+gd[1]+gd[0])+'</geburtsdatum>\n'
+        +  '      <geburtsort>'+F('geburtsort',p.birthplace)+'</geburtsort>\n'
+        +  '      <geschlecht>'+F('geschlecht',String(ext.GESCHLECHT||'m').toLowerCase().slice(0,1))+'</geschlecht>\n'
+        +  '      <PersonendatenMitFamilienname>\n'
+        +  '        <vorname>'+F('vorname',p.first_name||'')+'</vorname>\n'
+        +  '        <familiennameUnstrukturiert>'+F('familiennameUnstrukturiert',p.last_name||'')+'</familiennameUnstrukturiert>\n'
+        +  (gebname ? '        <geburtsnameUnstrukturiert>'+F('geburtsnameUnstrukturiert',gebname)+'</geburtsnameUnstrukturiert>\n'
+                   : '        <geburtsnameFehltZurecht>1</geburtsnameFehltZurecht>\n')
+        +  '      </PersonendatenMitFamilienname>\n'
+        +  '    </Personendaten>\n'
+        +  '  </Qualifikation>\n';
+  }
+  xml += '</Qualifikationen-Request>\n';
+
+  if (!nr) { zeig(['Kein Teilnehmer hat vollständige Pflichtangaben.']); return; }
+  // Abbruch VOR dem Download: eine zu lange Angabe macht die komplette
+  // Datei schemaungueltig, das KBA-Portal weist sie dann als Ganzes zurueck.
+  if (fehler.length) { zeig(fehler); return; }
+
+  const jetzt = new Date().toISOString();
+  try {
+    for (const t of gemeldet) {
+      await bkrfqgUpdate('bkrfqg_kursplan_teilnehmer', t.id, { bqr_datei_am: jetzt, bqr_gemeldet_am: null });
+    }
+  } catch(e) { toast('Meldestatus konnte nicht gespeichert werden: '+e.message, 'err'); }
+
+  const blob = new Blob([xml], {type:'application/xml'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'bqr-bgq-'+String(kp.kurstyp||'').toLowerCase()+'-'+beginn+'.xml';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>{ try{ URL.revokeObjectURL(a.href); }catch(e){} }, 5000);
+
+  bkrfqgCloseModal('bkrfqg-bgq-modal');
+  await bkrfqgTnLaden(kursplanId);
+  bkrfqgKursplaene(document.getElementById('bkrfqg-content'));
+  toast('✓ BGQ-Datei erzeugt: '+nr+' Teilnehmer · nach dem Upload bei kba-online.de bestätigen');
+}
+
+// Bestaetigung, dass die Datei im KBA-Portal hochgeladen wurde. Bewusst ein
+// eigener Schritt: hochgeladen wird von Hand, davon bekommt die App nichts mit.
+async function bkrfqgBgqUploadBestaetigen(kursplanId){
+  const offen = bkrfqgKPTeilnehmer.filter(t => t.bqr_datei_am && !t.bqr_gemeldet_am);
+  if (!offen.length) { toast('Keine erzeugte Datei offen.'); return; }
+  if (!confirm('Datei im KBA-Portal hochgeladen?\n\n'+offen.length+' Teilnehmer werden als gemeldet vermerkt.')) return;
+  const jetzt = new Date().toISOString();
+  try {
+    for (const t of offen) await bkrfqgUpdate('bkrfqg_kursplan_teilnehmer', t.id, { bqr_gemeldet_am: jetzt });
+    await bkrfqgTnLaden(kursplanId);
+    bkrfqgKursplaene(document.getElementById('bkrfqg-content'));
+    toast('✓ Als im BQR hochgeladen vermerkt');
+  } catch(e) { toast('Fehler: '+e.message, 'err'); }
+}
+
