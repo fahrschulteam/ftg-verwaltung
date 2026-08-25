@@ -730,8 +730,8 @@ function bkrfqgChipStil(){
       font-size:13px;font-weight:500;color:var(--ink);
       cursor:pointer;user-select:none;line-height:1.3;
     }
-    .chip input[type=checkbox]{
-      -webkit-appearance:checkbox;appearance:checkbox;
+    .chip input[type=checkbox], .chip input[type=radio], .mini-check{
+      -webkit-appearance:auto;appearance:auto;
       width:15px !important;height:15px !important;
       min-width:15px !important;max-width:15px !important;
       padding:0 !important;border:0 !important;box-shadow:none !important;
@@ -740,6 +740,7 @@ function bkrfqgChipStil(){
       accent-color:var(--blau);cursor:pointer;
     }
     .chip:has(input:checked){color:var(--blau);font-weight:600}
+    .mini-check{margin:0 8px 0 0 !important}
   `;
   document.head.appendChild(s);
 }
@@ -2878,8 +2879,8 @@ function bkrfqgAnlagenListe(){
     const pflicht = soll.includes(a.kategorie);
     return `<label style="display:flex;align-items:center;gap:8px;padding:5px 0;
       border-bottom:1px solid var(--border);font-size:12px;cursor:pointer">
-      <input type="checkbox" class="ba-anlage" value="${a.id}"
-        ${pflicht?'checked':''} style="width:15px;height:15px;flex:none;margin:0">
+      <input type="checkbox" class="ba-anlage mini-check" value="${a.id}"
+        ${pflicht?'checked':''}>
       <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
         <strong>${a.kategorie}</strong> · ${a.name}</span>
       <button type="button" class="btn btn-outline btn-sm"
