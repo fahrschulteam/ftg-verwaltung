@@ -40,6 +40,7 @@ async function ladeMitarbeiter() {
   personalState.loaded = true;   // immer setzen, sonst hängt der Spinner
   if (window.onMitarbeiterGeladen) window.onMitarbeiterGeladen();
   try { await ladeFortbildungen(); } catch(e) { console.warn('Fortbildungen:', e); }
+  try { await ladeMaDokumente(); } catch(e) { console.warn('MA-Dokumente:', e); }
   // Schulungs-iframe aktualisieren
   if (typeof sendMitarbeiterToSchulung === 'function') sendMitarbeiterToSchulung();
 }
@@ -379,6 +380,7 @@ async function oeffneMaAkte(id) {
         ${jub ? `<div class="jub-info ${jub.heute?'heute':''}">${jub.heute?'🎉':'🏆'} ${jub.heute?`Heute ${jub.jahre}-jähriges Jubiläum!`:`${jub.jahre}-jähriges Jubiläum in ${jub.diffTage} Tagen (${jub.datum})`}</div>`:''}
         <table class="akte-table"><tbody>${stammRows||'<tr><td colspan="2" style="color:var(--grau)">Noch keine Daten — auf Bearbeiten klicken.</td></tr>'}</tbody></table>
         ${fortbildungsBlockHTML(m)}
+        ${maDokumenteBlockHTML(m)}
         ${m.notiz?`<div class="fsec">Notiz</div><p style="font-size:13px;color:var(--dunkel)">${m.notiz}</p>`:''}
       </div>
       <div class="modal-footer">
@@ -654,6 +656,26 @@ function exportPersonalCSV() {
 //  Nutzt fortbildung.js (FB_PFLICHTEN, fortbildungsStatus, …)
 // ════════════════════════════════════════════════════════════════════
 let fortbildungenCache = [];
+let maDokumenteCache = [];
+
+// Papiere, die fuer den BKrFQG-Anerkennungsantrag beizufuegen sind.
+// Bewusst feste Kategorien: die Vollstaendigkeitspruefung muss wissen,
+// was sie abhaken darf - mit Freitext ginge das nicht.
+const MA_DOK_KATEGORIEN = [
+  'Fahrlehrerschein',
+  'Didaktik-Nachweis',
+  'Führungszeugnis',
+  'Sonstiges',
+];
+
+async function ladeMaDokumente() {
+  try {
+    const { data, error } = await sb.from('mitarbeiter_dokumente')
+      .select('*').order('hochgeladen_am', { ascending: false });
+    if (error) { console.warn('MA-Dokumente laden:', error.message); maDokumenteCache = []; return; }
+    maDokumenteCache = data || [];
+  } catch(e) { console.warn('MA-Dokumente:', e); maDokumenteCache = []; }
+}
 
 async function ladeFortbildungen() {
   try {
@@ -661,6 +683,81 @@ async function ladeFortbildungen() {
     if (error) { console.warn('Fortbildungen laden:', error.message); fortbildungenCache = []; return; }
     fortbildungenCache = data || [];
   } catch(e) { console.warn('Fortbildungen:', e); fortbildungenCache = []; }
+}
+
+// Dokumente eines MA in der Akte rendern. Getrennt von den Fortbildungs-
+// urkunden, weil es hier um Nachweise fuer den Anerkennungsantrag geht
+// und nicht um den Fortbildungsstand.
+function maDokumenteBlockHTML(m) {
+  const docs = maDokumenteCache.filter(d => d.mitarbeiter_id === m.id);
+  const liste = docs.length ? docs.map(d => `
+    <div class="fb-eintrag">
+      <span class="fb-art">${d.kategorie}</span>
+      <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${d.dateiname||''}</span>
+      <span style="font-size:11px;color:var(--grau)">${d.hochgeladen_am?new Date(d.hochgeladen_am).toLocaleDateString('de-DE'):''}</span>
+      <button class="btn btn-outline btn-sm" onclick="oeffneMaDokument('${d.storage_path}')">📄</button>
+      ${canWrite()?`<button class="btn btn-outline btn-sm" onclick="loescheMaDokument('${d.id}','${m.id}')">✕</button>`:''}
+    </div>`).join('') : '<p style="font-size:12px;color:var(--grau)">Noch keine Dokumente hinterlegt.</p>';
+
+  return `
+    <div class="fsec">Dokumente für den Anerkennungsantrag
+      ${canWrite()?`<label class="btn btn-primary btn-sm" style="float:right;font-size:10px;cursor:pointer;margin:0">＋ Dokument
+        <select id="madok-kat-${m.id}" style="display:none"></select>
+        <input type="file" style="display:none" accept=".pdf,.jpg,.jpeg,.png"
+          onchange="ladeMaDokumentHoch(this,'${m.id}')">
+      </label>`:''}
+    </div>
+    <div class="fb-liste">${liste}</div>`;
+}
+
+async function ladeMaDokumentHoch(input, maId) {
+  const datei = input.files[0];
+  input.value = '';
+  if (!datei) return;
+
+  // Kategorie erst nach der Dateiwahl abfragen: so ist klar, worum es geht.
+  const wahl = prompt('Kategorie wählen:\n' + MA_DOK_KATEGORIEN.map((k,i)=>(i+1)+' = '+k).join('\n'), '1');
+  if (wahl === null) return;
+  const kategorie = MA_DOK_KATEGORIEN[parseInt(wahl,10)-1];
+  if (!kategorie) { toast('Ungültige Kategorie.','err'); return; }
+
+  try {
+    const ext = datei.name.split('.').pop();
+    const storage_path = `mitarbeiter/${maId}/${Date.now()}.${ext}`;
+    const { error: upErr } = await sb.storage.from('dokumente').upload(storage_path, datei);
+    if (upErr) throw new Error(upErr.message);
+    const { error } = await sb.from('mitarbeiter_dokumente').insert({
+      mitarbeiter_id: maId, kategorie, dateiname: datei.name,
+      storage_path, mime_type: datei.type || null,
+    });
+    if (error) throw new Error(error.message);
+    await ladeMaDokumente();
+    document.getElementById('ma-akte-modal')?.remove();
+    oeffneMaAkte(maId);
+    toast('Dokument hinterlegt ✓');
+  } catch(e) { toast('Upload-Fehler: '+e.message,'err'); }
+}
+
+async function oeffneMaDokument(pfad) {
+  try {
+    const { data, error } = await sb.storage.from('dokumente').createSignedUrl(pfad, 3600);
+    if (error) throw new Error(error.message);
+    window.open(data.signedUrl, '_blank');
+  } catch(e) { toast('Fehler: '+e.message,'err'); }
+}
+
+async function loescheMaDokument(id, maId) {
+  const d = maDokumenteCache.find(x => x.id === id);
+  if (!confirm('Dokument „'+(d?.dateiname||'')+'“ wirklich löschen?')) return;
+  try {
+    if (d?.storage_path) await sb.storage.from('dokumente').remove([d.storage_path]);
+    const { error } = await sb.from('mitarbeiter_dokumente').delete().eq('id', id);
+    if (error) throw new Error(error.message);
+    await ladeMaDokumente();
+    document.getElementById('ma-akte-modal')?.remove();
+    oeffneMaAkte(maId);
+    toast('Dokument gelöscht');
+  } catch(e) { toast('Fehler: '+e.message,'err'); }
 }
 
 // Fortbildungen eines MA in der Akte rendern

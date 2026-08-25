@@ -2988,6 +2988,16 @@ async function bkrfqgAntragSenden() {
 // ════════════════════════════════════════════════════════════════════
 // DOKUMENTE
 // ════════════════════════════════════════════════════════════════════
+// Betriebsbezogene Unterlagen nach § 5 BKrFQV. Personenbezogene Papiere
+// liegen bewusst NICHT hier, sondern beim Mitarbeiter im Personal-Modul.
+const BKRFQG_DOK_KATEGORIEN = [
+  'Ausbildungsprogramm',
+  'Lehrmaterial',
+  'Raumnachweis',
+  'Anerkennungsbescheid',
+  'Sonstiges',
+];
+
 async function bkrfqgDokumente(el) {
   el.innerHTML = bKopf('📁 Dokumente & Scans','Bescheide, Verträge, Nachweise')
     + '<div class="loading"><div class="spinner"></div>Lade Dokumente …</div>';
@@ -3012,13 +3022,34 @@ async function bkrfqgDokumente(el) {
   } catch(e){ el.innerHTML=bKopf('📁 Dokumente')+`<div class="card" style="padding:20px;color:var(--rot)">Fehler: ${e.message}</div>`; }
 }
 async function bkrfqgDokUpload(input) {
-  const file=input.files[0]; if(!file)return;
+  const file=input.files[0];
+  input.value='';
+  if(!file)return;
+
+  // Ohne Kategorie kann die Vollstaendigkeitspruefung nichts abhaken,
+  // und ohne Standort landet alles pauschal beim ersten - beides wurde
+  // vorher gar nicht abgefragt.
+  const wahl = prompt('Kategorie wählen:\n' + BKRFQG_DOK_KATEGORIEN.map((k,i)=>(i+1)+' = '+k).join('\n'), '1');
+  if (wahl === null) return;
+  const kategorie = BKRFQG_DOK_KATEGORIEN[parseInt(wahl,10)-1];
+  if (!kategorie) { toast('Ungültige Kategorie.','err'); return; }
+
+  const orte = bkrfqgState.standorte || [];
+  if (!orte.length) { toast('Kein Standort angelegt.','err'); return; }
+  let standort = orte[0];
+  if (orte.length > 1) {
+    const sw = prompt('Standort wählen:\n' + orte.map((s,i)=>(i+1)+' = '+s.name).join('\n'), '1');
+    if (sw === null) return;
+    standort = orte[parseInt(sw,10)-1];
+    if (!standort) { toast('Ungültiger Standort.','err'); return; }
+  }
+
   const ext=file.name.split('.').pop();
-  const path=`allgemein/${Date.now()}.${ext}`;
+  const path=`${kategorie.toLowerCase()}/${Date.now()}.${ext}`;
   try {
     const {error}=await sb.storage.from('bkrfqg-dokumente').upload(path,file,{upsert:true});
     if(error)throw error;
-    await bkrfqgInsert('bkrfqg_dokumente',{bezug_typ:'standort',bezug_id:bkrfqgState.standorte[0]?.id||'00000000-0000-0000-0000-000000000000',kategorie:'Sonstiges',dateiname:file.name,storage_path:path,mime_type:file.type,groesse_bytes:file.size});
+    await bkrfqgInsert('bkrfqg_dokumente',{bezug_typ:'standort',bezug_id:standort.id,kategorie:'Sonstiges',dateiname:file.name,storage_path:path,mime_type:file.type,groesse_bytes:file.size});
     toast('Dokument hochgeladen ✓');
     bkrfqgDokumente(document.getElementById('bkrfqg-content'));
   } catch(e){toast('Upload-Fehler: '+e.message,'err');}
