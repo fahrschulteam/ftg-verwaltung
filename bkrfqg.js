@@ -6,7 +6,7 @@
 
 // Versionsstempel des Moduls. Muss mit dem ?v= am <script src="bkrfqg.js">
 // in index.html uebereinstimmen – beim Aendern beide Stellen anfassen.
-const BKRFQG_VERSION = '20260825b';
+const BKRFQG_VERSION = '20260825c';
 
 const bkrfqgState = {
   standorte: [], raeume: [], fahrlehrer: [], kursplaene: [],
@@ -2970,8 +2970,65 @@ const BGQ_KLASSEN = {
   BGQ_Person: ['D1','D1E','D','DE'],
   BGQ_Kombi:  ['C1','C1E','C','CE','D1','D1E','D','DE'],
 };
-// Anzurechnende Stunden. Das Schema laesst nur ganze Zahlen bis 140 zu.
-const BGQ_DAUER = { BGQ_Gueter:140, BGQ_Person:140, BGQ_Kombi:140 };
+// Zielqualifikation je Teilnehmer. Der Kurstyp gibt nur die Vorbelegung vor:
+// in einem Kombi-Kurs kann ein Umsteiger mitlaufen, der nur einen Zweig
+// dazuerwirbt und deshalb weniger gemeldet bekommt.
+const BGQ_QUALI = {
+  gueter: { label:'Güterkraftverkehr', klassen:['C1','C1E','C','CE'] },
+  person: { label:'Personenverkehr',   klassen:['D1','D1E','D','DE'] },
+  kombi:  { label:'Güter + Person',    klassen:['C1','C1E','C','CE','D1','D1E','D','DE'] },
+};
+function bgqQualiAusTyp(kurstyp){
+  return kurstyp==='BGQ_Gueter' ? 'gueter' : kurstyp==='BGQ_Person' ? 'person' : 'kombi';
+}
+
+// Beim Umsteiger wird nur der neu hinzukommende Zweig unterrichtet und
+// gemeldet - die gemeinsamen Baender hatte er in seiner ersten
+// Qualifikation bereits. Nach DEGENER-Rahmenplan sind das:
+//   auf Güter  → 2.2 (08), 3.7 (16), 1.4 (19)
+//   auf Person → 1.5 (06), 2.3 (09), 3.8 (17), 1.6 (20)
+const BGQ_KB_DELTA = {
+  gueter: ['08','16','19'],
+  person: ['06','09','17','20'],
+};
+
+// Vorbelegung der anzurechnenden Stunden je Pruefungsart. Das Schema
+// laesst nur ganze Zahlen bis 140 zu; je Teilnehmer aenderbar.
+const BGQ_STD = {
+  'Regelprüfung': 140,
+  'Quereinsteigerprüfung': 96,
+  'Umsteigerprüfung': 38,
+  'Ausbildung zum Berufskraftfahrer': 140,
+  'Ausbildung zur Fachkraft im Fahrbetrieb': 140,
+};
+
+// Was fuer diesen einen Teilnehmer gemeldet wird.
+function bgqUmfang(t, kp){
+  const q = t.qualifikation || bgqQualiAusTyp(kp && kp.kurstyp);
+  const ist = t.pruefungsart === 'Umsteigerprüfung';
+  let codes;
+  if (ist) {
+    // Kombi als Umsteiger ergibt fachlich keinen Sinn: dann fehlt die
+    // Angabe, welcher Zweig neu dazukommt.
+    codes = BGQ_KB_DELTA[q] || [];
+  } else {
+    codes = BGQ_KB_TYP[
+      q==='gueter' ? 'BGQ_Gueter' : q==='person' ? 'BGQ_Person' : 'BGQ_Kombi'
+    ] || [];
+  }
+  const std = (t.dauer_std!=null && t.dauer_std!=="")
+    ? Number(t.dauer_std)
+    : (BGQ_STD[t.pruefungsart] || 140);
+  return {
+    quali: q,
+    codes: codes,
+    klassen: (BGQ_QUALI[q] || BGQ_QUALI.kombi).klassen,
+    dauer: std,
+    warnung: (ist && q==='kombi')
+      ? 'Umsteiger mit Zielqualifikation „Güter + Person“ – bitte den Zweig wählen, der neu dazukommt.'
+      : '',
+  };
+}
 
 // Exakte Schreibweise laut XSD - Umlaute inbegriffen. Weicht ein Zeichen ab,
 // weist das KBA die KOMPLETTE Datei zurueck.
@@ -3046,6 +3103,9 @@ function bgqFehlend(t){
   if (!p.birthplace) f.push('Geburtsort');
   if (!ext.GESCHLECHT) f.push('Geschlecht');
   if (!t.pruefungsart) f.push('Prüfungsart');
+  if (t.pruefungsart === 'Umsteigerprüfung' && (t.qualifikation||'') === 'kombi') {
+    f.push('Umsteiger-Zweig');
+  }
   return f;
 }
 
@@ -3054,6 +3114,7 @@ function bkrfqgTnKarteHTML(kp){
   const liste = bkrfqgKPTeilnehmer;
   const rows = liste.map(t => {
     const fehlt = bgqFehlend(t);
+    const uf = bgqUmfang(t, kp);
     const p = bgqPerson(t);
     const gemeldet = t.bqr_gemeldet_am ? '<span class="tag" style="background:#dcfce7;color:#166534">✓ im BQR</span>'
                    : t.bqr_datei_am    ? '<span class="tag" style="background:#ffedd5;color:#9a3412">● Datei erzeugt</span>'
@@ -3067,6 +3128,16 @@ function bkrfqgTnKarteHTML(kp){
           ${BGQ_PRUEFUNGSARTEN.map(a=>`<option value="${bEsc(a)}" ${t.pruefungsart===a?'selected':''}>${bEsc(a)}</option>`).join('')}
         </select>
       </td>
+      <td>
+        <select data-id="${t.id}" onchange="bkrfqgTnQualifikation(this)" style="font-size:12px;padding:3px 6px">
+          ${Object.entries(BGQ_QUALI).map(([k,v])=>`<option value="${k}" ${(t.qualifikation||bgqQualiAusTyp(kp.kurstyp))===k?'selected':''}>${bEsc(v.label)}</option>`).join('')}
+        </select>
+      </td>
+      <td style="white-space:nowrap">
+        <input type="number" min="1" max="140" data-id="${t.id}" value="${uf.dauer}"
+          onchange="bkrfqgTnStunden(this)" style="width:64px;font-size:12px;padding:3px 6px">
+        <span style="font-size:11px;color:var(--grau)"> · ${uf.codes.length} KB</span>
+      </td>
       <td>${fehlt.length?`<span class="tag" style="background:#fee2e2;color:#b91c1c">fehlt: ${bEsc(fehlt.join(', '))}</span>`:'<span class="tag" style="background:#dcfce7;color:#166534">vollständig</span>'}</td>
       <td>${gemeldet}</td>
       <td style="text-align:right"><button class="btn btn-outline btn-sm" style="color:var(--rot)" onclick="bkrfqgTnEntfernen('${t.id}')">🗑</button></td>
@@ -3078,8 +3149,8 @@ function bkrfqgTnKarteHTML(kp){
         <div class="card-titel">👥 Teilnehmer (${liste.length})</div>
         <button class="btn btn-outline btn-sm" onclick="bkrfqgTnSuchDialog()">＋ Teilnehmer</button>
       </div>
-      ${liste.length ? `<div style="overflow-x:auto"><table class="ma-table" style="min-width:720px">
-        <thead><tr><th>Name</th><th>geboren</th><th>Prüfungsart</th><th>Status</th><th>Meldung</th><th></th></tr></thead>
+      ${liste.length ? `<div style="overflow-x:auto"><table class="ma-table" style="min-width:980px">
+        <thead><tr><th>Name</th><th>geboren</th><th>Prüfungsart</th><th>Qualifikation</th><th>Std · Umfang</th><th>Status</th><th>Meldung</th><th></th></tr></thead>
         <tbody>${rows}</tbody>
       </table></div>` : '<div style="padding:16px;color:var(--grau);font-size:13px">Noch keine Teilnehmer zugeordnet.</div>'}
     </div>`;
@@ -3162,7 +3233,10 @@ async function bkrfqgTnZuordnen(participantId){
   try {
     await bkrfqgInsert('bkrfqg_kursplan_teilnehmer', {
       kursplan_id: bkrfqgKPSelected,
-      participant_id: participantId
+      participant_id: participantId,
+      qualifikation: bgqQualiAusTyp(
+        (bkrfqgState.kursplaene.find(k => k.id === bkrfqgKPSelected)||{}).kurstyp
+      )
     });
     await bkrfqgTnLaden(bkrfqgKPSelected);
     bkrfqgKursplaene(document.getElementById('bkrfqg-content'));
@@ -3178,6 +3252,32 @@ async function bkrfqgTnEntfernen(id){
     await bkrfqgTnLaden(bkrfqgKPSelected);
     bkrfqgKursplaene(document.getElementById('bkrfqg-content'));
     toast('Teilnehmer entfernt');
+  } catch(e) { toast('Fehler: '+e.message, 'err'); }
+}
+
+async function bkrfqgTnQualifikation(sel){
+  const id = sel.getAttribute('data-id');
+  try {
+    await bkrfqgUpdate('bkrfqg_kursplan_teilnehmer', id, { qualifikation: sel.value });
+    const t = bkrfqgKPTeilnehmer.find(x => x.id === id);
+    if (t) t.qualifikation = sel.value;
+    bkrfqgKursplaene(document.getElementById('bkrfqg-content'));
+  } catch(e) { toast('Fehler: '+e.message, 'err'); }
+}
+
+async function bkrfqgTnStunden(inp){
+  const id = inp.getAttribute('data-id');
+  const v = parseInt(inp.value, 10);
+  if (!(v >= 1 && v <= 140)) {
+    toast('Stunden müssen zwischen 1 und 140 liegen.', 'err');
+    bkrfqgKursplaene(document.getElementById('bkrfqg-content'));
+    return;
+  }
+  try {
+    await bkrfqgUpdate('bkrfqg_kursplan_teilnehmer', id, { dauer_std: v });
+    const t = bkrfqgKPTeilnehmer.find(x => x.id === id);
+    if (t) t.dauer_std = v;
+    bkrfqgKursplaene(document.getElementById('bkrfqg-content'));
   } catch(e) { toast('Fehler: '+e.message, 'err'); }
 }
 
@@ -3253,7 +3353,8 @@ function bkrfqgBgqDialog(kursplanId){
     const f = bgqFehlend(t);
     return `<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:13px;margin-bottom:5px">
       <span><strong>${bEsc(bgqName(t))}</strong>
-      ${t.pruefungsart?`<span style="color:var(--grau);font-size:11px"> · ${bEsc(t.pruefungsart)}</span>`:''}</span>
+      ${t.pruefungsart?`<span style="color:var(--grau);font-size:11px"> · ${bEsc(t.pruefungsart)}`:''}
+      ${t.pruefungsart?` · ${bgqUmfang(t,kp).dauer} Std · KB ${bgqUmfang(t,kp).codes.join(', ')||'–'}</span>`:''}</span>
       ${f.length?`<span class="tag" style="background:#fee2e2;color:#b91c1c">fehlt: ${bEsc(f.join(', '))}</span>`
                :'<span class="tag" style="background:#dcfce7;color:#166534">wird gemeldet</span>'}
     </div>`;
@@ -3273,7 +3374,7 @@ function bkrfqgBgqDialog(kursplanId){
         <div style="font-size:13px;color:var(--grau);margin-bottom:12px">
           <strong>${bEsc(bKursTypLabel(kp.kurstyp))}</strong> · ${bfmtD(zr.von)} – ${bfmtD(zr.bis)}
           ${zr.ausKurstagen?`<span style="font-size:11px">(aus ${zr.tage} Kurstagen)</span>`:''}<br>
-          Kenntnisbereiche ${codes.join(', ')} · ${bereit.length} von ${liste.length} Teilnehmern vollständig
+          ${bereit.length} von ${liste.length} Teilnehmern vollständig · Umfang je Teilnehmer
         </div>
         ${fehlenImPlan.length?`<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:6px;padding:9px 12px;margin-bottom:12px;font-size:12px">
           ⚠ Laut Rahmenplan zu melden, aber in keinem Kurstag hinterlegt: ${fehlenImPlan.join(', ')}.
@@ -3283,13 +3384,9 @@ function bkrfqgBgqDialog(kursplanId){
           Am Kursplan fehlt das Enddatum. Gemeldet wird der letzte Kurstag, der ${bfmtD(zr.bis)}.
           <button class="btn btn-outline btn-sm" style="margin-left:8px" onclick="bkrfqgBgqEndeUebernehmen('${kp.id}')">Am Kursplan nachtragen</button>
         </div>` : ''}
-        <div class="fgrid">
-          <div class="frow"><label>Sachbearbeiterkennung</label>
-            <input id="bgq-sb" maxlength="10" value="${bEsc(sb0)}"></div>
-          <div class="frow"><label>Anzurechnende Stunden</label>
-            <input type="number" id="bgq-dauer" min="1" max="140" value="${BGQ_DAUER[kp.kurstyp]||140}"></div>
-        </div>
-        <div style="font-size:11px;color:var(--grau);margin:-4px 0 12px">Max. 10 Zeichen bzw. max. 140 Stunden – beides Vorgabe des KBA-Schemas.</div>
+        <div class="frow"><label>Sachbearbeiterkennung</label>
+          <input id="bgq-sb" maxlength="10" value="${bEsc(sb0)}"></div>
+        <div style="font-size:11px;color:var(--grau);margin:-4px 0 12px">Max. 10 Zeichen (Vorgabe des KBA-Schemas). Stunden und Kenntnisbereiche stehen je Teilnehmer in der Teilnehmerliste.</div>
         ${rows}
         ${offen.length?`<div style="font-size:12px;color:var(--grau);margin-top:8px">Teilnehmer mit fehlenden Angaben werden <b>nicht</b> in die Datei aufgenommen und bleiben ungemeldet.</div>`:''}
         <div id="bgq-fehler"></div>
@@ -3308,7 +3405,6 @@ async function bkrfqgBgqErzeugen(kursplanId){
   const kp = bkrfqgState.kursplaene.find(x => x.id === kursplanId);
   if (!kp) return;
   const sbk = ((document.getElementById('bgq-sb')||{}).value||'').trim();
-  const dauer = parseInt((document.getElementById('bgq-dauer')||{}).value, 10);
   const box = document.getElementById('bgq-fehler');
   if (box) box.innerHTML = '';
 
@@ -3321,11 +3417,8 @@ async function bkrfqgBgqErzeugen(kursplanId){
 
   if (!sbk) { zeig(['Bitte Sachbearbeiterkennung eintragen.']); return; }
   if (sbk.length > BGQ_MAXLEN.sachbearbeiterkennung) { zeig(['Sachbearbeiterkennung ist '+sbk.length+' Zeichen lang, erlaubt sind 10.']); return; }
-  if (!(dauer >= 1 && dauer <= 140)) { zeig(['Anzurechnende Stunden müssen zwischen 1 und 140 liegen.']); return; }
   localStorage.setItem('bgqSachbearbeiter', sbk);
 
-  const codes   = BGQ_KB_TYP[kp.kurstyp] || [];
-  const klassen = BGQ_KLASSEN[kp.kurstyp] || [];
   const zr      = bgqZeitraum(kp);
   const beginn  = zr.von;
   const ende    = zr.bis;
@@ -3346,6 +3439,11 @@ async function bkrfqgBgqErzeugen(kursplanId){
     if (bgqFehlend(t).length) continue;
     const p = bgqPerson(t);
     const ext = p.ext_dates || {};
+    const uf = bgqUmfang(t, kp);
+    if (!uf.codes.length) {
+      fehler.push(bgqName(t)+' – kein Kenntnisbereich ermittelbar (Prüfungsart und Qualifikation prüfen)');
+      continue;
+    }
     nr++; gemeldet.push(t);
     const wer = bgqName(t);
     const F = (feld, wert) => bgqFeld(feld, wert, fehler, wer);
@@ -3354,17 +3452,17 @@ async function bkrfqgBgqErzeugen(kursplanId){
     // Klassen des Teilnehmers, falls gepflegt - sonst die des Kurstyps.
     const eigene = String(ext.KLASSEN||'').split(',').map(s=>s.trim())
       .filter(k => /^(C1E|C1|CE|C|D1E|D1|DE|D)$/.test(k));
-    const kl = (eigene.length ? eigene : klassen).slice(0, 8);
+    const kl = (eigene.length ? eigene : uf.klassen).slice(0, 8);
 
     xml += '  <Qualifikation>\n'
         +  '    <satznummer>'+nr+'</satznummer>\n'
         +  '    <sachbearbeiterkennung>'+F('sachbearbeiterkennung',sbk)+'</sachbearbeiterkennung>\n'
         +  '    <BeschleunigteGrundqualifikationAusbildungsstaette>\n'
-        +  codes.map(c=>'      <kenntnisbereich>'+F('kenntnisbereich',c)+'</kenntnisbereich>\n').join('')
+        +  uf.codes.map(c=>'      <kenntnisbereich>'+F('kenntnisbereich',c)+'</kenntnisbereich>\n').join('')
         +  '      <pruefungsart>'+bEsc(t.pruefungsart)+'</pruefungsart>\n'
         +  '      <beginn>'+F('beginn',beginn)+'</beginn>\n'
         +  '      <ende>'+F('ende',ende)+'</ende>\n'
-        +  '      <dauer>'+dauer+'</dauer>\n'
+        +  '      <dauer>'+uf.dauer+'</dauer>\n'
         +  kl.map(k=>'      <fahrerlaubnisklasse>'+bEsc(k)+'</fahrerlaubnisklasse>\n').join('')
         +  '      <Ausbildungsstaette>\n'
         +  '        <ausbildungsstaette>'+F('ausbildungsstaette',BGQ_STAMM.name)+'</ausbildungsstaette>\n'
