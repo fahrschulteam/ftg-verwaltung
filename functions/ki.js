@@ -321,7 +321,7 @@ Unterrichtsart: ${kurstag.unterrichtsart || 'Präsenz'}
 Max. Teilnehmer: ${kurstag.max_teilnehmer || '–'}
 
 Schreibe ein formelles, korrektes Anschreiben auf Deutsch.
-Fasse dich knapp: hoechstens sechs Punkte, je Text maximal 25 Woerter.
+Fasse dich knapp: hoechstens fuenf Punkte, je Text maximal 20 Woerter, Massnahme maximal 15 Woerter.
 Antworte NUR mit JSON, kein Markdown:
 {
   "betreff": "Betreff des Schreibens",
@@ -370,15 +370,30 @@ Antworte NUR mit JSON, kein Markdown:
   "empfehlung": "Konkrete nächste Schritte"
 }`;
 
+      // Haiku statt Sonnet: Der Abgleich gegen eine feste Anforderungsliste
+      // braucht kein grosses Modell, ist aber deutlich schneller - und nur
+      // dadurch passt eine vollstaendige Antwort in das Zeitfenster.
       const result = await anthropicRequest({
-        model: 'claude-sonnet-4-6',
-        max_tokens: 1200,
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 2500,
         messages: [{ role: 'user', content: prompt }],
       });
 
       if (result.status !== 200) throw new Error(result.data.error?.message || 'API Fehler');
+
+      // stop_reason max_tokens heisst: die Antwort ist mittendrin zu Ende.
+      // Das als solches melden, statt den Parser daran scheitern zu lassen.
+      if (result.data.stop_reason === 'max_tokens') {
+        throw new Error('Die Antwort der KI wurde abgeschnitten. Bitte mit weniger Fahrlehrern oder Räumen erneut versuchen.');
+      }
+
       const text = result.data.content[0].text.replace(/```json|```/g, '').trim();
-      return { statusCode: 200, headers: CORS, body: JSON.stringify({ ok: true, pruefung: JSON.parse(text) }) };
+      let pruefung;
+      try { pruefung = JSON.parse(text); }
+      catch (e) {
+        throw new Error('Die KI hat kein gültiges JSON geliefert: ' + text.slice(0, 150));
+      }
+      return { statusCode: 200, headers: CORS, body: JSON.stringify({ ok: true, pruefung }) };
     }
 
     // ── MONITOR-MELDUNG BEWERTEN (Wettbewerb & Recht) ─────────────────────────
