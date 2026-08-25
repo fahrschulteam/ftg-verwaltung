@@ -2819,7 +2819,7 @@ ${tn.length===0?'<div style="color:#C0001A">⚠️ Keine Teilnehmer eingetragen.
 <table><thead><tr><th>#</th><th>Nachname</th><th>Vorname</th><th>Geburtsdatum</th><th>Geburtsort</th><th>Geschlecht</th><th>FS-Klasse</th></tr></thead>
 <tbody>${tn.map((t,i)=>`<tr><td>${i+1}</td><td><strong>${t.nachname}</strong></td><td>${t.vorname}</td>
 <td>${t.geburtsdatum?new Date(t.geburtsdatum+'T12:00').toLocaleDateString('de-DE'):'<span class="fehlend">fehlt</span>'}</td>
-<td>${t.geburtsort||'<span class="fehlend">fehlt</span>'}</td>
+<tconst zeilen = vorhanden.mapd>${t.geburtsort||'<span class="fehlend">fehlt</span>'}</td>
 <td>${t.geschlecht?gLabel[t.geschlecht]:'<span class="fehlend">fehlt!</span>'}</td>
 <td>${t.fs_klasse||'–'}</td></tr>`).join('')}</tbody></table>
 <div style="margin-top:8px;font-size:9pt;color:#666">Gesamt: ${tn.length} · männlich: ${tn.filter(t=>t.geschlecht==='m').length} · weiblich: ${tn.filter(t=>t.geschlecht==='w').length} · divers: ${tn.filter(t=>t.geschlecht==='d').length}</div>`}
@@ -2875,19 +2875,18 @@ function bkrfqgAnlagenListe(){
   const soll = BKRFQG_ANLAGEN_SOLL[anlass] || [];
   const fehlend = soll.filter(k => !vorhanden.some(a => a.kategorie === k));
 
-  const zeilen = vorhanden.map(a => {
+   const zeilen = vorhanden.map(a => {
     const pflicht = soll.includes(a.kategorie);
-    return `<label style="display:flex;align-items:center;gap:8px;padding:5px 0;
-      border-bottom:1px solid var(--border);font-size:12px;cursor:pointer">
-      <input type="checkbox" class="ba-anlage mini-check" value="${a.id}"
+    return `<label class="chip" style="width:100%;padding:6px 0;
+      border-bottom:1px solid var(--border)">
+      <input type="checkbox" class="ba-anlage" value="${a.id}"
         ${pflicht?'checked':''}>
       <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
         <strong>${a.kategorie}</strong> · ${a.name}</span>
       <button type="button" class="btn btn-outline btn-sm"
-        onclick="event.preventDefault();bkrfqgAnlageOeffnen('${a.pfad}')">📄</button>
+        onclick="event.preventDefault();bkrfqgAnlageOeffnen('${a.pfad}')">Ansehen</button>
     </label>`;
   }).join('');
-
   const fehlendHtml = fehlend.length
     ? `<div style="margin-top:10px;padding:8px 10px;background:#fef2f2;border:1px solid #fecaca;
         border-radius:6px;font-size:12px;color:#b91c1c">
@@ -2895,7 +2894,8 @@ function bkrfqgAnlagenListe(){
         <span style="color:#7f1d1d">Im Modul Personal beim Mitarbeiter hinterlegen.</span>
       </div>` : '';
 
-  return (zeilen || '<div style="font-size:12px;color:var(--grau)">Keine Dokumente hinterlegt.</div>') + fehlendHtml;
+      return (zeilen ? `<div class="chip-grid" style="align-items:stretch">${zeilen}</div>`
+                 : '<div style="font-size:12px;color:var(--grau)">Keine Dokumente hinterlegt.</div>') + fehlendHtml;
 }
 
 async function bkrfqgAnlageOeffnen(pfad){
