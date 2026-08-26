@@ -694,18 +694,17 @@ function maDokumenteBlockHTML(m) {
     <div class="fb-eintrag">
       <span class="fb-art">${d.kategorie}</span>
       <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${d.dateiname||''}</span>
-      <span style="font-size:11px;color:var(--grau)">${d.hochgeladen_am?new Date(d.hochgeladen_am).toLocaleDateString('de-DE'):''}</span>
+            <span style="font-size:11px;color:var(--grau)">${d.hochgeladen?new Date(d.hochgeladen).toLocaleDateString('de-DE'):''}</span>
       <button class="btn btn-outline btn-sm" onclick="oeffneMaDokument('${d.storage_path}')">📄</button>
       ${canWrite()?`<button class="btn btn-outline btn-sm" onclick="loescheMaDokument('${d.id}','${m.id}')">✕</button>`:''}
     </div>`).join('') : '<p style="font-size:12px;color:var(--grau)">Noch keine Dokumente hinterlegt.</p>';
 
   return `
     <div class="fsec">Dokumente für den Anerkennungsantrag
-      ${canWrite()?`<label class="btn btn-primary btn-sm" style="float:right;font-size:10px;cursor:pointer;margin:0">＋ Dokument
-        <select id="madok-kat-${m.id}" style="display:none"></select>
-        <input type="file" style="display:none" accept=".pdf,.jpg,.jpeg,.png"
-          onchange="ladeMaDokumentHoch(this,'${m.id}')">
-      </label>`:''}
+        ${canWrite()?`<button type="button" class="btn btn-primary btn-sm" style="float:right;font-size:10px;margin:0"
+          onclick="document.getElementById('madok-datei-${m.id}').click()">＋ Dokument</button>
+        <input type="file" id="madok-datei-${m.id}" style="display:none" accept=".pdf,.jpg,.jpeg,.png"
+          onchange="ladeMaDokumentHoch(this,'${m.id}')">`:''}
     </div>
     <div class="fb-liste">${liste}</div>`;
 }
@@ -726,9 +725,9 @@ async function ladeMaDokumentHoch(input, maId) {
     const storage_path = `mitarbeiter/${maId}/${Date.now()}.${ext}`;
     const { error: upErr } = await sb.storage.from('dokumente').upload(storage_path, datei);
     if (upErr) throw new Error(upErr.message);
-    const { error } = await sb.from('ma_dokumente').insert({
-      mitarbeiter_id: maId, kategorie, dateiname: datei.name,
-      storage_path, mime_type: datei.type || null,
+        const { error } = await sb.from('ma_dokumente').insert({
+      mitarbeiter_id: maId, typ: kategorie, dateiname: datei.name,
+      storage_path,
     });
     if (error) throw new Error(error.message);
     await ladeMaDokumente();
