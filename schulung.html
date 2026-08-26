@@ -11916,7 +11916,8 @@ function invoicePDF(id){
     doc.setTextColor(30,30,30);doc.text('z. H. '+recipientCo.contact,PL,ay);ay+=5;
   }
   // Anschrift (Pflichtangabe § 14 UStG): Firma → gespeicherte Anschrift → Hinweis
-  const recipAddr=(recipientCo&&recipientCo.addr)?recipientCo.addr:(inv.recipientAddr||'');
+  const _ftgPrivatAdr=(function(){try{var isI=inv.type&&inv.type.startsWith('UW-');var ps=[];if(isI){var all=[].concat(state.instructions||[],state.adrInstructions||[]);ps=[].concat.apply([],inv.items.map(function(it){var i=all.find(function(x){return x.id===it.courseId});return i&&i.participant?[i.participant]:[]}));}else{ps=[].concat.apply([],inv.items.map(function(it){var co=(state.courses||[]).find(function(c){return c.id===it.courseId});return co&&co.participant?[co.participant]:[]}));}if(!ps.length)return'';var p=(state.participants||[]).find(function(x){return x.id===ps[0]});if(!p)return'';if(p.companyId||p.company_id)return'';var str=p.street||p.strasse||'';var plz=p.zip||p.plz||'';var ort=p.city||p.ort||'';var z=[plz,ort].filter(Boolean).join(' ');return [str,z].filter(Boolean).join('\n');}catch(e){return''}})();
+const recipAddr=(recipientCo&&recipientCo.addr)?recipientCo.addr:(inv.recipientAddr||_ftgPrivatAdr||'');
   if(recipAddr.trim()){
     doc.setTextColor(30,30,30);
     recipAddr.split('\n').forEach(l=>{if(l.trim()){doc.text(l,PL,ay);ay+=5;}});
