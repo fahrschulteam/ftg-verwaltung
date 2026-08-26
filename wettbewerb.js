@@ -146,7 +146,7 @@ function renderWbContent() {
 
   function wbCardHtml(q) {
     return `
-      <div class="card" style="display:flex; gap:12px; align-items:flex-start; padding:14px 16px; margin-bottom:10px; ${q.aktiv ? '' : 'opacity:.5;'}">
+            <div class="card" style="display:flex; gap:12px; align-items:flex-start; flex-wrap:wrap; padding:14px 16px; margin-bottom:10px; ${q.aktiv ? '' : 'opacity:.5;'}">
         <div style="flex:1; min-width:0;">
           <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
             <strong style="font-size:14px;">${escWb(q.name)}</strong>
@@ -165,15 +165,22 @@ function renderWbContent() {
           </div>
           ${q._snap?.fehler_seit ? `<div style="font-size:11px; color:#C0001A; margin-top:6px;">⚠️ Fehler seit ${new Date(q._snap.fehler_seit).toLocaleDateString('de-DE')} (${q._snap.fehler_anzahl}×): ${escWb(q._snap.letzter_fehler || '')}</div>` : ''}
         </div>
-        ${(() => {
+               ${(() => {
           const b = wettbewerbState.briefings[q.id];
           if (!b) return '';
           const farbe = b.relevanz === 'hoch' ? '#C0001A' : b.relevanz === 'niedrig' ? 'var(--grau)' : '#2A6CAE';
           return `
-          <div style="margin-top:10px; padding:10px 12px; border-left:3px solid ${farbe}; background:var(--hell); border-radius:0 8px 8px 0;">
-            <div style="font-size:12px; font-weight:700;">🕵 ${escWb(b.titel || 'Recherchebericht')}</div>
-            <div style="font-size:11px; color:var(--grau); margin-top:2px;">Recherche vom ${new Date(b.erstellt_am).toLocaleDateString('de-DE')}</div>
-            <button class="btn" style="padding:4px 9px; font-size:11px; margin-top:6px;" onclick="zeigeBriefing('${q.id}')">Bericht lesen</button>
+          <div style="width:100%; margin-top:10px; padding:10px 12px; border-left:3px solid ${farbe}; background:var(--hell); border-radius:0 8px 8px 0; box-sizing:border-box;">
+            <div style="display:flex; align-items:flex-start; gap:10px; flex-wrap:wrap;">
+              <div style="flex:1; min-width:0;">
+                <div style="font-size:12px; font-weight:700;">${escWb(b.titel || 'Recherchebericht')}</div>
+                <div style="font-size:11px; color:var(--grau); margin-top:2px;">Recherche vom ${new Date(b.erstellt_am).toLocaleDateString('de-DE')}</div>
+              </div>
+              <div style="display:flex; gap:6px; flex-shrink:0;">
+                <button class="btn" style="padding:4px 9px; font-size:11px;" onclick="zeigeBriefing('${q.id}')">Bericht lesen</button>
+                ${canWrite() ? `<button class="btn" style="padding:4px 9px; font-size:11px; color:#C0001A; border-color:#C0001A;" onclick="loescheBriefing('${b.id}','${q.id}')">Löschen</button>` : ''}
+              </div>
+            </div>
           </div>`;
         })()}
         ${canWrite() ? `
@@ -578,3 +585,28 @@ async function starteSammelRecherche() {
   toast(`Sammellauf beendet: ${fertig - fehler} Berichte erstellt${fehler ? `, ${fehler} fehlgeschlagen` : ''}.`, fehler ? 'err' : 'ok');
   renderWbContent();
 }
+  window.loescheBriefing = async function(briefingId, quelleId) {
+    if (!confirm('Diesen Recherchebericht endgültig löschen?')) return;
+    try {
+      const { error } = await sb.from('monitor_briefings').delete().eq('id', briefingId);
+      if (error) throw error;
+      delete wettbewerbState.briefings[quelleId];
+      toast('Bericht gelöscht');
+      renderWbContent();
+    } catch (e) {
+      toast('Fehler beim Löschen: ' + e.message, 'err');
+    }
+  };
+
+  async function loescheBriefing(briefingId, quelleId) {
+    if (!confirm('Diesen Recherchebericht endgültig löschen?')) return;
+    try {
+      const { error } = await sb.from('monitor_briefings').delete().eq('id', briefingId);
+      if (error) throw error;
+      delete wettbewerbState.briefings[quelleId];
+      toast('Bericht gelöscht');
+      renderWbContent();
+    } catch (e) {
+      toast('Fehler beim Löschen: ' + e.message, 'err');
+    }
+  }
