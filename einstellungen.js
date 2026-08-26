@@ -46,6 +46,7 @@ async function ladeEinstellungen() {
     einstState.firma       = f.data || {};
   } catch (err) { console.warn('Einstellungen laden:', err); }
   einstState.loaded = true;
+  window.einstState = einstState; if (typeof window.sendEinstellungenToSchulung === 'function') window.sendEinstellungenToSchulung();
 }
 
 window.renderEinstellungen = async function () {
