@@ -2623,7 +2623,6 @@ function fesSpeichernErlaubt(type, datum, teilnehmerIds, ausserId, weiter){
   return true;
 }
 function typeTag(t){
-  if(t==='Sammelrechnung')return 'steel';
   if(t&&t.startsWith('UW-'))return 'steel';
   return ctype(t).tag;
 }
@@ -2640,7 +2639,6 @@ function typeLabel(t){
 function typeShort(t){
   if(!t) return '—';
   // UW-Typen
-  if(t==='Sammelrechnung') return 'SR';
   const uwMap={'UW-Gabelstapler':'UW GS','UW-Ladekran':'UW LK',
     'UW-ADR':'UW ADR','UW-Fahrtenschreiber':'UW FT','UW-Baumaschinen':'UW BM'};
   if(uwMap[t]) return uwMap[t];
@@ -2657,7 +2655,7 @@ function cleanType(v){return v.replace(/ \([^)]*\)$/,'')}
 function grundlagenFor(type){
   const g=(state.settings.grundlagen||{})[type];
   if(Array.isArray(g)&&g.length)return g;
-  return (ctype(type)||{}).defaultGrundlagen||[];
+  return ctype(type).defaultGrundlagen||[];
 }
 // ADR-Gültigkeit: Ablaufdatum der Qualifikation für einen Teilnehmer (spätester bestandener ADR-Kurs)
 function adrExpiry(pid){
@@ -10464,7 +10462,6 @@ function adrInstrCert(id){
 function typePrefix(t){
   // Unterweisungs-Präfixe
   const instrPfx={'UW-Gabelstapler':'UG','UW-Ladekran':'UL','UW-ADR':'UA','UW-Fahrtenschreiber':'UF','ADR-Unterweisung':'UA','Gabelstapler':'UG','Ladekran':'UL','Fahrtenschreiber':'UF','Baumaschinen':'UB','BGQ LKW':'BL','BGQ KOM':'BK','Umsteiger LKW':'UL','Umsteiger KOM':'UB'};
-  if(t==='Sammelrechnung')return 'SR';
   if(instrPfx[t])return instrPfx[t];
   return ctype(t).prefix;
 }
@@ -10684,15 +10681,13 @@ function renderInvoices(){
       <td colspan="6" style="padding:0">
         <table style="width:100%;border-collapse:collapse;font-size:.82rem">
           <thead><tr style="background:#efeadf">
-            <th style="padding:5px 12px;text-align:left;font-size:.75rem;color:var(--steel);width:34%">Teilnehmer</th>
-            <th style="padding:5px 12px;text-align:left;font-size:.75rem;color:var(--steel)">Modul</th>
+            <th style="padding:5px 12px;text-align:left;font-size:.75rem;color:var(--steel);width:40%">Teilnehmer</th>
             <th style="padding:5px 12px;text-align:left;font-size:.75rem;color:var(--steel)">Datum</th>
             <th style="padding:5px 12px;text-align:right;font-size:.75rem;color:var(--steel)">Einzelpreis</th>
           </tr></thead>
           <tbody>
             ${i.items.map(it=>`<tr style="border-bottom:1px solid #eee7da">
               <td style="padding:5px 12px">${it.name}</td>
-              <td style="padding:5px 12px;color:var(--muted)">${typeShort(it.modul||i.type)}</td>
               <td style="padding:5px 12px;color:var(--muted)">${fmt(it.courseDate)}</td>
               <td style="padding:5px 12px;text-align:right">${eur(it.price)}</td>
             </tr>`).join('')}
@@ -10715,7 +10710,7 @@ function renderInvoices(){
   // ── Offene Rechnungen ────────────────────────────────────────────────
   const bOpen=document.getElementById('invBody');
   if(bOpen){
-    bOpen.innerHTML=srBannerHtml()+(open.length?open.map(i=>baseRow(i,
+    bOpen.innerHTML=open.length?open.map(i=>baseRow(i,
       `<td class="row-actions" style="padding:4px 8px">
         <div style="display:flex;gap:4px;align-items:center;flex-wrap:nowrap">
           <button class="btn sm" onclick="invoicePDF('${i.id}')" style="padding:4px 10px">📄 PDF</button>
@@ -10726,7 +10721,7 @@ function renderInvoices(){
           <button class="btn danger sm" onclick="delInvoice('${i.id}')" style="padding:4px 8px">🗑</button>
         </div>
       </td>`
-    )).join(''):'<tr><td colspan="6"><div class="empty" style="padding:14px">Keine offenen Rechnungen.</div></td></tr>');
+    )).join(''):'<tr><td colspan="6"><div class="empty" style="padding:14px">Keine offenen Rechnungen.</div></td></tr>';
   }
   // ─═ Versendete Rechnungen ═─
   const bSent=document.getElementById('invSentBody');
@@ -11559,72 +11554,6 @@ function unmarkInvoiceSent(id){
 }
 
 
-// ===== Sammelrechnungen =====================================
-// Sucht Empfaenger, die mehr als eine offene (nicht versendete)
-// Rechnung haben. Versendete oder bezahlte bleiben unberuehrt.
-function srFindGroups(){
-  const open=(state.invoices||[]).filter(i=>!i.sentAt&&!i.paidAt);
-  const map={};
-  open.forEach(i=>{
-    const k=(i.recipient||'').trim();
-    if(!k)return;
-    (map[k]=map[k]||[]).push(i);
-  });
-  return Object.keys(map).filter(k=>map[k].length>1).map(k=>({recipient:k,invs:map[k]}));
-}
-// Hinweisleiste ueber der Liste der offenen Rechnungen
-function srBannerHtml(){
-  const groups=srFindGroups();
-  if(!groups.length)return '';
-  return groups.map(x=>{
-    const sum=x.invs.reduce((s,i)=>s+(+i.gross||0),0);
-    const nums=x.invs.map(i=>i.number).join(', ');
-    const safe=String(x.recipient).replace(/\\/g,'\\\\').replace(/'/g,"\\'");
-    return '<tr><td colspan="7" style="padding:0;border:0">'
-      +'<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;'
-      +'margin:6px 0;padding:8px 12px;border:1px solid #2A6CAE;border-radius:6px;background:#f4f8fc">'
-      +'<div style="flex:1;min-width:220px;font-size:.84rem;color:var(--ink)">'
-      +'<strong>'+x.recipient+'</strong> hat '+x.invs.length+' offene Rechnungen ('+nums+')'
-      +' &middot; zusammen '+eur(sum)+'</div>'
-      +'<button class="btn sm" style="border-color:#2A6CAE;color:#2A6CAE" '
-      +'onclick="srMerge(\''+safe+'\')">Zusammenfassen</button>'
-      +'</div></td></tr>';
-  }).join('');
-}
-// Fasst alle offenen Rechnungen eines Empfaengers zu einer zusammen.
-function srMerge(recipient){
-  const invs=(state.invoices||[]).filter(i=>!i.sentAt&&!i.paidAt&&(i.recipient||'').trim()===String(recipient).trim());
-  if(invs.length<2){toast('Keine zwei offenen Rechnungen gefunden');return}
-  const nums=invs.map(i=>i.number).join(', ');
-  askConfirm('Rechnungen '+nums+' zu einer Sammelrechnung zusammenfassen?\n\n'
-    +'Die Einzelrechnungen landen im Papierkorb und sind wiederherstellbar.',()=>{
-    const items=[];
-    invs.forEach(i=>{
-      (i.items||[]).forEach(it=>{ items.push(Object.assign({},it,{modul:it.modul||i.type})); });
-    });
-    items.sort((a,b)=>String(a.name||'').localeCompare(String(b.name||''))
-      ||String(a.courseDate||'').localeCompare(String(b.courseDate||'')));
-    const net=items.reduce((s,it)=>s+(+it.price||0),0);
-    const tax=state.settings.tax!=null?state.settings.tax:0;
-    const taxAmt=net*tax/100;
-    const gross=net+taxAmt;
-    const email=(invs.find(i=>i.recipientEmail)||{}).recipientEmail||'';
-    const addr=(invs.find(i=>i.recipientAddr)||{}).recipientAddr||'';
-    const no=nextInvNo('Sammelrechnung');
-    const inv={id:uid(),number:no.number,year:no.year,seq:no.seq,type:'Sammelrechnung',
-      date:today(),recipient:String(recipient).trim(),recipientEmail:email,recipientAddr:addr,
-      desc:'Sammelrechnung mit '+items.length+' Positionen',
-      items:items,unitPrice:0,discount:0,taxRate:tax,net:net,taxAmt:taxAmt,gross:gross,
-      sentAt:'',paidAt:'',bildungsgutschein:false};
-    invs.forEach(i=>{ try{_pkPush('rechnung','Rechnung '+i.number+' - '+(i.recipient||''),{inv:i});}catch(e){} });
-    const ids=new Set(invs.map(i=>i.id));
-    state.invoices=state.invoices.filter(x=>!ids.has(x.id));
-    state.invoices.push(inv);
-    try{_invUpdateExtDates(inv);}catch(e){}
-    save();renderAll();toast('Sammelrechnung '+no.number+' angelegt');
-  });
-}
-
 function delInvoice(id){
   const inv=state.invoices.find(x=>x.id===id);if(!inv)return;
   askConfirm(`Rechnung ${inv.number} löschen? Die Nummer wird nicht erneut vergeben. (Landet im 🗑 Papierkorb.)`,()=>{
@@ -12036,8 +11965,7 @@ const recipAddr=(recipientCo&&recipientCo.addr)?recipientCo.addr:(inv.recipientA
     if(y>265){doc.addPage();y=24;}
     const rowY=y;
     doc.text(String(n+1),PL+2,rowY);
-    const _mt=it.modul||inv.type;
-    const posLabel=_mt&&_mt.startsWith('UW-')?_mt.replace('UW-','')+'-Unterweisung':_mt;
+    const posLabel=inv.type&&inv.type.startsWith('UW-')?inv.type.replace('UW-','')+'-Unterweisung':inv.type;
     doc.text(it.name+' \u2013 '+posLabel,PL+14,rowY,{maxWidth:98});
     doc.text(fmt(it.courseDate),PL+116,rowY);
     doc.text(eur(it.price),PR,rowY,{align:'right'});
@@ -12052,7 +11980,7 @@ const recipAddr=(recipientCo&&recipientCo.addr)?recipientCo.addr:(inv.recipientA
   y+=5;
 
   // ── 7. Summenblock ────────────────────────────────────────────────────────
-  const sub=inv.items.reduce((s,it)=>s+(+it.price||0),0)||(inv.unitPrice*inv.items.length);
+  const sub=inv.unitPrice*inv.items.length;
   const sumX=118, numX=PR;
   const row=(label,val,bold)=>{
     doc.setFont('helvetica',bold?'bold':'normal');
