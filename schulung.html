@@ -1826,8 +1826,8 @@ function erzeugeGenerischenSync(cfg){
 }
 const _firmenSync = erzeugeGenerischenSync({
   tabelle:'schulung_companies', stateKey:'companies', orderBy:'name',
-  zuDb:c=>({ name:c.name||'', addr:c.addr||'', contact:c.contact||'', email:c.email||'', phone:c.phone||'' }),
-  vonDb:r=>({ id:r.id, _dbId:r.id, legacy_id:r.legacy_id||'', name:r.name||'(ohne Name)', addr:r.addr||'', contact:r.contact||'', email:r.email||'', phone:r.phone||'', portalCode:r.portal_code||'' }),
+  zuDb:c=>({ name:c.name||'', addr:c.addr||'', contact:c.contact||'', email:c.email||'', invoice_email:c.invoiceEmail||'', phone:c.phone||'' }),
+  vonDb:r=>({ id:r.id, _dbId:r.id, legacy_id:r.legacy_id||'', name:r.name||'(ohne Name)', addr:r.addr||'', contact:r.contact||'', email:r.email||'', invoiceEmail:r.invoice_email||'', phone:r.phone||'', portalCode:r.portal_code||'' }),
 });
 const _dozexSync = erzeugeGenerischenSync({
   tabelle:'schulung_dozenten_extern', stateKey:'dozenten', orderBy:'name',
@@ -2046,7 +2046,7 @@ function normalizeData(){
   if(s.defaultCapacity==null)s.defaultCapacity=18;
   // BQR/KBA-Meldung: Sachbearbeiterkennung, max. 10 Zeichen (siehe BQR_MAXLEN).
   s.bqrSachbearbeiter=_bqrSb(s.bqrSachbearbeiter);
-  state.companies=state.companies.filter(Boolean).map(c=>({id:c.id||uid(),name:c.name||'(ohne Name)',addr:c.addr||'',contact:c.contact||'',email:c.email||'',phone:c.phone||''}));
+  state.companies=state.companies.filter(Boolean).map(c=>({id:c.id||uid(),name:c.name||'(ohne Name)',addr:c.addr||'',contact:c.contact||'',email:c.email||'',invoiceEmail:c.invoiceEmail||'',phone:c.phone||''}));
   state.participants=state.participants.filter(Boolean).map(p=>{
     // Migration: altes "name"-Feld in firstName/lastName aufteilen
     let firstName=p.firstName||'', lastName=p.lastName||'';
@@ -2846,7 +2846,7 @@ async function sendPortalMail(id){
 }
 
 function openCompany(id){
-  const co=id?state.companies.find(x=>x.id===id):{name:'',addr:'',contact:'',email:'',phone:''};
+  const co=id?state.companies.find(x=>x.id===id):{name:'',addr:'',contact:'',email:'',invoiceEmail:'',phone:''};
   document.getElementById('modalContent').innerHTML=`
     <h3>${id?'Firma bearbeiten':'Neue Firma'}</h3>
     <div class="field"><label>Firmenname *</label><input id="co_name" value="${co.name||''}"></div>
@@ -2856,6 +2856,8 @@ function openCompany(id){
       <div class="field"><label>Tel./Mobil</label><input id="co_phone" type="tel" value="${co.phone||''}" placeholder="+49 …"></div>
     </div>
     <div class="field"><label>E-Mail</label><input id="co_email" type="email" value="${co.email||''}" placeholder="info@firma.de"></div>
+    <div class="field"><label>E-Mail Rechnungsversand</label><input id="co_invmail" type="email" value="${co.invoiceEmail||''}" placeholder="buchhaltung@firma.de">
+      <div class="hint" style="margin-top:4px">Leer lassen, wenn Rechnungen an die Adresse oben gehen sollen.</div></div>
     ${co.portalCode?`<div class="field" style="margin-top:14px">
       <div style="font-size:.82rem;font-weight:700;color:var(--steel);margin-bottom:6px;padding-bottom:5px;border-bottom:1px solid var(--border)">Firmenportal-Zugang</div>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
@@ -2876,7 +2878,8 @@ function openCompany(id){
 function saveCompany(id){
   const name=document.getElementById('co_name').value.trim();
   if(!name){toast('Firmenname erforderlich');return}
-  const obj={name,addr:document.getElementById('co_addr').value,contact:document.getElementById('co_contact').value,phone:document.getElementById('co_phone').value.trim(),email:document.getElementById('co_email').value.trim()};
+  const _im=document.getElementById('co_invmail');
+  const obj={name,addr:document.getElementById('co_addr').value,contact:document.getElementById('co_contact').value,phone:document.getElementById('co_phone').value.trim(),email:document.getElementById('co_email').value.trim(),invoiceEmail:_im?_im.value.trim():''};
   if(id){Object.assign(state.companies.find(x=>x.id===id),obj);
     // company name update → sync participants
     state.participants.filter(p=>p.companyId===id).forEach(p=>{p.company=obj.name});
@@ -5478,7 +5481,7 @@ function openInstrGroupInvoiceDialog(g){
     firmMap[r.firm].count++;
   });
   const firmList=Object.values(firmMap).sort((a,b)=>b.count-a.count);
-  firmList.forEach(f=>{const co=state.companies.find(x=>x.name===f.name);if(co)f.email=co.email||'';});
+  firmList.forEach(f=>{const co=state.companies.find(x=>x.name===f.name);if(co)f.email=coInvMail(co);});
   const defRecipient=firmList.length?firmList[0].name:(tnRows[0]?tnRows[0].pn:'');
   const defEmail=firmList.length?firmList[0].email:(tnRows[0]&&tnRows[0].p?tnRows[0].p.email||'':'');
 
@@ -9021,7 +9024,7 @@ function openGroupInvoiceDialog(g){
     firmMap[r.firm].count++;
   });
   const firmList=Object.values(firmMap).sort((a,b)=>b.count-a.count);
-  firmList.forEach(f=>{const co=state.companies.find(x=>x.name===f.name);if(co)f.email=co.email||'';});
+  firmList.forEach(f=>{const co=state.companies.find(x=>x.name===f.name);if(co)f.email=coInvMail(co);});
 
   // Standard-Empfänger: häufigste Firma oder erste Person
   const defRecipient=firmList.length?firmList[0].name:(tnRows[0]?tnRows[0].pn:'');
@@ -9318,7 +9321,7 @@ function giCreateCollectiveFirm(firmName){
   if(!sel.length){toast('Keine Teilnehmer von '+firmName+' ausgewählt');return;}
   const g=window._giGroup;
   const co=state.companies.find(x=>x.name===firmName);
-  const inv=_giMakeInv(sel.map(r=>r.e.id),firmName,co?co.email||'':'',
+  const inv=_giMakeInv(sel.map(r=>r.e.id),firmName,coInvMail(co),
     `Lehrgang ${g.type} · ${fmt(g.date)} · ${firmName} (${sel.length} TN)`,g.type);
   if(!inv)return;
   state.invoices.push(inv);
@@ -9830,7 +9833,7 @@ function wf4CreateCollective(fk){
   const no=nextInvNo(window._wf4InvType);
   const co=fk.startsWith('txt_')||fk==='__individual__'?null:state.companies.find(x=>x.id===fk);
   state.invoices.push({id:uid(),number:no.number,year:no.year,seq:no.seq,type:window._wf4InvType,date,
-    recipient:co?co.name:fd.name,recipientEmail:co?co.email||'':'',
+    recipient:co?co.name:fd.name,recipientEmail:co?coInvMail(co):'',
     desc:window._wf4TypeName+' · '+fmt(window._wf4CourseDate)+' · '+fd.name+' ('+cids.length+' TN)',
     items,unitPrice:price,discount:disc,taxRate:tax,net,taxAmt,gross,
     sentAt:'',paidAt:'',bildungsgutschein:false});
@@ -10476,6 +10479,21 @@ function nextInvNo(type){
   while(state.invoices.some(x=>x.year===yr&&x.type===type&&x.seq===seq)) seq++;
   return{year:yr,seq,number:`${pre}-${yr}-${String(seq).padStart(3,'0')}`};
 }
+// ===== Rechnungs-E-Mail ======================================
+// Liefert die Adresse fuer den Rechnungsversand. Ist keine eigene
+// hinterlegt, wird ersatzweise die der Kontaktperson genommen -
+// so bleibt nie eine Rechnung ohne Empfaengeradresse.
+function coInvMail(co){
+  if(!co)return '';
+  return (co.invoiceEmail||'').trim()||(co.email||'').trim()||'';
+}
+// Sucht die Rechnungsadresse anhand des Firmennamens.
+function recipientMailFor(name){
+  if(!name)return '';
+  const co=(state.companies||[]).find(c=>c.name===String(name).trim());
+  return coInvMail(co);
+}
+
 function recipientFor(courseIds, instrIds){
   // Unterweisungen
   if(instrIds&&instrIds.length){
@@ -11147,7 +11165,7 @@ function createInvoice(){
     const sub=price*items.length,discAmt=sub*disc/100,net=sub-discAmt,taxAmt=net*tax/100,gross=net+taxAmt;
     const no=nextInvNo(invType);
     const inv={id:uid(),number:no.number,year:no.year,seq:no.seq,type:invType,date,
-      recipient:recipientFor([],ids),desc,items,unitPrice:price,discount:disc,
+      recipient:recipientFor([],ids),recipientEmail:recipientMailFor(recipientFor([],ids)),desc,items,unitPrice:price,discount:disc,
       taxRate:tax,net,taxAmt,gross,sentAt:'',paidAt:'',bildungsgutschein:false};
     state.invoices.push(inv);_invUpdateExtDates(inv);
     save();closeModal();renderAll();toast('Rechnung '+no.number+' angelegt');
@@ -11160,7 +11178,7 @@ function createInvoice(){
     const sub=price*items.length,discAmt=sub*disc/100,net=sub-discAmt,taxAmt=net*tax/100,gross=net+taxAmt;
     const no=nextInvNo(type);
     const inv={id:uid(),number:no.number,year:no.year,seq:no.seq,type,date,
-      recipient:recipientFor(ids,[]),desc,items,unitPrice:price,discount:disc,
+      recipient:recipientFor(ids,[]),recipientEmail:recipientMailFor(recipientFor(ids,[])),desc,items,unitPrice:price,discount:disc,
       taxRate:tax,net,taxAmt,gross,sentAt:'',paidAt:'',bildungsgutschein:false};
     state.invoices.push(inv);_invUpdateExtDates(inv);
     save();closeModal();renderAll();toast('Rechnung '+no.number+' angelegt');
@@ -11324,7 +11342,7 @@ function openInvoiceMailDialog(invId){
     firstPart=firstCourse?state.participants.find(p=>p.id===firstCourse.participant):null;
   }
   const recipCo=firstPart&&firstPart.companyId?state.companies.find(c=>c.id===firstPart.companyId):null;
-  const defaultEmail=inv.recipientEmail||(recipCo&&recipCo.email)||'';
+  const defaultEmail=inv.recipientEmail||coInvMail(recipCo)||'';
   const firm=state.settings.name||'Fahrschulteam';
   const subject=`Rechnung ${inv.number} – ${inv.desc||inv.type}`;
   const body=`Sehr geehrte Damen und Herren,

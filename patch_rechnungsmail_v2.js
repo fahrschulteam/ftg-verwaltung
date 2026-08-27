@@ -85,10 +85,10 @@ ersetze('3a. openCompany: Leerwert ergaenzen',
 `  const co=id?state.companies.find(x=>x.id===id):{name:'',addr:'',contact:'',email:'',invoiceEmail:'',phone:''};`);
 
 ersetze('3b. openCompany: neues Eingabefeld',
-`      <div class="field"><label>E-Mail</label><input id="co_email" type="email" value="\${co.email||''}" placeholder="info@firma.de"></div>`,
-`      <div class="field"><label>E-Mail</label><input id="co_email" type="email" value="\${co.email||''}" placeholder="info@firma.de"></div>
-      <div class="field"><label>E-Mail Rechnungsversand</label><input id="co_invmail" type="email" value="\${co.invoiceEmail||''}" placeholder="buchhaltung@firma.de">
-        <div class="hint" style="margin-top:4px">Leer lassen, wenn Rechnungen an die Adresse oben gehen sollen.</div></div>`);
+`    <div class="field"><label>E-Mail</label><input id="co_email" type="email" value="\${co.email||''}" placeholder="info@firma.de"></div>`,
+`    <div class="field"><label>E-Mail</label><input id="co_email" type="email" value="\${co.email||''}" placeholder="info@firma.de"></div>
+    <div class="field"><label>E-Mail Rechnungsversand</label><input id="co_invmail" type="email" value="\${co.invoiceEmail||''}" placeholder="buchhaltung@firma.de">
+      <div class="hint" style="margin-top:4px">Leer lassen, wenn Rechnungen an die Adresse oben gehen sollen.</div></div>`);
 
 ersetze('3c. saveCompany: Feld mitspeichern',
 `  const obj={name,addr:document.getElementById('co_addr').value,contact:document.getElementById('co_contact').value,phone:document.getElementById('co_phone').value.trim(),email:document.getElementById('co_email').value.trim()};`,
