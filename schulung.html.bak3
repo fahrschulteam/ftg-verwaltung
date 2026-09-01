@@ -4947,9 +4947,12 @@ function renderCourses(){
       : g.instrType==='Baumaschinen'    ? 'Baumaschinen-Unterweisung (DGUV V38)'
       :                                   'Gabelstapler-Unterweisung (DGUV V68)';
 
-    const dateStr = g.dateTo&&g.dateTo!==g.date
-    ? fmt(g.date)+' \u2013 '+fmt(g.dateTo)
-    : fmt(g.date);
+    // Bei mehreren Einzelterminen alle anzeigen, sonst wie bisher Von-Bis.
+  const dateStr = _alTermine.length > 1
+    ? _alTermine.map(fmt).join('  \u00b7  ')
+    : (g.dateTo && g.dateTo !== g.date
+        ? fmt(g.date)+' \u2013 '+fmt(g.dateTo)
+        : fmt(g.date));
     const dauer = g.duration ? g.duration+' Std.' : '';
     const topicsArr = (g.topics||[]);
     const topicsStr = topicsArr.length
@@ -6466,12 +6469,9 @@ function printAttendanceList(g, isInstr){ try{
       :g.type==='Baumaschinen'?' (DGUV 301-005)'
       :'');
 
-  // Bei mehreren Einzelterminen alle anzeigen, sonst wie bisher Von-Bis.
-  const dateStr = _alTermine.length > 1
-    ? _alTermine.map(fmt).join('  \u00b7  ')
-    : (g.dateTo && g.dateTo !== g.date
-        ? fmt(g.date)+' \u2013 '+fmt(g.dateTo)
-        : fmt(g.date));
+  const dateStr = g.dateTo&&g.dateTo!==g.date
+    ? fmt(g.date)+' – '+fmt(g.dateTo)
+    : fmt(g.date);
 
   const doz = g.dozent ? state.dozenten.find(x=>x.id===g.dozent) : null;
 
