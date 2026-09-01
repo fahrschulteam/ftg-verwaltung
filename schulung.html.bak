@@ -4947,12 +4947,7 @@ function renderCourses(){
       : g.instrType==='Baumaschinen'    ? 'Baumaschinen-Unterweisung (DGUV V38)'
       :                                   'Gabelstapler-Unterweisung (DGUV V68)';
 
-    // Bei mehreren Einzelterminen alle anzeigen, sonst wie bisher Von-Bis.
-  const dateStr = _alTermine.length > 1
-    ? _alTermine.map(fmt).join('  \u00b7  ')
-    : (g.dateTo && g.dateTo !== g.date
-        ? fmt(g.date)+' \u2013 '+fmt(g.dateTo)
-        : fmt(g.date));
+    const dateStr = g.dateTo&&g.dateTo!==g.date ? fmt(g.date)+' – '+fmt(g.dateTo) : fmt(g.date);
     const dauer = g.duration ? g.duration+' Std.' : '';
     const topicsArr = (g.topics||[]);
     const topicsStr = topicsArr.length
@@ -6401,40 +6396,7 @@ function printAttendanceList(g, isInstr){ try{
   const SAFE_BOTTOM = FOOTER_TOP - SIG_BLOCK_H - 2; // 153 mm: Tabellenende max.
 
   // ── Spalten (Summe = 267 mm) ─────────────────────────────────────────
-  // -- FES: zwei Unterschriftenspalten statt Firma/Selbstzahler ----------
-  // Die Termine stehen als Zeile "Termine: 24.08.2026, 31.08.2026" in der
-  // Bemerkung des Kurses; _termineFromNote() liest sie dort heraus.
-  const _isFES = (typeof istFes === 'function')
-    ? !!istFes(g.type)
-    : /^\s*fes/i.test(String(g.type||''));
-
-  const _alTermine = (function(){
-    const quellen = [g.note].concat((g.entries||[]).map(function(e){ return e && e.note; }));
-    for(let i=0; i<quellen.length; i++){
-      const t = (typeof _termineFromNote === 'function') ? _termineFromNote(quellen[i]) : [];
-      if(t && t.length > 1) return t;
-    }
-    const vb = [g.dateFrom || g.date, g.dateTo].filter(Boolean);
-    return vb.filter(function(v,i,a){ return a.indexOf(v) === i; });
-  })();
-
-  const SIG_2 = _isFES && _alTermine.length > 1;
-
-  const COLS = SIG_2 ? [
-    // Summe = 267 mm
-    { key:'nr',      w:12, label:'Lfd. Nr'    },
-    { key:'name',    w:50, label:'Name'       },
-    { key:'vorname', w:45, label:'Vorname'    },
-    { key:'birth',   w:28, label:'Geb.-Datum' },
-    { key:'sig',     w:66, label:'Unterschrift '+fmt(_alTermine[0]) },
-    { key:'sig2',    w:66, label:'Unterschrift '+fmt(_alTermine[1]) },
-  ] : _isFES ? [
-    { key:'nr',      w:12,  label:'Lfd. Nr'      },
-    { key:'name',    w:55,  label:'Name'         },
-    { key:'vorname', w:50,  label:'Vorname'      },
-    { key:'birth',   w:30,  label:'Geb.-Datum'   },
-    { key:'sig',     w:120, label:'Unterschrift' },
-  ] : [
+  const COLS = [
     { key:'nr',      w:12, label:'Lfd. Nr'      },
     { key:'name',    w:45, label:'Name'         },
     { key:'vorname', w:40, label:'Vorname'      },
@@ -6493,7 +6455,7 @@ function printAttendanceList(g, isInstr){ try{
   const THEME_W  = PW - INFO_W - 7;
   const THEME_COLS = themes ? (themes.length > 4 ? 2 : 1) : 0;
   const INFO_H   = infoRows.length*5.5 + 5;
-  let THEME_H  = themes
+  const THEME_H  = themes
     ? 8.5 + (THEME_COLS===2 ? Math.ceil(themes.length/2) : themes.length) * 4.4
     : 0;
   const TOP_SN = 25;   // Folgeseiten: Ende der kompakten Kopfzeile
@@ -6525,22 +6487,11 @@ function printAttendanceList(g, isInstr){ try{
       doc.text('SCHULUNGSINHALTE', THEME_X, y+4);
       doc.setFont('helvetica','normal'); doc.setFontSize(7.5); doc.setTextColor(50,50,50);
       const colW = THEME_W / THEME_COLS;
-      // Jeder Stichpunkt wird umbrochen. Frueher rueckte die Schreibposition
-      // pro Punkt nur um feste 4.4 mm weiter - mehrzeilige Punkte liefen
-      // deshalb ineinander. Jetzt fuehrt jede Spalte einen eigenen Cursor.
-      const T_LH   = 3.4;
-      const T_GAP  = 1.6;
-      const T_HALF = Math.ceil(themes.length / THEME_COLS);
-      const cy = new Array(THEME_COLS).fill(y + 8.5);
-      themes.forEach(function(t, i){
-        var col = THEME_COLS === 2 ? Math.min(1, Math.floor(i / T_HALF)) : 0;
-        var bx  = THEME_X + col*colW;
-        var ls  = doc.splitTextToSize(String(t == null ? "" : t), colW - 6);
-        doc.text("\u2022", bx, cy[col]);
-        ls.forEach(function(ln, k){ doc.text(ln, bx + 3, cy[col] + k*T_LH); });
-        cy[col] += ls.length*T_LH + T_GAP;
+      themes.forEach((t,i)=>{
+        const col = THEME_COLS===2 ? i%2 : 0;
+        const row = THEME_COLS===2 ? Math.floor(i/2) : i;
+        doc.text('• '+t, THEME_X + col*colW, y + 8.5 + row*4.4, {maxWidth:colW-3});
       });
-      THEME_H = Math.max.apply(null, cy) - y;
     }
 
     // Gemessener Endwert statt vorab geschätzter Konstante: die Zeilenkapazität
@@ -6587,7 +6538,7 @@ function printAttendanceList(g, isInstr){ try{
     const firm = co ? co.name : (p.company||'');
     const nameL = doc.splitTextToSize(p.lastName||p.name||'', CW.name-4);
     const vorL  = doc.splitTextToSize(p.firstName||'',        CW.vorname-4);
-    const firmL = CW.firma ? doc.splitTextToSize(firm, CW.firma-4) : [];
+    const firmL = doc.splitTextToSize(firm,                   CW.firma-4);
     const lines = Math.max(1, nameL.length, vorL.length, firmL.length);
     return {
       nameL, vorL, firmL,
@@ -6621,7 +6572,7 @@ function printAttendanceList(g, isInstr){ try{
     r.vorL .forEach((t,k)=>doc.text(t, PL+CX.vorname+2, ty+k*LINE_H));
     doc.setTextColor(80,80,80);
     if(r.birth) doc.text(r.birth, PL+CX.birth+2, ty);
-    if(CW.firma) r.firmL.forEach((t,k)=>doc.text(t, PL+CX.firma+2, ty+k*LINE_H));
+    r.firmL.forEach((t,k)=>doc.text(t, PL+CX.firma+2, ty+k*LINE_H));
     // Selbstzahler und Unterschrift bleiben leer – wird handschriftlich ergänzt.
   }
 
