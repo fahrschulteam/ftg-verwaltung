@@ -6406,27 +6406,13 @@ function printAttendanceList(g, isInstr){ try{
     : /^\s*fes/i.test(String(g.type||''));
 
   const _alTermine = (function(){
-    var out = [];
-    var add = function(v){ if(v && out.indexOf(v) < 0) out.push(v); };
-    // 1. Bevorzugt die Zeile "Termine: ..." aus der Bemerkung
-    var notizen = [g.note].concat((g.entries||[]).map(function(e){ return e && e.note; }));
-    for(var i=0; i<notizen.length; i++){
-      var t = (typeof _termineFromNote === 'function') ? _termineFromNote(notizen[i]) : [];
-      if(t && t.length > 1){ t.forEach(add); break; }
+    const quellen = [g.note].concat((g.entries||[]).map(function(e){ return e && e.note; }));
+    for(let i=0; i<quellen.length; i++){
+      const t = (typeof _termineFromNote === 'function') ? _termineFromNote(quellen[i]) : [];
+      if(t && t.length > 1) return t;
     }
-    // 2. Sonst alle Datumsfelder der Eintraege einsammeln
-    if(out.length < 2){
-      (g.entries||[]).forEach(function(e){
-        if(!e) return;
-        add(e.dateFrom); add(e.date); add(e.dateTo);
-      });
-      add(g.dateFrom); add(g.date); add(g.dateTo);
-      out.sort();
-    }
-    try{ console.log('[Anwesenheitsliste] Termine:', out,
-      '| g:', g.date, g.dateFrom, g.dateTo,
-      '| note:', (g.entries && g.entries[0] && g.entries[0].note) || g.note); }catch(_e){}
-    return out;
+    const vb = [g.dateFrom || g.date, g.dateTo].filter(Boolean);
+    return vb.filter(function(v,i,a){ return a.indexOf(v) === i; });
   })();
 
   const SIG_2 = _isFES && _alTermine.length > 1;
@@ -6438,7 +6424,7 @@ function printAttendanceList(g, isInstr){ try{
     { key:'vorname', w:45, label:'Vorname'    },
     { key:'birth',   w:28, label:'Geb.-Datum' },
     { key:'sig',     w:66, label:'Unterschrift '+fmt(_alTermine[0]) },
-    { key:'sig2',    w:66, label:'Unterschrift '+fmt(_alTermine[_alTermine.length-1]) },
+    { key:'sig2',    w:66, label:'Unterschrift '+fmt(_alTermine[1]) },
   ] : _isFES ? [
     { key:'nr',      w:12,  label:'Lfd. Nr'      },
     { key:'name',    w:55,  label:'Name'         },
