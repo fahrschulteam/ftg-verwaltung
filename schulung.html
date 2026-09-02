@@ -1324,6 +1324,8 @@ function _kursZuDb(c){
     bqr_datei_am: c.bqrDateiAm||null,
     bqr_gemeldet_am: c.bqrGemeldetAm||null,
     fes_bausteine: Array.isArray(c.fesBausteine)?c.fesBausteine:[],
+    // Verweis auf den BKrFQG-Kursplan.
+    kursplan_id: c.kursplanId || null,
     updated_at: new Date().toISOString(),
   };
 }
@@ -1348,6 +1350,7 @@ function _kursVonDb(r){
     bqrDateiAm: r.bqr_datei_am||'',
     bqrGemeldetAm: r.bqr_gemeldet_am||'',
     fesBausteine: Array.isArray(r.fes_bausteine)?r.fes_bausteine:[],
+    kursplanId: r.kursplan_id || '',
   };
 }
 let _kursLetzterFehler='';
@@ -7708,7 +7711,7 @@ function openCourse(id){
     ${state.participants.length?'':'<p class="hint" style="margin-bottom:12px">Noch keine Teilnehmer angelegt – Lehrgang kann trotzdem gespeichert und Teilnehmer später zugewiesen werden.</p>'}
     <div class="grid grid-2" style="margin-bottom:0">
       <div class="field"><label>Lehrgangstyp</label>
-        <select id="m_type" onchange="courseThemes();updateCourseTypeIcon();toggleLSDauer();toggleFFZ();toggleFES()" style="font-size:1rem">${typeOptions(cc.type)}</select>
+        <select id="m_type" onchange="courseThemes();updateCourseTypeIcon();toggleLSDauer();toggleFFZ();toggleFES();toggleKursplan()" style="font-size:1rem">${typeOptions(cc.type)}</select>
       </div>
       <div class="field"></div>
     </div>
@@ -7748,6 +7751,19 @@ function openCourse(id){
       <div class="grid grid-2" style="margin-bottom:10px">
         <div class="field" style="margin:0"><label>Von (Startdatum)</label><input type="date" id="m_date" value="${cc.dateFrom||cc.date||today()}" onchange="courseAutoDate()"></div>
         <div class="field" style="margin:0"><label>Bis (Enddatum)</label><input type="date" id="m_dateTo" value="${cc.dateTo||cc.dateFrom||cc.date||today()}" onchange="courseAutoHours()"></div>
+      </div>
+      <div class="field" id="m_kursplanRow"
+        style="margin:12px 0 0;display:none">
+        <label>Kursplan (BKrFQG)</label>
+        <select id="m_kursplan">
+          <option value="">\u2013 kein
+          Kursplan zugeordnet \u2013</option>
+        </select>
+        <div style="font-size:.75rem;
+          color:#6b7280;margin-top:4px">
+          Liefert die Kurstage f\u00fcr die
+          Anwesenheitsliste je Schulungstag.
+        </div>
       </div>
       <div class="field" style="margin:12px 0 0">
         <label>Öffentliche Einzeltermine (erscheinen im Kurskalender – optional)</label>
@@ -7813,6 +7829,7 @@ function openCourse(id){
   coursePartFilter();
   coursePartRender();
   initCourseSummary();
+  kursplanFeldInit(cc.kursplanId || '');
   // Beim Bearbeiten die bereits gewaehlten Bausteine des Teilnehmers vorbelegen
   _fesBausteineVorbelegung = (id && Array.isArray(cc.fesBausteine) && cc.participant)
     ? {[cc.participant]: cc.fesBausteine.slice()} : {};
@@ -8763,6 +8780,7 @@ function saveCourseGroup(idsCsv){
     passed:_passedVal,
     note:_mergeTermineIntoNote(document.getElementById('m_note').value),
     dozent:document.getElementById('m_dozent').value,themes,
+    kursplanId:(document.getElementById('m_kursplan')||{}).value||'',
     capacity:+(document.getElementById('m_capacity')||{}).value||0,
     reserviert:+refEntry_reserviert_merken||0,
     reservierungen:refEntry_reservierungen_merken||[],
@@ -8933,6 +8951,95 @@ function werbePrompt(base){
     +'</div>';
   document.body.appendChild(d);
   setTimeout(function(){ var e=document.getElementById('werbePrompt'); if(e) e.remove(); }, 45000);
+}
+
+
+// -- Kursplan-Verknuepfung (BKrFQG) ------
+// Nur bei den vier mehrtaegigen
+// Lehrgangstypen sinnvoll.
+const BGQ_LEHRGANGSTYPEN = [
+  'BGQ LKW',
+  'BGQ KOM',
+  'Umsteiger LKW',
+  'Umsteiger KOM'
+];
+let _kursplaeneCache = null;
+
+async function _ladeKursplaene(){
+  if (_kursplaeneCache) {
+    return _kursplaeneCache;
+  }
+  try{
+    let url = MAIN_URL;
+    url += '/rest/v1/bkrfqg_kursplaene';
+    url += '?select=id,titel,kurstyp';
+    url += ',startdatum,enddatum';
+    url += '&order=startdatum.desc';
+    const r = await fetch(url, {
+      headers: mainHeaders()
+    });
+    if(!r.ok){
+      console.warn('Kursplaene HTTP '
+        + r.status);
+      return [];
+    }
+    _kursplaeneCache = await r.json();
+    return _kursplaeneCache;
+  }catch(e){
+    console.warn('Kursplaene', e.message);
+    return [];
+  }
+}
+
+function _kursplanText(k){
+  const von = k.startdatum
+    ? fmt(k.startdatum) : '';
+  const bis = k.enddatum
+    ? fmt(k.enddatum) : '';
+  let zeit = '';
+  if (von) {
+    zeit = ' (' + von;
+    if (bis && bis !== von) {
+      zeit += ' \u2013 ' + bis;
+    }
+    zeit += ')';
+  }
+  let t = k.titel || 'ohne Titel';
+  t += ' \u00b7 ';
+  t += (k.kurstyp || '');
+  return t + zeit;
+}
+
+async function kursplanFeldInit(vorbelegt){
+  const sel =
+    document.getElementById('m_kursplan');
+  if(!sel) return;
+  toggleKursplan();
+  const liste = await _ladeKursplaene();
+  let html = '<option value="">';
+  html += '\u2013 kein Kursplan ';
+  html += 'zugeordnet \u2013</option>';
+  liste.forEach(function(k){
+    const gew = (k.id === vorbelegt)
+      ? ' selected' : '';
+    html += '<option value="';
+    html += k.id + '"' + gew + '>';
+    html += _esc(_kursplanText(k));
+    html += '</option>';
+  });
+  sel.innerHTML = html;
+}
+
+function toggleKursplan(){
+  const row =
+    document.getElementById('m_kursplanRow');
+  const typEl =
+    document.getElementById('m_type');
+  if(!row || !typEl) return;
+  const typ = cleanType(typEl.value);
+  const an =
+    BGQ_LEHRGANGSTYPEN.indexOf(typ) >= 0;
+  row.style.display = an ? '' : 'none';
 }
 
 function saveCourse(id){
