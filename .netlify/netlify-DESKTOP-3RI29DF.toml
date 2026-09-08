@@ -1,0 +1,114 @@
+functionsDirectory = "C:\\Users\\Elitebook FTG\\OneDrive\\42 Fahrschulverwaltung\\functions"
+functionsDirectoryOrigin = "config-v1"
+plugins = []
+
+[build]
+publish = "C:\\Users\\Elitebook FTG\\OneDrive\\42 Fahrschulverwaltung"
+publishOrigin = "config"
+functions = "C:\\Users\\Elitebook FTG\\OneDrive\\42 Fahrschulverwaltung\\functions"
+
+[build.environment]
+
+[build.processing]
+
+[build.processing.css]
+
+[build.processing.html]
+
+[build.processing.images]
+
+[build.processing.js]
+
+[build.services]
+
+[functions]
+
+[functions.ki]
+timeout = 26.0
+
+[functions."*"]
+node_bundler = "nft"
+
+[[headers]]
+for = "/*.html"
+
+[headers.values]
+Cache-Control = "no-cache, no-store, must-revalidate"
+
+[[headers]]
+for = "/"
+
+[headers.values]
+Cache-Control = "no-cache, no-store, must-revalidate"
+
+[[headers]]
+for = "/index.html"
+
+[headers.values]
+Cache-Control = "no-cache, no-store, must-revalidate"
+
+[[headers]]
+for = "/*.js"
+
+[headers.values]
+Cache-Control = "no-cache, no-store, must-revalidate"
+
+[[redirects]]
+from = "/import/*"
+to = "/nicht-oeffentlich"
+status = 404.0
+force = true
+
+[redirects.query]
+
+[redirects.conditions]
+
+[redirects.headers]
+
+[[redirects]]
+from = "/import"
+to = "/nicht-oeffentlich"
+status = 404.0
+force = true
+
+[redirects.query]
+
+[redirects.conditions]
+
+[redirects.headers]
+
+[[redirects]]
+from = "/supabase/*"
+to = "/nicht-oeffentlich"
+status = 404.0
+force = true
+
+[redirects.query]
+
+[redirects.conditions]
+
+[redirects.headers]
+
+[[redirects]]
+from = "/functions/*"
+to = "/nicht-oeffentlich"
+status = 404.0
+force = true
+
+[redirects.query]
+
+[redirects.conditions]
+
+[redirects.headers]
+
+[[redirects]]
+from = "/docs/*"
+to = "/nicht-oeffentlich"
+status = 404.0
+force = true
+
+[redirects.query]
+
+[redirects.conditions]
+
+[redirects.headers]
