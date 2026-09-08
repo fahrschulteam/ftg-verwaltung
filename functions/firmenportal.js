@@ -52,6 +52,13 @@ const istDatum = (v) => /^\d{4}-\d{2}-\d{2}$/.test(String(v || ''));
 // Jeder Teilnehmer braucht eine legacy_id – die Verwaltung verknuepft darueber.
 const neueLegacyId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 
+// Beim Zuordnen wird die komplette Terminzeile kopiert, damit die Verwaltung
+// die neue Zeile demselben Lehrgang zuordnet. Nur diese Felder werden NICHT
+// uebernommen, weil sie je Teilnehmer eigene Werte brauchen.
+const NICHT_KOPIEREN = ['id', 'participant_id', 'participant_legacy', 'passed',
+  'created_at', 'updated_at', 'confirmation_sent', 'pruef_theorie', 'pruef_praxis',
+  'bqr_datei_am', 'bqr_gemeldet_am', 'reserviert', 'reservierungen'];
+
 // 7 UE = 1 Modul; Fenster = 5 Jahre vor Stichtag (Schlüsselzahl 95)
 function bkfStatus(p, kurse) {
   const ext = p.ext_dates || {};
@@ -204,7 +211,8 @@ exports.handler = async (event) => {
       const treffer = (zeilen || []).filter((r) => terminKey(r) === key);
       if (!treffer.length) return antwort(404, { success: false, message: 'Dieser Termin gehört nicht zu Ihrer Firma.' });
 
-      const vorlage = treffer[0];
+      // Die Terminzeile ohne Teilnehmer ist das Original, das du angelegt hast.
+      const vorlage = treffer.find((r) => !r.participant_id) || treffer[0];
       const kapazitaet = Math.max(...treffer.map((r) => +r.capacity || 0));
       const belegt = treffer.filter((r) => r.participant_id).length;
       const schonDrin = new Set(treffer.filter((r) => r.participant_id).map((r) => r.participant_id));
@@ -221,14 +229,18 @@ exports.handler = async (event) => {
         return antwort(400, { success: false, message: `Für diesen Termin sind noch ${Math.max(0, kapazitaet - belegt)} Plätze frei.` });
       }
 
+      // Alle Felder der Terminzeile holen (Datum, Dozent, Themen, Stunden ...).
+      const voll = await supa(`schulung_courses?id=eq.${encodeURIComponent(vorlage.id)}&select=*`);
+      const basis = {};
+      Object.keys(voll[0] || vorlage).forEach((f) => {
+        if (NICHT_KOPIEREN.indexOf(f) === -1) basis[f] = (voll[0] || vorlage)[f];
+      });
+
       const neueZeilen = neueIds.map((id) => ({
+        ...basis,
         participant_id: id,
         participant_legacy: legacyVon[id],
-        type: vorlage.type,
-        date_from: vorlage.date_from,
-        date_to: vorlage.date_to,
-        location: vorlage.location,
-        capacity: vorlage.capacity,
+        passed: false,
         firma_id: firma.id,
         created_at: jetzt,
         updated_at: jetzt,
