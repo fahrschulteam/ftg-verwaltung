@@ -1299,6 +1299,18 @@ function startTeilnehmerRealtime(){
 //  geänderten oder gelöschten Kurse zeilenweise übertragen. Damit sind
 //  alle ~12 Mutationsstellen der App automatisch abgedeckt.
 // ════════════════════════════════════════════════════════════════════
+// Auswahlliste der Firmen fuer den Lehrgangs-Dialog.
+// Leerer Wert = oeffentlicher Kurs (erscheint im Kurskalender).
+function _firmaOpts(aktiv){
+  const esc=t=>String(t==null?'':t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  const firmen=(state.companies||[]).slice().sort((a,b)=>String(a.name||'').localeCompare(String(b.name||''),'de'));
+  let h='<option value="">- oeffentlicher Kurs -</option>';
+  firmen.forEach(f=>{
+    const id=f._dbId||f.id;
+    h+='<option value="'+esc(id)+'"'+(String(aktiv)===String(id)?' selected':'')+'>'+esc(f.name)+'</option>';
+  });
+  return h;
+}
 function _kursZuDb(c){
   // Teilnehmer-Referenz: legacy-ID der App → echte DB-UUID (falls migriert)
   const tn = state.participants.find(p=>p.id===c.participant);
@@ -1337,6 +1349,8 @@ function _kursZuDb(c){
     fes_bausteine: Array.isArray(c.fesBausteine)?c.fesBausteine:[],
     // Verweis auf den BKrFQG-Kursplan.
     kursplan_id: c.kursplanId || null,
+    // Firmeninterner Termin: leer = oeffentlich, sonst nur im Firmenportal sichtbar.
+    firma_id: c.firmaId || null,
     updated_at: new Date().toISOString(),
   };
 }
@@ -1362,6 +1376,7 @@ function _kursVonDb(r){
     bqrGemeldetAm: r.bqr_gemeldet_am||'',
     fesBausteine: Array.isArray(r.fes_bausteine)?r.fes_bausteine:[],
     kursplanId: r.kursplan_id || '',
+    firmaId: r.firma_id || '',
   };
 }
 let _kursLetzterFehler='';
@@ -8953,6 +8968,10 @@ function openCourseGroup(g){
       <div class="field"><label>Ort / Schulungsraum</label><input id="m_loc" value="${refEntry.location||defLoc()}" placeholder="z.B. Betriebshof"></div>
       <div class="field"><label>Durchführender Dozent</label><select id="m_dozent">${dozOpts}</select></div>
     </div>
+    <div class="field"><label>Firma (firmeninterner Termin)</label>
+      <select id="m_firma">${_firmaOpts(refEntry.firmaId||'')}</select>
+      <div class="hint" style="margin-top:4px">Wird eine Firma gewählt, erscheint der Termin <b>nicht</b> im öffentlichen Kurskalender, sondern nur im Firmenportal dieser Firma.</div>
+    </div>
     ${ffzFormBlock(refEntry)}
     ${String(refEntry.type||'').indexOf('BKF Modul')===0?`
     <div class="hint" style="background:#f5f3ff;border:1px solid #ddd6fe;border-radius:8px;padding:8px 12px;margin-bottom:4px">🏛 BKF-Weiterbildung: Die Teilnahmebescheinigungen gehen automatisch an alle gelisteten Teilnehmer, sobald die <b>BQR-Meldung</b> erzeugt wird – hier ist kein separater Vermerk nötig.</div>`:`
@@ -9059,6 +9078,7 @@ function saveCourseGroup(idsCsv){
     note:_mergeTermineIntoNote(document.getElementById('m_note').value),
     dozent:document.getElementById('m_dozent').value,themes,
     kursplanId:(document.getElementById('m_kursplan')||{}).value||'',
+    firmaId:(document.getElementById('m_firma')||{}).value||'',
     capacity:+(document.getElementById('m_capacity')||{}).value||0,
     reserviert:+refEntry_reserviert_merken||0,
     reservierungen:refEntry_reservierungen_merken||[],
