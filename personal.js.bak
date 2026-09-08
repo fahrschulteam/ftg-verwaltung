@@ -671,7 +671,7 @@ const MA_DOK_KATEGORIEN = [
 async function ladeMaDokumente() {
   try {
     const { data, error } = await sb.from('ma_dokumente')
-      .select('*').order('hochgeladen', { ascending: false });
+      .select('*').order('hochgeladen_am', { ascending: false });
     if (error) { console.warn('MA-Dokumente laden:', error.message); maDokumenteCache = []; return; }
     maDokumenteCache = data || [];
   } catch(e) { console.warn('MA-Dokumente:', e); maDokumenteCache = []; }
