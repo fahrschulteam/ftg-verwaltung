@@ -518,8 +518,8 @@ window.renderAZK = async function() {
     sum.urlaubGeplant += ber.urlaubGeplant;
     sum.urlaubRest += ber.urlaubRest;
     if (!z) return;
-    const e = z.eintrag;
     sum.urlaubMonat += Number(e.urlaubstage||0);
+    const e = z.eintrag;
     sum.standVormonat += z.standVormonat; sum.praxis += Number(e.praxis||0); sum.theorie += Number(e.theorie||0);
     sum.kurse += Number(e.kurse||0); sum.sonstige += Number(e.sonstige||0); sum.soll += Number(e.soll||0);
     sum.ist += z.ist; sum.diffMonat += z.diffMonat; sum.ausgezahlt += Number(e.ausgezahlt||0);
