@@ -8052,7 +8052,7 @@ function openCourse(id){
       <div class="field"><label>Schulungsort Praxis <span style="font-weight:400;color:#888">(falls abweichend)</span></label><input id="m_locPraxis" value="${cc.locationPraxis||''}" placeholder="z.B. Betriebshof Kunde"></div>
     </div>
     <div class="grid grid-2">
-      <div class="field"></div>
+      <div class="field"><label>Firma (firmeninterner Termin)</label><select id="m_firma">${_firmaOpts(cc.firmaId||'')}</select><div class="hint" style="margin-top:4px">Leer = im Kurskalender sichtbar</div></div>
       <div class="field"><label>Durchführender Dozent</label><select id="m_dozent">${dozOpts}</select>
         ${state.dozenten.length?'':'<div class="hint" style="margin-top:4px">Dozenten unter Einstellungen anlegen.</div>'}
       </div>
@@ -9375,7 +9375,8 @@ function saveCourse(id){
     theory:+document.getElementById('m_theory').value||0,practice:+document.getElementById('m_practice').value||0,
     passed:_passedVal,note:_mergeTermineIntoNote(document.getElementById('m_note').value),
     dozent:document.getElementById('m_dozent').value,themes,
-    lsDauer:(document.getElementById('m_lsDauer')&&cleanType(document.getElementById('m_type').value)==='Ladungssicherung')?document.getElementById('m_lsDauer').value:''};
+    lsDauer:(document.getElementById('m_lsDauer')&&cleanType(document.getElementById('m_type').value)==='Ladungssicherung')?document.getElementById('m_lsDauer').value:'',
+    firmaId:(document.getElementById('m_firma')||{}).value||''};
   const _ffz={bauart:(document.getElementById('m_bauart')||{}).value||'',antrieb:(document.getElementById('m_antrieb')||{}).value||'',tragfaehigkeit:(document.getElementById('m_trag')||{}).value||'',pruefTheorie:(document.getElementById('m_pruefTh')||{}).value||'',pruefPraxis:(document.getElementById('m_pruefPr')||{}).value||''};
   Object.assign(base,_ffz);
   if((base.type==='Gabelstapler'||base.type==='Ladekran'||base.type==='Baumaschinen')&&(_ffz.bauart||_ffz.antrieb||_ffz.tragfaehigkeit)){state.settings.ffzDefaults=Object.assign({},state.settings.ffzDefaults,{[base.type]:{bauart:_ffz.bauart,antrieb:_ffz.antrieb,tragfaehigkeit:_ffz.tragfaehigkeit}});}
