@@ -49,6 +49,8 @@ const terminKey = (r) => [r.date_from || '', r.type || '', r.location || ''].joi
 
 const text = (v, max) => String(v == null ? '' : v).trim().slice(0, max || 200);
 const istDatum = (v) => /^\d{4}-\d{2}-\d{2}$/.test(String(v || ''));
+// Jeder Teilnehmer braucht eine legacy_id – die Verwaltung verknuepft darueber.
+const neueLegacyId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 
 // 7 UE = 1 Modul; Fenster = 5 Jahre vor Stichtag (Schlüsselzahl 95)
 function bkfStatus(p, kurse) {
@@ -163,6 +165,7 @@ exports.handler = async (event) => {
         first_name: vorname,
         last_name: nachname,
         company_id: firma.id,
+        legacy_id: neueLegacyId(),
         created_at: jetzt,
         updated_at: jetzt,
         ext_dates: { PORTAL_NEU: heute },
@@ -207,8 +210,10 @@ exports.handler = async (event) => {
       const schonDrin = new Set(treffer.filter((r) => r.participant_id).map((r) => r.participant_id));
 
       // Nur Fahrer der eigenen Firma – Prüfung serverseitig, nicht im Browser.
-      const eigene = await supa(`schulung_participants?company_id=eq.${firma.id}&select=id&limit=2000`);
+      const eigene = await supa(`schulung_participants?company_id=eq.${firma.id}&select=id,legacy_id&limit=2000`);
       const erlaubteIds = new Set((eigene || []).map((x) => x.id));
+      const legacyVon = {};
+      (eigene || []).forEach((x) => { legacyVon[x.id] = x.legacy_id || x.id; });
       const neueIds = ids.filter((id) => erlaubteIds.has(id) && !schonDrin.has(id));
 
       if (!neueIds.length) return antwort(200, { success: true, hinzugefuegt: 0, message: 'Diese Fahrer sind bereits eingetragen.' });
@@ -218,6 +223,7 @@ exports.handler = async (event) => {
 
       const neueZeilen = neueIds.map((id) => ({
         participant_id: id,
+        participant_legacy: legacyVon[id],
         type: vorlage.type,
         date_from: vorlage.date_from,
         date_to: vorlage.date_to,
