@@ -16,6 +16,7 @@
   header h1{font-size:21px;margin:0}
   header p{margin:2px 0 0;color:var(--muted);font-size:13.5px}
   .card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:16px}
+  .card.intern{border-left:4px solid var(--red)}
   h2{font-size:16px;margin:0 0 10px}
   label{font-size:13px;font-weight:600;display:block;margin-bottom:4px}
   input{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:9px;font-size:15px}
@@ -23,7 +24,9 @@
     padding:10px 18px;font-size:14.5px;font-weight:700;cursor:pointer;text-decoration:none}
   .btn.ghost{background:#fff;color:var(--ink);border:1px solid var(--line)}
   .btn.sm{padding:6px 12px;font-size:13px}
+  .btn:disabled{opacity:.55;cursor:default}
   .err{color:var(--red);font-size:13.5px;margin-top:8px}
+  .ok{color:var(--green);font-size:13.5px;margin-top:8px}
   table{width:100%;border-collapse:collapse;font-size:13.5px}
   th{font-size:11.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);text-align:left;
     padding:8px 10px;border-bottom:2px solid var(--line)}
@@ -38,9 +41,18 @@
   .modal-bg{position:fixed;inset:0;background:rgba(20,24,30,.5);display:none;align-items:center;justify-content:center;padding:16px;z-index:50}
   .modal-bg.open{display:flex}
   .modal{background:#fff;border-radius:14px;padding:20px;max-width:440px;width:100%}
+  .modal.wide{max-width:560px}
   .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
   .terminrow{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;
     border:1px solid var(--line);border-radius:10px;padding:9px 12px;margin-bottom:8px;font-size:13.5px}
+  .wahl{max-height:300px;overflow-y:auto;border:1px solid var(--line);border-radius:10px;padding:4px 0}
+  .wahl label{display:flex;align-items:center;gap:10px;font-weight:400;font-size:14px;
+    padding:8px 12px;margin:0;border-bottom:1px solid var(--line);cursor:pointer}
+  .wahl label:last-child{border-bottom:0}
+  .wahl input[type=checkbox]{width:auto;flex:none;margin:0}
+  .wahl .drin{color:var(--muted)}
+  .fliste{margin:8px 0 0;padding:0;list-style:none;font-size:13px}
+  .fliste li{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:4px 0}
   @media(max-width:640px){table{font-size:12.5px} td,th{padding:6px 6px}}
 </style>
 </head>
@@ -74,8 +86,11 @@
     </div>
 
     <div class="card">
-      <h2>Ihre Fahrer</h2>
-      <input id="suche" placeholder="Fahrer suchen …" oninput="renderFahrer()" style="margin-bottom:10px;max-width:320px">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+        <h2 style="margin:0">Ihre Fahrer</h2>
+        <button class="btn ghost sm" onclick="neuerFahrer()">Neuen Fahrer anlegen</button>
+      </div>
+      <input id="suche" placeholder="Fahrer suchen …" oninput="renderFahrer()" style="margin:10px 0;max-width:320px">
       <div style="overflow-x:auto">
       <table>
         <thead><tr><th>Name</th><th>Kontakt</th><th>BKF-Weiterbildung</th><th>Fahrerlaubnis</th><th></th></tr></thead>
@@ -86,6 +101,13 @@
         Adresse, Telefon und E-Mail Ihrer Fahrer können Sie über ✎ selbst aktualisieren.</p>
     </div>
 
+    <div class="card intern" id="internCard" style="display:none">
+      <h2>Ihre firmeninternen Termine</h2>
+      <p class="muted" style="margin:0 0 12px">Diese Termine haben wir für Ihre Firma reserviert.
+        Sie sind nicht öffentlich buchbar – tragen Sie hier einfach Ihre Fahrer ein.</p>
+      <div id="internListe"></div>
+    </div>
+
     <div class="card">
       <h2>Kommende Kurstermine</h2>
       <div id="termine"></div>
@@ -94,6 +116,7 @@
   </div>
 </div>
 
+<!-- Kontaktdaten bearbeiten -->
 <div class="modal-bg" id="mBg">
   <div class="modal">
     <h2 style="margin-bottom:12px">Kontaktdaten bearbeiten</h2>
@@ -115,46 +138,100 @@
   </div>
 </div>
 
+<!-- Fahrer einem Termin zuordnen -->
+<div class="modal-bg" id="zBg">
+  <div class="modal wide">
+    <h2 style="margin-bottom:4px">Fahrer eintragen</h2>
+    <p class="muted" style="margin:0 0 12px" id="zTermin"></p>
+    <input id="zSuche" placeholder="Fahrer suchen …" oninput="renderWahl()" style="margin-bottom:10px">
+    <div class="wahl" id="zListe"></div>
+    <p class="muted" style="margin:8px 0 0" id="zFrei"></p>
+    <div class="err" id="zErr"></div>
+    <div style="display:flex;gap:8px;justify-content:space-between;margin-top:16px;flex-wrap:wrap">
+      <button class="btn ghost" onclick="neuerFahrer()">Neuen Fahrer anlegen</button>
+      <span style="display:flex;gap:8px">
+        <button class="btn ghost" onclick="zSchliessen()">Abbrechen</button>
+        <button class="btn" id="zSave" onclick="zuordnen()">Eintragen</button>
+      </span>
+    </div>
+  </div>
+</div>
+
+<!-- Neuen Fahrer anlegen -->
+<div class="modal-bg" id="nBg">
+  <div class="modal">
+    <h2 style="margin-bottom:4px">Neuen Fahrer anlegen</h2>
+    <p class="muted" style="margin:0 0 12px">Vor- und Nachname genügen. Weitere Angaben helfen uns bei der Zuordnung.</p>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <div class="grid2">
+        <div><label>Vorname *</label><input id="n_first"></div>
+        <div><label>Nachname *</label><input id="n_last"></div>
+      </div>
+      <div class="grid2">
+        <div><label>Geburtsdatum</label><input id="n_birth" type="date"></div>
+        <div><label>Geburtsort</label><input id="n_birthplace"></div>
+      </div>
+      <div><label>Straße / Hausnummer</label><input id="n_street"></div>
+      <div class="grid2">
+        <div><label>PLZ</label><input id="n_zip"></div>
+        <div><label>Ort</label><input id="n_city"></div>
+      </div>
+      <div><label>Telefon / Mobil</label><input id="n_phone"></div>
+      <div><label>E-Mail</label><input id="n_email"></div>
+    </div>
+    <div class="err" id="nErr"></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
+      <button class="btn ghost" onclick="nSchliessen()">Abbrechen</button>
+      <button class="btn" id="nSave" onclick="fahrerAnlegen()">Fahrer anlegen</button>
+    </div>
+  </div>
+</div>
+
 <script>
 (function(){
   var API="/.netlify/functions/firmenportal";
-  var daten=null, aktCode="", bearbId=null;
+  var daten=null, aktCode="", bearbId=null, zKey=null;
   var ANMELDUNG="https://newslettertool.netlify.app/anmeldung.html";
 
   function de(iso){ if(!iso) return ""; var p=String(iso).split("-"); return p.length===3?p[2]+"."+p[1]+"."+p[0]:iso; }
   function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];}); }
   function tageBis(iso){ if(!iso) return null; return Math.round((new Date(iso)-new Date())/86400000); }
+  function el(id){ return document.getElementById(id); }
+  function zeitraum(k){
+    if(k.termine) return String(k.termine).replace(/^\s*Termine:\s*/i,"");
+    return (k.bis&&k.bis!==k.date) ? de(k.date)+" – "+de(k.bis) : de(k.date);
+  }
 
   window.laden=async function(){
-    var code=(document.getElementById("code").value||"").trim().toUpperCase();
-    var err=document.getElementById("loginErr"); err.textContent="";
+    var code=(el("code").value||"").trim().toUpperCase();
+    var err=el("loginErr"); err.textContent="";
     if(!code){ err.textContent="Bitte Zugangscode eingeben."; return; }
-    document.getElementById("loginBtn").disabled=true;
+    el("loginBtn").disabled=true;
     try{
       var r=await fetch(API,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({code:code})});
       var d=await r.json();
       if(!d.success){ err.textContent=d.message||"Anmeldung fehlgeschlagen."; return; }
       daten=d; aktCode=code;
       try{ sessionStorage.setItem("ftg-portal-code",code); }catch(e){}
-      document.getElementById("loginCard").style.display="none";
-      document.getElementById("app").style.display="";
-      document.getElementById("firmaName").textContent=d.firma.name;
-      renderFahrer(); renderTermine();
+      el("loginCard").style.display="none";
+      el("app").style.display="";
+      el("firmaName").textContent=d.firma.name;
+      renderFahrer(); renderTermine(); renderIntern();
     }catch(e){ err.textContent="Der Dienst ist gerade nicht erreichbar."; }
-    finally{ document.getElementById("loginBtn").disabled=false; }
+    finally{ el("loginBtn").disabled=false; }
   };
 
   window.abmelden=function(){
     daten=null; aktCode="";
     try{ sessionStorage.removeItem("ftg-portal-code"); }catch(e){}
-    document.getElementById("app").style.display="none";
-    document.getElementById("loginCard").style.display="";
-    document.getElementById("code").value="";
+    el("app").style.display="none";
+    el("loginCard").style.display="";
+    el("code").value="";
   };
 
   window.renderFahrer=function(){
-    var q=(document.getElementById("suche").value||"").toLowerCase();
-    var b=document.getElementById("fBody");
+    var q=(el("suche").value||"").toLowerCase();
+    var b=el("fBody");
     var rows=(daten.fahrer||[]).filter(function(f){ return (f.name+" "+f.email+" "+f.phone).toLowerCase().indexOf(q)!==-1; });
     if(!rows.length){ b.innerHTML='<tr><td colspan="5" class="muted">Keine Fahrer gefunden.</td></tr>'; return; }
     b.innerHTML=rows.map(function(f){
@@ -177,12 +254,12 @@
   };
 
   window.renderTermine=function(){
-    var el=document.getElementById("termine");
+    var e=el("termine");
     var t=daten.termine||[];
-    if(!t.length){ el.innerHTML='<p class="muted">Zurzeit sind keine kommenden Termine eingetragen.</p>'; return; }
-    el.innerHTML=t.map(function(k){
+    if(!t.length){ e.innerHTML='<p class="muted">Zurzeit sind keine kommenden Termine eingetragen.</p>'; return; }
+    e.innerHTML=t.map(function(k){
       var frei=Math.max(0,(k.capacity||18)-(k.belegt||0));
-      var termin=k.termine?String(k.termine).replace(/^\s*Termine:\s*/i,""):(k.bis&&k.bis!==k.date?de(k.date)+" – "+de(k.bis):de(k.date));
+      var termin=zeitraum(k);
       var link=ANMELDUNG+"?modul="+encodeURIComponent(k.type||"")+"&termin="+encodeURIComponent(termin);
       return '<div class="terminrow"><span><b>'+esc(k.type)+'</b> · '+esc(termin)+(k.location?' · '+esc(k.location):'')+'</span>'
         +'<span style="display:flex;gap:8px;align-items:center"><span class="tag '+(frei>0?"t-ok":"t-crit")+'">'+(frei>0?frei+" Plätze frei":"ausgebucht")+'</span>'
@@ -190,42 +267,155 @@
     }).join("");
   };
 
+  // ── Firmeninterne Termine ────────────────────────────────────────────
+  window.renderIntern=function(){
+    var liste=daten.intern||[];
+    el("internCard").style.display=liste.length?"":"none";
+    if(!liste.length) return;
+    var namen={};
+    (daten.fahrer||[]).forEach(function(f){ namen[f.id]=f.name; });
+    el("internListe").innerHTML=liste.map(function(k){
+      var frei=k.capacity?Math.max(0,k.capacity-k.belegt):null;
+      var tag=frei===null?'<span class="tag t-mut">'+k.belegt+' eingetragen</span>'
+        :'<span class="tag '+(frei>0?"t-ok":"t-crit")+'">'+k.belegt+' / '+k.capacity+' Plätze belegt</span>';
+      var eingetragen=(k.fahrer||[]).map(function(id){
+        return '<li><span>'+esc(namen[id]||"Fahrer")+'</span>'
+          +'<button class="btn ghost sm" onclick="austragen(\''+esc(k.key)+'\',\''+id+'\')">Entfernen</button></li>';
+      }).join("");
+      return '<div class="terminrow" style="display:block">'
+        +'<div style="display:flex;gap:10px;justify-content:space-between;align-items:center;flex-wrap:wrap">'
+        +'<span><b>'+esc(k.type)+'</b> · '+esc(zeitraum(k))+(k.location?' · '+esc(k.location):'')+'</span>'
+        +'<span style="display:flex;gap:8px;align-items:center">'+tag
+        +'<button class="btn sm" onclick="zOeffnen(\''+esc(k.key)+'\')">Fahrer eintragen</button></span></div>'
+        +(eingetragen?'<ul class="fliste">'+eingetragen+'</ul>':'<p class="muted" style="margin:6px 0 0">Noch niemand eingetragen.</p>')
+        +'</div>';
+    }).join("");
+  };
+
+  window.zOeffnen=function(key){
+    zKey=key;
+    var k=(daten.intern||[]).find(function(x){return x.key===key;}); if(!k) return;
+    el("zTermin").textContent=k.type+" · "+zeitraum(k)+(k.location?" · "+k.location:"");
+    el("zSuche").value=""; el("zErr").textContent="";
+    var frei=k.capacity?Math.max(0,k.capacity-k.belegt):null;
+    el("zFrei").textContent=frei===null?"":("Noch "+frei+" von "+k.capacity+" Plätzen frei.");
+    renderWahl();
+    el("zBg").classList.add("open");
+  };
+  window.zSchliessen=function(){ el("zBg").classList.remove("open"); zKey=null; };
+
+  window.renderWahl=function(){
+    var k=(daten.intern||[]).find(function(x){return x.key===zKey;}); if(!k) return;
+    var drin=new Set(k.fahrer||[]);
+    var q=(el("zSuche").value||"").toLowerCase();
+    var rows=(daten.fahrer||[]).filter(function(f){ return f.name.toLowerCase().indexOf(q)!==-1; });
+    if(!rows.length){ el("zListe").innerHTML='<p class="muted" style="padding:12px">Keine Fahrer gefunden. Legen Sie unten einen neuen Fahrer an.</p>'; return; }
+    el("zListe").innerHTML=rows.map(function(f){
+      if(drin.has(f.id)) return '<label class="drin"><input type="checkbox" disabled checked>'+esc(f.name)+' · bereits eingetragen</label>';
+      return '<label><input type="checkbox" value="'+f.id+'">'+esc(f.name)+(f.birth?' · geb. '+de(f.birth):'')+'</label>';
+    }).join("");
+  };
+
+  window.zuordnen=async function(){
+    var boxen=el("zListe").querySelectorAll('input[type=checkbox]:checked:not([disabled])');
+    var ids=Array.prototype.map.call(boxen,function(b){return b.value;});
+    var err=el("zErr"); err.textContent="";
+    if(!ids.length){ err.textContent="Bitte mindestens einen Fahrer auswählen."; return; }
+    var btn=el("zSave"); btn.disabled=true;
+    try{
+      var r=await fetch(API,{method:"POST",headers:{"content-type":"application/json"},
+        body:JSON.stringify({code:aktCode,action:"zuordnen",key:zKey,ids:ids})});
+      var d=await r.json();
+      if(!d.success){ err.textContent=d.message||"Eintragen fehlgeschlagen."; return; }
+      zSchliessen(); await neuLaden();
+    }catch(e){ err.textContent="Der Dienst ist gerade nicht erreichbar."; }
+    finally{ btn.disabled=false; }
+  };
+
+  window.austragen=async function(key,id){
+    if(!confirm("Diesen Fahrer aus dem Termin entfernen?")) return;
+    try{
+      var r=await fetch(API,{method:"POST",headers:{"content-type":"application/json"},
+        body:JSON.stringify({code:aktCode,action:"austragen",key:key,id:id})});
+      var d=await r.json();
+      if(!d.success){ alert(d.message||"Entfernen fehlgeschlagen."); return; }
+      await neuLaden();
+    }catch(e){ alert("Der Dienst ist gerade nicht erreichbar."); }
+  };
+
+  // ── Neuen Fahrer anlegen ─────────────────────────────────────────────
+  window.neuerFahrer=function(){
+    ["n_first","n_last","n_birth","n_birthplace","n_street","n_zip","n_city","n_phone","n_email"]
+      .forEach(function(id){ el(id).value=""; });
+    el("nErr").textContent="";
+    el("nBg").classList.add("open");
+  };
+  window.nSchliessen=function(){ el("nBg").classList.remove("open"); };
+
+  window.fahrerAnlegen=async function(){
+    var f={ first_name:el("n_first").value, last_name:el("n_last").value, birth:el("n_birth").value,
+      birthplace:el("n_birthplace").value, street:el("n_street").value, zip:el("n_zip").value,
+      city:el("n_city").value, phone:el("n_phone").value, email:el("n_email").value };
+    var err=el("nErr"); err.textContent="";
+    if(!f.first_name.trim()||!f.last_name.trim()){ err.textContent="Bitte Vor- und Nachname angeben."; return; }
+    var btn=el("nSave"); btn.disabled=true;
+    try{
+      var r=await fetch(API,{method:"POST",headers:{"content-type":"application/json"},
+        body:JSON.stringify({code:aktCode,action:"neuerFahrer",fahrer:f})});
+      var d=await r.json();
+      if(!d.success){ err.textContent=d.message||"Der Fahrer konnte nicht angelegt werden."; return; }
+      daten.fahrer.push(d.fahrer);
+      daten.fahrer.sort(function(a,b){ return a.name.localeCompare(b.name,"de"); });
+      nSchliessen(); renderFahrer();
+      if(zKey) renderWahl();
+    }catch(e){ err.textContent="Der Dienst ist gerade nicht erreichbar."; }
+    finally{ btn.disabled=false; }
+  };
+
+  // Daten neu holen, ohne den Anmeldebildschirm zu zeigen.
+  async function neuLaden(){
+    try{
+      var r=await fetch(API,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({code:aktCode})});
+      var d=await r.json();
+      if(d.success){ daten=d; renderFahrer(); renderTermine(); renderIntern(); }
+    }catch(e){}
+  }
+
   window.bearbeiten=function(id){
     var f=(daten.fahrer||[]).find(function(x){return x.id===id;}); if(!f) return;
     bearbId=id;
-    document.getElementById("mName").textContent=f.name;
-    document.getElementById("m_street").value=f.street||"";
-    document.getElementById("m_zip").value=f.zip||"";
-    document.getElementById("m_city").value=f.city||"";
-    document.getElementById("m_phone").value=f.phone||"";
-    document.getElementById("m_email").value=f.email||"";
-    document.getElementById("mErr").textContent="";
-    document.getElementById("mBg").classList.add("open");
+    el("mName").textContent=f.name;
+    el("m_street").value=f.street||"";
+    el("m_zip").value=f.zip||"";
+    el("m_city").value=f.city||"";
+    el("m_phone").value=f.phone||"";
+    el("m_email").value=f.email||"";
+    el("mErr").textContent="";
+    el("mBg").classList.add("open");
   };
-  window.schliessen=function(){ document.getElementById("mBg").classList.remove("open"); bearbId=null; };
+  window.schliessen=function(){ el("mBg").classList.remove("open"); bearbId=null; };
 
   window.speichern=async function(){
     if(!bearbId) return;
-    var patch={ street:document.getElementById("m_street").value, zip:document.getElementById("m_zip").value,
-      city:document.getElementById("m_city").value, phone:document.getElementById("m_phone").value,
-      email:document.getElementById("m_email").value };
-    var btn=document.getElementById("mSave"); btn.disabled=true;
+    var patch={ street:el("m_street").value, zip:el("m_zip").value,
+      city:el("m_city").value, phone:el("m_phone").value, email:el("m_email").value };
+    var btn=el("mSave"); btn.disabled=true;
     try{
       var r=await fetch(API,{method:"POST",headers:{"content-type":"application/json"},
         body:JSON.stringify({code:aktCode,action:"update",id:bearbId,patch:patch})});
       var d=await r.json();
-      if(!d.success){ document.getElementById("mErr").textContent=d.message||"Speichern fehlgeschlagen."; return; }
+      if(!d.success){ el("mErr").textContent=d.message||"Speichern fehlgeschlagen."; return; }
       var f=(daten.fahrer||[]).find(function(x){return x.id===bearbId;});
       if(f){ f.street=patch.street; f.zip=patch.zip; f.city=patch.city; f.phone=patch.phone; f.email=patch.email; }
       schliessen(); renderFahrer();
-    }catch(e){ document.getElementById("mErr").textContent="Der Dienst ist gerade nicht erreichbar."; }
+    }catch(e){ el("mErr").textContent="Der Dienst ist gerade nicht erreichbar."; }
     finally{ btn.disabled=false; }
   };
 
   // Automatisch wieder anmelden, wenn der Code in dieser Sitzung schon benutzt wurde.
   try{
     var merk=sessionStorage.getItem("ftg-portal-code");
-    if(merk){ document.getElementById("code").value=merk; laden(); }
+    if(merk){ el("code").value=merk; laden(); }
   }catch(e){}
 })();
 </script>

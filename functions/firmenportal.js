@@ -4,7 +4,14 @@
 //  Firmen melden sich mit ihrem Zugangscode an und sehen/ändern
 //  AUSSCHLIESSLICH die eigenen Fahrer. Alle Datenbank-Zugriffe laufen
 //  hier serverseitig – das Portal selbst bekommt nie einen Datenbank-
-//  Schlüssel. Änderbar sind nur Kontaktdaten (Adresse, Telefon, E-Mail).
+//  Schlüssel. Änderbar sind Kontaktdaten (Adresse, Telefon, E-Mail).
+//
+//  Firmeninterne Termine: Kurszeilen in schulung_courses mit gesetzter
+//  firma_id. Diese Termine sind aus dem öffentlichen Kurskalender
+//  (View kurskalender_public) ausgeblendet und nur hier sichtbar.
+//  Die Firma kann eigene Fahrer zuordnen, wieder austragen und neue
+//  Fahrer anlegen. Die company_id wird IMMER serverseitig aus dem
+//  Zugangscode abgeleitet, niemals aus der Anfrage übernommen.
 // ════════════════════════════════════════════════════════════════════
 
 const SUPA_URL = 'https://ejuhpgcwskyqwheinlub.supabase.co';
@@ -36,6 +43,13 @@ async function supa(pfad) {
   return r.json();
 }
 
+// Ein Termin ist die Gruppe aus Datum + Kursart + Ort – genau wie in der
+// View kurskalender_public. Der Schlüssel identifiziert ihn eindeutig.
+const terminKey = (r) => [r.date_from || '', r.type || '', r.location || ''].join('|');
+
+const text = (v, max) => String(v == null ? '' : v).trim().slice(0, max || 200);
+const istDatum = (v) => /^\d{4}-\d{2}-\d{2}$/.test(String(v || ''));
+
 // 7 UE = 1 Modul; Fenster = 5 Jahre vor Stichtag (Schlüsselzahl 95)
 function bkfStatus(p, kurse) {
   const ext = p.ext_dates || {};
@@ -61,6 +75,36 @@ function bkfStatus(p, kurse) {
   return { sz95, module, fehlen: Math.max(0, 5 - module) };
 }
 
+// Alle Kurszeilen dieser Firma ab heute – Grundlage für Anzeige und Prüfung.
+async function interneZeilen(firmaId, abDatum) {
+  return supa(
+    `schulung_courses?firma_id=eq.${firmaId}&date_from=gte.${abDatum}` +
+    `&select=id,type,date_from,date_to,location,capacity,participant_id,passed,note` +
+    `&order=date_from.asc&limit=2000`,
+  );
+}
+
+// Kurszeilen zu Terminen zusammenfassen (gleiche Logik wie kurskalender_public).
+function zuTerminen(zeilen) {
+  const map = new Map();
+  for (const r of zeilen) {
+    const k = terminKey(r);
+    if (!map.has(k)) {
+      map.set(k, { key: k, type: r.type || '', date: r.date_from || '', bis: r.date_to || '', location: r.location || '', capacity: 0, belegt: 0, fahrer: [], termine: '' });
+    }
+    const g = map.get(k);
+    const cap = +r.capacity || 0;
+    if (cap > g.capacity) g.capacity = cap;
+    if (r.date_to && r.date_to > g.bis) g.bis = r.date_to;
+    if (!g.termine && r.note) {
+      const m = String(r.note).match(/Termine:.*/);
+      if (m) g.termine = m[0];
+    }
+    if (r.participant_id) { g.belegt += 1; g.fahrer.push(r.participant_id); }
+  }
+  return [...map.values()];
+}
+
 exports.handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') return antwort(200, { ok: true });
   if (event.httpMethod !== 'POST') return antwort(405, { success: false, message: 'Nur POST erlaubt.' });
@@ -70,6 +114,9 @@ exports.handler = async (event) => {
 
   const code = String(body.code || '').trim().toUpperCase();
   if (!code || code.length < 6) return antwort(401, { success: false, message: 'Bitte den Zugangscode Ihrer Firma eingeben.' });
+
+  const heute = new Date().toISOString().slice(0, 10);
+  const jetzt = new Date().toISOString();
 
   try {
     // Firma über den Code finden – der Code ist der einzige Schlüssel.
@@ -86,7 +133,7 @@ exports.handler = async (event) => {
         if (typeof (body.patch || {})[f] === 'string') erlaubt[f] = body.patch[f].trim().slice(0, 200);
       }
       if (!body.id || !Object.keys(erlaubt).length) return antwort(400, { success: false, message: 'Keine Änderungen übergeben.' });
-      erlaubt.updated_at = new Date().toISOString();
+      erlaubt.updated_at = jetzt;
       // company_id-Filter stellt sicher: nur eigene Fahrer sind änderbar.
       const r = await fetch(
         `${SUPA_URL}/rest/v1/schulung_participants?id=eq.${encodeURIComponent(body.id)}&company_id=eq.${firma.id}`,
@@ -94,6 +141,115 @@ exports.handler = async (event) => {
       );
       const rows = r.ok ? await r.json() : [];
       if (!r.ok || !rows.length) return antwort(403, { success: false, message: 'Dieser Fahrer gehört nicht zu Ihrer Firma.' });
+      return antwort(200, { success: true });
+    }
+
+    // ── Neuen Fahrer der eigenen Firma anlegen ─────────────────────────
+    if (body.action === 'neuerFahrer') {
+      const f = body.fahrer || {};
+      const vorname = text(f.first_name, 80);
+      const nachname = text(f.last_name, 80);
+      if (!vorname || !nachname) return antwort(400, { success: false, message: 'Vorname und Nachname werden benötigt.' });
+
+      const bestand = await supa(`schulung_participants?company_id=eq.${firma.id}&select=id,first_name,last_name,birth&limit=2000`);
+      const norm = (s) => String(s || '').trim().toLowerCase();
+      const dublette = (bestand || []).find((x) =>
+        norm(x.first_name) === norm(vorname) && norm(x.last_name) === norm(nachname)
+        && (!istDatum(f.birth) || !x.birth || x.birth === f.birth));
+      if (dublette) return antwort(409, { success: false, message: 'Dieser Fahrer ist bereits angelegt.' });
+
+      // company_id kommt aus dem Zugangscode, nie aus der Anfrage.
+      const neu = {
+        first_name: vorname,
+        last_name: nachname,
+        company_id: firma.id,
+        created_at: jetzt,
+        updated_at: jetzt,
+        ext_dates: { PORTAL_NEU: heute },
+      };
+      if (istDatum(f.birth)) neu.birth = f.birth;
+      for (const feld of ['birthplace', 'street', 'zip', 'city', 'phone', 'email']) {
+        const w = text(f[feld], 200);
+        if (w) neu[feld] = w;
+      }
+
+      const r = await fetch(`${SUPA_URL}/rest/v1/schulung_participants`,
+        { method: 'POST', headers: { ...HEAD, Prefer: 'return=representation' }, body: JSON.stringify(neu) });
+      const rows = r.ok ? await r.json() : [];
+      if (!r.ok || !rows.length) return antwort(500, { success: false, message: 'Der Fahrer konnte nicht angelegt werden.' });
+      const p = rows[0];
+      return antwort(200, {
+        success: true,
+        fahrer: {
+          id: p.id,
+          name: [p.last_name, p.first_name].filter(Boolean).join(', '),
+          birth: p.birth || '',
+          street: p.street || '', zip: p.zip || '', city: p.city || '',
+          phone: p.phone || '', email: p.email || '',
+          fe: '', sz95: '', module: 0, fehlen: 5,
+        },
+      });
+    }
+
+    // ── Fahrer einem firmeninternen Termin zuordnen ────────────────────
+    if (body.action === 'zuordnen') {
+      const key = String(body.key || '');
+      const ids = Array.isArray(body.ids) ? body.ids.slice(0, 100).map(String) : [];
+      if (!key || !ids.length) return antwort(400, { success: false, message: 'Bitte mindestens einen Fahrer auswählen.' });
+
+      const zeilen = await interneZeilen(firma.id, heute);
+      const treffer = (zeilen || []).filter((r) => terminKey(r) === key);
+      if (!treffer.length) return antwort(404, { success: false, message: 'Dieser Termin gehört nicht zu Ihrer Firma.' });
+
+      const vorlage = treffer[0];
+      const kapazitaet = Math.max(...treffer.map((r) => +r.capacity || 0));
+      const belegt = treffer.filter((r) => r.participant_id).length;
+      const schonDrin = new Set(treffer.filter((r) => r.participant_id).map((r) => r.participant_id));
+
+      // Nur Fahrer der eigenen Firma – Prüfung serverseitig, nicht im Browser.
+      const eigene = await supa(`schulung_participants?company_id=eq.${firma.id}&select=id&limit=2000`);
+      const erlaubteIds = new Set((eigene || []).map((x) => x.id));
+      const neueIds = ids.filter((id) => erlaubteIds.has(id) && !schonDrin.has(id));
+
+      if (!neueIds.length) return antwort(200, { success: true, hinzugefuegt: 0, message: 'Diese Fahrer sind bereits eingetragen.' });
+      if (kapazitaet > 0 && belegt + neueIds.length > kapazitaet) {
+        return antwort(400, { success: false, message: `Für diesen Termin sind noch ${Math.max(0, kapazitaet - belegt)} Plätze frei.` });
+      }
+
+      const neueZeilen = neueIds.map((id) => ({
+        participant_id: id,
+        type: vorlage.type,
+        date_from: vorlage.date_from,
+        date_to: vorlage.date_to,
+        location: vorlage.location,
+        capacity: vorlage.capacity,
+        firma_id: firma.id,
+        created_at: jetzt,
+        updated_at: jetzt,
+      }));
+      const r = await fetch(`${SUPA_URL}/rest/v1/schulung_courses`,
+        { method: 'POST', headers: { ...HEAD, Prefer: 'return=minimal' }, body: JSON.stringify(neueZeilen) });
+      if (!r.ok) return antwort(500, { success: false, message: 'Die Zuordnung konnte nicht gespeichert werden.' });
+      return antwort(200, { success: true, hinzugefuegt: neueIds.length });
+    }
+
+    // ── Fahrer wieder aus einem firmeninternen Termin austragen ────────
+    if (body.action === 'austragen') {
+      const key = String(body.key || '');
+      const id = String(body.id || '');
+      if (!key || !id) return antwort(400, { success: false, message: 'Angabe unvollständig.' });
+
+      const zeilen = await interneZeilen(firma.id, heute);
+      const zeile = (zeilen || []).find((r) => terminKey(r) === key && r.participant_id === id);
+      if (!zeile) return antwort(404, { success: false, message: 'Dieser Eintrag wurde nicht gefunden.' });
+      if (zeile.passed) return antwort(403, { success: false, message: 'Dieser Kurs ist bereits abgeschlossen und kann nicht geändert werden.' });
+
+      // firma_id-Filter im Löschbefehl: fremde Zeilen sind nicht erreichbar.
+      const r = await fetch(
+        `${SUPA_URL}/rest/v1/schulung_courses?id=eq.${encodeURIComponent(zeile.id)}&firma_id=eq.${firma.id}`,
+        { method: 'DELETE', headers: { ...HEAD, Prefer: 'return=minimal' } },
+      );
+      if (!r.ok) return antwort(500, { success: false, message: 'Der Eintrag konnte nicht entfernt werden.' });
       return antwort(200, { success: true });
     }
 
@@ -107,8 +263,10 @@ exports.handler = async (event) => {
     // Kommende Termine aus dem öffentlichen Kurskalender
     let termine = [];
     try { termine = await supa(`kurskalender_public?select=type,date,bis,location,capacity,belegt,termine&order=date.asc`); } catch { termine = []; }
+    // Firmeninterne Termine – nur für diese Firma sichtbar
+    let intern = [];
+    try { intern = zuTerminen(await interneZeilen(firma.id, heute)); } catch { intern = []; }
 
-    const heute = new Date().toISOString().slice(0, 10);
     return antwort(200, {
       success: true,
       firma: { name: firma.name },
@@ -125,6 +283,7 @@ exports.handler = async (event) => {
         };
       }),
       termine: (termine || []).filter((t) => (t.date || '') >= heute).slice(0, 12),
+      intern,
     });
   } catch (e) {
     console.error('firmenportal', e);
