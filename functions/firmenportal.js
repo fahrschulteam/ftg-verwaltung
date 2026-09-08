@@ -245,9 +245,22 @@ exports.handler = async (event) => {
         created_at: jetzt,
         updated_at: jetzt,
       }));
-      const r = await fetch(`${SUPA_URL}/rest/v1/schulung_courses`,
+      let r = await fetch(`${SUPA_URL}/rest/v1/schulung_courses`,
         { method: 'POST', headers: { ...HEAD, Prefer: 'return=minimal' }, body: JSON.stringify(neueZeilen) });
-      if (!r.ok) return antwort(500, { success: false, message: 'Die Zuordnung konnte nicht gespeichert werden.' });
+
+      // Falls ein kopiertes Feld nicht doppelt vorkommen darf (z. B. eine
+      // eindeutige legacy_id), diese Felder weglassen und erneut versuchen.
+      if (!r.ok) {
+        const ersterFehler = await r.text();
+        const ohne = neueZeilen.map((z) => { const k = { ...z }; delete k.legacy_id; return k; });
+        r = await fetch(`${SUPA_URL}/rest/v1/schulung_courses`,
+          { method: 'POST', headers: { ...HEAD, Prefer: 'return=minimal' }, body: JSON.stringify(ohne) });
+        if (!r.ok) {
+          const zweiterFehler = await r.text();
+          console.error('firmenportal zuordnen', ersterFehler, zweiterFehler);
+          return antwort(500, { success: false, message: `Speichern fehlgeschlagen: ${String(zweiterFehler).slice(0, 300)}` });
+        }
+      }
       return antwort(200, { success: true, hinzugefuegt: neueIds.length });
     }
 
