@@ -5076,7 +5076,7 @@ function renderCourses(){
       ev.stopPropagation();
       openScanViewer(g.key.replace(/[^a-z0-9]/gi,'_'), 0);
     });
-    const _q__instr_attendance_btn=card.querySelector('.instr-attendance-btn'); if(_q__instr_attendance_btn) _q__instr_attendance_btn.addEventListener('click',()=>printAttendanceList(g, !isKurs));
+    const _q__instr_attendance_btn=card.querySelector('.instr-attendance-btn'); if(_q__instr_attendance_btn) _q__instr_attendance_btn.addEventListener('click',()=>{if(_hatKursplan(g)) printTagesListe(g); else printAttendanceList(g, !isKurs);});
     const _q__instr_cert_btn=card.querySelector('.instr-cert-btn'); if(_q__instr_cert_btn) _q__instr_cert_btn.addEventListener('click',()=>instrGroupCerts(g));
     const _q__fa_group_btn=card.querySelector('.fa-group-btn'); if(_q__fa_group_btn) _q__fa_group_btn.addEventListener('click',()=>openFahrausweisChooser(g));
     const _q__instr_inv_btn=card.querySelector('.instr-inv-btn'); if(_q__instr_inv_btn) _q__instr_inv_btn.addEventListener('click',()=>openInstrGroupInvoiceDialog(g));
@@ -5422,7 +5422,7 @@ function renderInstructions(){
       ev.stopPropagation();
       openScanViewer(g.key.replace(/[^a-z0-9]/gi,'_'), 0);
     });
-    const _q__instr_attendance_btn=card.querySelector('.instr-attendance-btn'); if(_q__instr_attendance_btn) _q__instr_attendance_btn.addEventListener('click',()=>printAttendanceList(g, !isKurs));
+    const _q__instr_attendance_btn=card.querySelector('.instr-attendance-btn'); if(_q__instr_attendance_btn) _q__instr_attendance_btn.addEventListener('click',()=>{if(_hatKursplan(g)) printTagesListe(g); else printAttendanceList(g, !isKurs);});
     const _q__instr_cert_btn=card.querySelector('.instr-cert-btn'); if(_q__instr_cert_btn) _q__instr_cert_btn.addEventListener('click',()=>instrGroupCerts(g));
     const _q__fa_group_btn=card.querySelector('.fa-group-btn'); if(_q__fa_group_btn) _q__fa_group_btn.addEventListener('click',()=>openFahrausweisChooser(g));
     const _q__instr_inv_btn=card.querySelector('.instr-inv-btn'); if(_q__instr_inv_btn) _q__instr_inv_btn.addEventListener('click',()=>openInstrGroupInvoiceDialog(g));
@@ -6391,6 +6391,247 @@ function instrGroupCertDownload(isADR, isKurs){
 
 
 // ── Anwesenheitsliste ────────────────────────────────────────────────────
+
+// Lehrgang hat einen Kursplan zugeordnet?
+function _hatKursplan(g){
+  return (g.entries||[]).some(function(e){
+    return e && e.kursplanId;
+  });
+}
+
+// -- Anwesenheitsliste je Kurstag (BGQ) ----
+// Holt die Kurstage ueber die kursplan_id
+// des Lehrgangs, die Teilnehmer kommen aus
+// dem Lehrgang selbst.
+async function _ladeKurstage(kpId){
+  try{
+    let url = MAIN_URL;
+    url += '/rest/v1/bkrfqg_kurstage';
+    url += '?select=datum,beginn,ende';
+    url += ',stunden,gegenstand';
+    url += '&kursplan_id=eq.' + kpId;
+    url += '&order=datum';
+    const r = await fetch(url, {
+      headers: mainHeaders()
+    });
+    if(!r.ok){
+      console.warn('Kurstage HTTP ' + r.status);
+      return [];
+    }
+    return await r.json();
+  }catch(e){
+    console.warn('Kurstage', e.message);
+    return [];
+  }
+}
+
+function _bandTitel(g){
+  const m = (g||'').match(/^Band [^:]+:\s*(.*)/);
+  return m ? m[1].trim() : (g || '');
+}
+
+async function printTagesListe(g){
+  const kpId = (g.entries||[])
+    .map(function(e){ return e && e.kursplanId; })
+    .filter(Boolean)[0];
+  if(!kpId){
+    toast('Kein Kursplan zugeordnet', 'err');
+    return;
+  }
+  toast('Kurstage werden geladen ...');
+  const kt = await _ladeKurstage(kpId);
+  if(!kt.length){
+    toast('Keine Kurstage gefunden', 'err');
+    return;
+  }
+  const WT = ['Sonntag','Montag','Dienstag',
+    'Mittwoch','Donnerstag','Freitag','Samstag'];
+  const tn = (g.entries||[])
+    .map(function(e){
+      const p = state.participants.find(
+        function(x){ return x.id === e.participant; });
+      if(!p) return null;
+      const nach = p.lastName || p.last_name
+        || p.nachname || '';
+      const vor = p.firstName || p.first_name
+        || p.vorname || '';
+      let nm = (nach + ', ' + vor)
+        .replace(/^, |, $/,'');
+      if(!nm && typeof pFullName === 'function'){
+        nm = pFullName(p);
+      }
+      const gb = p.birth || p.geburtsdatum || '';
+      return { name: nm, geb: gb ? fmt(gb) : '' };
+    })
+    .filter(function(x){ return x && x.name; })
+    .sort(function(a,b){
+      return a.name.localeCompare(b.name,'de');
+    });
+  const tage = {};
+  kt.forEach(function(k){
+    if(!tage[k.datum]) tage[k.datum] = [];
+    tage[k.datum].push(k);
+  });
+  const daten = Object.keys(tage).sort();
+  const logo = window.FST_LOGO || '';
+  const blaetter = daten.map(function(datum, idx){
+    const s = tage[datum];
+    const d = new Date(datum + 'T12:00');
+    const datStr = d.toLocaleDateString('de-DE',
+      {day:'2-digit',month:'long',year:'numeric'});
+    const std = Math.round(s.reduce(
+      function(a,k){ return a+(k.stunden||0); },0)*10)/10;
+    const beg = s[0].beginn
+      ? s[0].beginn.slice(0,5) : '08:00';
+    const letzt = s[s.length-1];
+    const end = letzt.ende
+      ? letzt.ende.slice(0,5) : '15:45';
+    const themen = s.map(function(k){
+      return _bandTitel(k.gegenstand);
+    }).filter(function(v,i,a){
+      return v && a.indexOf(v) === i;
+    });
+    const anzahl = Math.max(tn.length + 3, 12);
+    let zeilen = '';
+    for(let i=0; i<anzahl; i++){
+      const t = tn[i];
+      zeilen += '<tr><td class="nr">' + (i+1)
+        + '</td><td>' + (t ? _esc(t.name) : '')
+        + '</td><td class="geb">'
+        + (t ? t.geb : '')
+        + '</td><td class="sig"></td></tr>';
+    }
+    let h = '<div class="blatt"><div class="kopf">';
+    if(logo) h += '<img src="' + logo
+      + '" class="logo" alt="">';
+    h += '<div><div class="eyebrow">'
+      + 'Anwesenheitsliste</div>';
+    h += '<div class="titel">'
+      + _esc(g.type||'') + '</div>';
+    h += '<div class="sub">Fahrschulteam Lingen'
+      + '</div></div>';
+    h += '<div class="tagnr">Kurstag<br><strong>'
+      + (idx+1) + ' / ' + daten.length
+      + '</strong></div></div>';
+    h += '<div class="infobox">';
+    h += '<div><span>Datum</span><strong>'
+      + WT[d.getDay()] + ', ' + datStr
+      + '</strong></div>';
+    h += '<div><span>Uhrzeit</span><strong>'
+      + beg + ' \u2013 ' + end + ' Uhr'
+      + '\u00a0\u00b7\u00a0' + std
+      + ' Std.</strong></div>';
+    h += '</div>';
+    if(themen.length){
+      h += '<div class="themen"><span>Themen'
+        + '</span>' + _esc(themen.join(' \u00b7 '))
+        + '</div>';
+    }
+    h += '<table><thead><tr>';
+    h += '<th class="nr">Lfd. Nr</th>';
+    h += '<th>Name, Vorname</th>';
+    h += '<th class="geb">Geb.-Datum</th>';
+    h += '<th class="sig">Unterschrift</th>';
+    h += '</tr></thead><tbody>' + zeilen
+      + '</tbody></table>';
+    h += '<div class="unten">';
+    h += '<div class="linie">Ort, Datum</div>';
+    h += '<div class="linie">'
+      + 'Unterschrift Dozent / Ausbilder</div>';
+    h += '</div>';
+    h += '<div class="fuss"><span>'
+      + 'Fahrschulteam Lingen \u00b7 '
+      + 'Rheiner Str. 158 \u00b7 49809 Lingen'
+      + '</span><span>Blatt ' + (idx+1)
+      + ' von ' + daten.length
+      + '</span></div></div>';
+    return h;
+  }).join('');
+  let css = '';
+  css += '*{margin:0;padding:0;';
+  css += 'box-sizing:border-box}';
+  css += 'body{font-family:Arial,sans-serif;';
+  css += 'font-size:10pt;color:#3F4B57}';
+  css += '@page{size:A4;margin:12mm 10mm 10mm}';
+  css += '@media screen{body{max-width:210mm;';
+  css += 'margin:0 auto;padding:14mm 12mm}';
+  css += '.blatt{margin-bottom:24px;';
+  css += 'border-bottom:2px dashed #ddd;';
+  css += 'padding-bottom:24px}}';
+  css += '@media print{.blatt{';
+  css += 'page-break-after:always}';
+  css += '.blatt:last-child{';
+  css += 'page-break-after:auto}}';
+  css += '.kopf{display:flex;';
+  css += 'justify-content:space-between;';
+  css += 'align-items:flex-start;gap:14px;';
+  css += 'border-bottom:3px solid #C0001A;';
+  css += 'padding-bottom:8px;margin-bottom:12px}';
+  css += '.logo{height:44px;float:left;';
+  css += 'margin-right:12px}';
+  css += '.eyebrow{font-size:8pt;color:#C0001A;';
+  css += 'font-weight:700;letter-spacing:.05em;';
+  css += 'text-transform:uppercase}';
+  css += '.titel{font-size:14pt;font-weight:800;';
+  css += 'margin:2px 0;color:#1a1a1a}';
+  css += '.sub{font-size:8.5pt;color:#555}';
+  css += '.tagnr{font-size:8pt;color:#555;';
+  css += 'text-align:right;white-space:nowrap}';
+  css += '.tagnr strong{font-size:13pt;';
+  css += 'color:#C0001A}';
+  css += '.infobox{display:flex;gap:18px;';
+  css += 'background:#f9f9f9;';
+  css += 'border:1px solid #e5e5e5;';
+  css += 'border-radius:4px;padding:7px 12px;';
+  css += 'margin-bottom:8px;font-size:9pt}';
+  css += '.infobox div{display:flex;';
+  css += 'flex-direction:column}';
+  css += '.infobox span{font-size:7.5pt;';
+  css += 'color:#888;text-transform:uppercase}';
+  css += '.themen{font-size:8.5pt;color:#555;';
+  css += 'margin-bottom:10px}';
+  css += '.themen span{font-size:7.5pt;';
+  css += 'color:#888;text-transform:uppercase;';
+  css += 'margin-right:6px}';
+  css += 'table{width:100%;';
+  css += 'border-collapse:collapse}';
+  css += 'th{background:#C0001A;color:#fff;';
+  css += 'font-size:8.5pt;font-weight:700;';
+  css += 'text-align:left;padding:5px 7px}';
+  css += 'td{border:1px solid #d9d9d9;';
+  css += 'padding:0 7px;height:9mm;';
+  css += 'font-size:9.5pt}';
+  css += 'th.nr,td.nr{width:16mm;';
+  css += 'text-align:center;color:#888}';
+  css += 'th.geb,td.geb{width:28mm}';
+  css += 'th.sig,td.sig{width:72mm}';
+  css += 'tbody tr:nth-child(even) td{';
+  css += 'background:#fafafa}';
+  css += '.unten{display:flex;gap:40px;';
+  css += 'margin-top:14px}';
+  css += '.linie{flex:1;';
+  css += 'border-top:1px solid #999;';
+  css += 'padding-top:3px;font-size:8pt;';
+  css += 'color:#777}';
+  css += '.fuss{display:flex;';
+  css += 'justify-content:space-between;';
+  css += 'font-size:7.5pt;color:#aaa;';
+  css += 'border-top:1px solid #e5e5e5;';
+  css += 'margin-top:10px;padding-top:4px}';
+  let html = '<!DOCTYPE html><html lang="de">';
+  html += '<head><meta charset="UTF-8">';
+  html += '<title>Anwesenheitsliste</title>';
+  html += '<style>' + css + '</style></head>';
+  html += '<body>' + blaetter;
+  html += '<scr' + 'ipt>setTimeout(function(){';
+  html += 'window.print();},400);</scr' + 'ipt>';
+  html += '</body></html>';
+  const w = window.open('','_blank',
+    'width=900,height=1000');
+  w.document.write(html);
+  w.document.close();
+}
+
 function printAttendanceList(g, isInstr){ try{
   if(!window.jspdf||!window.jspdf.jsPDF){toast('PDF-Bibliothek nicht geladen');return;}
   const {jsPDF}=window.jspdf;
