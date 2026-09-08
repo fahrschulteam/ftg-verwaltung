@@ -8674,6 +8674,19 @@ function openCourseGroup(g){
         <div class="field" style="margin:0"><label>Von (Startdatum)</label><input type="date" id="m_date" value="${refEntry.dateFrom||refEntry.date||today()}" onchange="courseAutoDate()"></div>
         <div class="field" style="margin:0"><label>Bis (Enddatum)</label><input type="date" id="m_dateTo" value="${refEntry.dateTo||refEntry.dateFrom||refEntry.date||today()}" onchange="courseAutoHours()"></div>
       </div>
+      <div class="field" id="m_kursplanRow"
+        style="margin:12px 0 0;display:none">
+        <label>Kursplan (BKrFQG)</label>
+        <select id="m_kursplan">
+          <option value="">\u2013 kein
+          Kursplan zugeordnet \u2013</option>
+        </select>
+        <div style="font-size:.75rem;
+          color:#6b7280;margin-top:4px">
+          Liefert die Kurstage f\u00fcr die
+          Anwesenheitsliste je Schulungstag.
+        </div>
+      </div>
       <div class="field" style="margin:12px 0 0">
         <label>Öffentliche Einzeltermine (erscheinen im Kurskalender – optional)</label>
         <div id="m_termine_list">${_termineRowsHtml(refEntry.note)}</div>
@@ -8728,6 +8741,9 @@ function openCourseGroup(g){
       <button class="btn" onclick="saveCourseGroup('${g.entries.map(e=>e.id).join(',')}')">Speichern</button>
     </div>`;
   showModal();
+  
+  // Kursplan-Auswahl im Gruppendialog
+  groupKursplanInit(refEntry);
   const groupDefaultThemes = refEntry.themes&&refEntry.themes.length ? refEntry.themes : ctype(refEntry.type).themes||[];
   courseThemes(groupDefaultThemes);
   toggleLSDauer();
@@ -8742,6 +8758,16 @@ function openCourseGroup(g){
     }
   });
   fesRenderBausteine();
+}
+
+
+// Fuellt die Kursplan-Auswahl im
+// Gruppendialog und blendet sie nur bei
+// mehrtaegigen Lehrgangstypen ein.
+function groupKursplanInit(refEntry){
+  const vorher = refEntry
+    ? (refEntry.kursplanId || '') : '';
+  kursplanFeldInit(vorher);
 }
 
 function saveCourseGroup(idsCsv){
