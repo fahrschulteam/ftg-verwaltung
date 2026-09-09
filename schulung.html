@@ -5074,6 +5074,7 @@ function renderCourses(){
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:10px">'+
         '<div class="hint" style="display:flex;flex-direction:column;gap:4px">'+
           '<span>📅 '+dateStr+'</span>'+
+          '<span>👤 '+(dozName(g.dozent||'')?_esc(dozName(g.dozent)):'<span style="color:#C0001A">Kein Dozent eingetragen</span>')+'</span>'+
           (g.location?'<span>📍 '+g.location+'</span>':'')+
           (dauer?'<span>⏱ '+dauer+'</span>':'')+
           (firms?'<span>🏢 '+firms+'</span>':'')+
@@ -5262,7 +5263,7 @@ function renderInstructions(){
       key, date:i.dateFrom||i.date, dateTo:i.dateTo||i.dateFrom||i.date,
       instrType:i.instrType||currentInstrType,
       isADR: isAll ? (i.instrType==='ADR'||!i.instrType&&!!state.adrInstructions.find(x=>x.id===i.id)) : isADR,
-      location:i.location||'', duration:i.duration||0,
+      location:i.location||'', dozent:i.dozent||'', duration:i.duration||0,
       topics:i.topics||[], note:i.note||'', entries:[]
     };
     groups[key].entries.push(i);
@@ -5403,6 +5404,7 @@ function renderInstructions(){
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:10px">'+
         '<div class="hint" style="display:flex;flex-direction:column;gap:4px">'+
           '<span>📅 '+dateStr+'</span>'+
+          '<span>👤 '+(dozName(g.dozent||'')?_esc(dozName(g.dozent)):'<span style="color:#C0001A">Kein Dozent eingetragen</span>')+'</span>'+
           (g.location?'<span>📍 '+g.location+'</span>':'')+
           (dauer?'<span>⏱ '+dauer+'</span>':'')+
           (firms?'<span>🏢 '+firms+'</span>':'')+
@@ -13132,7 +13134,11 @@ function buildDozentOpts(selectedId, typ){
   const req = typ ? REQUIRED_QUAL_BY_TYPE[typ] : null;
   const passt = d => !req || req.some(q => Array.isArray(d.quals) && d.quals.includes(q));
   // Nur qualifizierte Dozenten — bereits Ausgewählte immer mitanzeigen (mit Warnung falls nicht qualifiziert)
-  const stammGefiltert = stammDozenten.filter(d => passt(d) || d.id === selectedId);
+  // Fahrlehrer des Fahrschulteams erscheinen immer - unabhaengig vom Kurstyp
+  const istFahrlehrer = d => Array.isArray(d.quals)
+    && d.quals.indexOf('Fahrlehrer (BE/C/CE/D)') >= 0;
+  const stammGefiltert = stammDozenten.filter(d =>
+    passt(d) || istFahrlehrer(d) || d.id === selectedId);
   const externGefiltert = state.dozenten.filter(d => passt(d) || d.id === selectedId);
   function opt(d) {
     const nichtQual = req && !passt(d);
