@@ -270,7 +270,7 @@ async function onAuthenticated(user) {
       await window.ladeMitarbeiter();
     }
     const f = document.getElementById('schulungFrame');
-if (f && !f.getAttribute('src')) f.setAttribute('src', 'schulung.html?v=20260909d');
+if (f && !f.getAttribute('src')) f.setAttribute('src', 'schulung.html?v=20260909e');
     // Fahrzeugkalender wird lazy geladen (nur bei Tab-Klick) → kein Hintergrund-Polling
   }, 1500);
 }

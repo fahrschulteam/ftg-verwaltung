@@ -2015,7 +2015,9 @@ function mitarbeiterZuDozent(m) {
   const quals = new Set();
   if (m.bereich === 'fahrlehrer') quals.add('Fahrlehrer (BE/C/CE/D)');
   Object.entries(QUAL_MAP).forEach(([feld, label]) => { if (m[feld]) quals.add(label); });
-  return { id: 'ma_' + m.id, name: m.vorname + ' ' + m.nachname, quals: [...quals], _stamm: true };
+  const _nm = m.vorname + ' ' + m.nachname + (m.firma ? ' (' + m.firma + ')' : '');
+  return { id: 'ma_' + m.id, name: _nm, quals: [...quals], _stamm: true,
+    _extern: m.bereich === 'extern' };
 }
 
 window.addEventListener('message', e => {
@@ -2029,7 +2031,9 @@ window.addEventListener('message', e => {
 
   // ── Mitarbeiter (Dozenten) ──
   if (e.data.type === 'FST_MITARBEITER') {
-    const aktive = (e.data.mitarbeiter || []).filter(m => m.status === 'aktiv');
+    // Externe aus dem Personal-Modul nur dann, wenn sie Dozenten sind
+    const aktive = (e.data.mitarbeiter || []).filter(m => m.status === 'aktiv'
+      && (m.bereich !== 'extern' || m.rolle === 'Externer Dozent'));
     stammDozenten = aktive.map(mitarbeiterZuDozent);
   // Externe Dozenten bereinigen die jetzt als MA bekannt sind
   bereinigeDoppelteDozenten();
@@ -13146,18 +13150,21 @@ function buildDozentOpts(selectedId, typ){
     const style = nichtQual ? ' style="color:#C0001A"' : '';
     return `<option value="${d.id}"${d.id===selectedId?' selected':''}${style}>${_esc(d.name)}${warnung}</option>`;
   }
+  // Externe aus dem Personal-Modul zu den externen Dozenten stellen
+  const stammIntern = stammGefiltert.filter(d => !d._extern);
+  const externAlle  = stammGefiltert.filter(d => d._extern).concat(externGefiltert);
   let html = '<option value="">— Dozent wählen —</option>';
-  if(stammGefiltert.length){
+  if(stammIntern.length){
     html += '<optgroup label="── Fahrschulteam Mitarbeiter ──">';
-    html += stammGefiltert.map(opt).join('');
+    html += stammIntern.map(opt).join('');
     html += '</optgroup>';
   }
-  if(externGefiltert.length){
+  if(externAlle.length){
     html += '<optgroup label="── Externe Dozenten ──">';
-    html += externGefiltert.map(opt).join('');
+    html += externAlle.map(opt).join('');
     html += '</optgroup>';
   }
-  if(req && !stammGefiltert.length && !externGefiltert.length){
+  if(req && !stammIntern.length && !externAlle.length){
     html += `<option value="" disabled>— Kein Dozent mit passender Qualifikation —</option>`;
   }
   return html;

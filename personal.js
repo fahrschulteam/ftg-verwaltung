@@ -10,6 +10,19 @@ let personalState = {
   loaded: false,
 };
 
+const EXTERN_ROLLEN = [
+  'Externer Dozent',
+  'Externe Reinigung',
+  'Fensterreinigung',
+  'Fachkraft für Arbeitssicherheit',
+  'Betriebsarzt',
+  'Handwerk / Wartung',
+  'IT',
+  'Externe Buchhaltung',
+  'Steuerberater',
+  'Externe Sonstige',
+];
+
 const KLASSEN_ALLE = ['A','B','C','D'];
 
 const QUALIFIKATIONEN = [
@@ -71,6 +84,7 @@ window.renderPersonal = async function() {
           <button class="mod-side-btn" data-pb="fahrlehrer" onclick="setPBereich('fahrlehrer')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px;flex-shrink:0"><circle cx="12" cy="8" r="6"/><path d="M8.21 13.89 7 22l5-3 5 3-1.21-8.11"/></svg><span class="mod-lbl">Fahrlehrer</span></button>
           <button class="mod-side-btn" data-pb="verwaltung" onclick="setPBereich('verwaltung')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px;flex-shrink:0"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg><span class="mod-lbl">Verwaltung</span></button>
           <button class="mod-side-btn" data-pb="sonstige" onclick="setPBereich('sonstige')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px;flex-shrink:0"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span class="mod-lbl">Sonstige</span></button>
+          <button class="mod-side-btn" data-pb="extern" onclick="setPBereich('extern')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px;flex-shrink:0"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg><span class="mod-lbl">Externe</span></button>
         </nav></aside>
         <div class="mod-main" id="personal-content"></div>
       </div>`;
@@ -115,7 +129,7 @@ function jubilaeumInfo(m) {
 }
 
 function maZeile(m) {
-  const BDOT = { fahrlehrer:'#2A6CAE', verwaltung:'#D97706', sonstige:'#6B7280' };
+  const BDOT = { fahrlehrer:'#2A6CAE', verwaltung:'#D97706', sonstige:'#6B7280', extern:'#475569' };
   const quals = QUALIFIKATIONEN.filter(q=>m[q.feld]).map(q=>`<span class="qchip">${q.kuerzel}</span>`).join('');
   const fbStatus = (m.bereich==='fahrlehrer' && typeof fortbildungsStatus==='function') ? fortbildungsStatus(m, fortbildungenCache) : null;
   const fbDot = (fbStatus && fbStatus.gesamt) ? `<span class="fb-mini-dot" style="background:${statusFarbe(fbStatus.gesamt)}" title="Fortbildung: ${statusLabel(fbStatus.gesamt)}"></span>` : '';
@@ -124,7 +138,7 @@ function maZeile(m) {
   const jub = jubilaeumInfo(m);
   const jubBadge = jub ? `<span class="jub-badge ${jub.heute?'heute':''}" title="${jub.jahre} Jahre am ${jub.datum}">🏆 ${jub.heute?'Jubiläum!':jub.diffTage+'T'}</span>` : '';
   return `<tr>
-    <td><div class="ma-name-cell"><span class="bdot" style="background:${BDOT[m.bereich]||'#6B7280'}"></span><div class="ma-avatar">${(m.vorname?.[0]||'')}${(m.nachname?.[0]||'')}</div><div><div class="ma-name">${fbDot}${m.nachname||'(ohne Nachname)'}, ${m.vorname||'(ohne Vorname)'} ${jubBadge}</div><div class="ma-sub">${m.rolle||'–'}${m.ort?' · '+m.ort:''}</div></div></div></td>
+    <td><div class="ma-name-cell"><span class="bdot" style="background:${BDOT[m.bereich]||'#6B7280'}"></span><div class="ma-avatar">${(m.vorname?.[0]||'')}${(m.nachname?.[0]||'')}</div><div><div class="ma-name">${fbDot}${m.nachname||'(ohne Nachname)'}, ${m.vorname||'(ohne Vorname)'} ${jubBadge}</div><div class="ma-sub">${m.rolle||'–'}${m.firma?' · '+m.firma:''}${m.ort?' · '+m.ort:''}</div></div></div></td>
     <td>${kl}</td>
     <td><div class="qchips">${quals||'–'}</div></td>
     <td>${eintritt}</td>
@@ -187,8 +201,12 @@ function oeffneMaForm(id) {
                 <option ${m?.rolle==='Minijob'?'selected':''}>Minijob</option>
                 <option ${m?.rolle==='Sonstige'?'selected':''}>Sonstige</option>
               </optgroup>
+              <optgroup label="Externe">
+                ${EXTERN_ROLLEN.map(r=>`<option ${m?.rolle===r?'selected':''}>${r}</option>`).join('')}
+              </optgroup>
             </select></div>
           <div class="frow"><label>Eintrittsdatum</label><input type="date" id="mf-eintritt" value="${m?.eintrittsdatum||''}"></div>
+          <div class="frow" id="mf-firma-row" style="display:none"><label>Firma / Anbieter</label><input id="mf-firma" value="${m?.firma||''}" placeholder="z.B. Muster GmbH"></div>
         </div>
         <div id="mf-fahrlehrer-block">
           <div class="fsec">Fahrerlaubnisklassen</div>
@@ -220,6 +238,7 @@ function oeffneMaForm(id) {
               <label class="chip" style="margin-top:4px"><input type="checkbox" id="mf-bkf-erfahrung" ${m?.bkf_berufserfahrung?'checked':''}>vorhanden</label></div>
           </div>
         </div>
+        <div id="mf-lohn-block">
         <div class="fsec">Buchhaltung / Lohnabrechnung</div>
         <div class="fgrid">
           <div class="frow"><label>Steuerklasse</label><input id="mf-steuerklasse" value="${m?.steuerklasse||''}" placeholder="z.B. 1"></div>
@@ -238,6 +257,7 @@ function oeffneMaForm(id) {
           <div class="frow"><label>SV-Status</label><input id="mf-sv-status" value="${m?.sv_status||''}"></div>
         </div>
         <div class="frow"><label>IBAN</label><input id="mf-iban" value="${m?.iban||''}" placeholder="DE..."></div>
+        </div>
         <div class="fsec">Individuelle Felder <button class="btn btn-outline btn-sm" style="float:right;font-size:10px" onclick="mfAddCustom()">＋ Feld</button></div>
         <div id="mf-custom">${cf.map(c=>customFieldRow(c.label,c.value)).join('')}</div>
         <div class="fsec">Notiz</div>
@@ -259,7 +279,14 @@ function mfAddCustom() { document.getElementById('mf-custom').insertAdjacentHTML
 function mfRolleChange() {
   const rolle = document.getElementById('mf-rolle').value;
   const istFL = ['Fahrlehrer','Fahrlehrerin','Fahrlehrer-Anwärter'].includes(rolle);
-  document.getElementById('mf-fahrlehrer-block').style.display = istFL ? '' : 'none';
+  const istExtern = EXTERN_ROLLEN.includes(rolle);
+  const istExtDoz = rolle === 'Externer Dozent';
+  document.getElementById('mf-fahrlehrer-block').style.display =
+    (istFL || istExtDoz) ? '' : 'none';
+  const lohn = document.getElementById('mf-lohn-block');
+  if (lohn) lohn.style.display = istExtern ? 'none' : '';
+  const firma = document.getElementById('mf-firma-row');
+  if (firma) firma.style.display = istExtern ? '' : 'none';
 }
 function schliesseMaForm() { document.getElementById('ma-form-modal')?.remove(); }
 
@@ -268,7 +295,8 @@ async function speichereMa() {
   const vorname = v('mf-vorname'), nachname = v('mf-nachname');
   if (!vorname || !nachname) { toast('Bitte Vor- und Nachname eingeben.','err'); return; }
   const rolle = document.getElementById('mf-rolle').value;
-  const bereich = ['Fahrlehrer','Fahrlehrerin','Fahrlehrer-Anwärter'].includes(rolle) ? 'fahrlehrer'
+  const bereich = EXTERN_ROLLEN.includes(rolle) ? 'extern'
+                : ['Fahrlehrer','Fahrlehrerin','Fahrlehrer-Anwärter'].includes(rolle) ? 'fahrlehrer'
                 : ['Bürokraft','Verwaltungsleitung','Buchhaltung','Inhaber / Geschäftsführung'].includes(rolle) ? 'verwaltung'
                 : 'sonstige';
   const klassen = [...document.querySelectorAll('.mf-klasse:checked')].map(c=>c.value);
@@ -278,7 +306,7 @@ async function speichereMa() {
     geburtsdatum: v('mf-geburtsdatum')||null, geburtsort: v('mf-geburtsort')||null,
     strasse: v('mf-strasse')||null, plz: v('mf-plz')||null, ort: v('mf-ort')||null,
     telefon: v('mf-telefon')||null, email: v('mf-email')||null,
-    rolle, bereich, eintrittsdatum: v('mf-eintritt')||null,
+    rolle, bereich, firma: v('mf-firma')||null, eintrittsdatum: v('mf-eintritt')||null,
     frist_fahrlg: parseInt(v('mf-frist-fahrlg'))||null,
     frist_bkf: parseInt(v('mf-frist-bkf'))||null,
     frist_afl: parseInt(v('mf-frist-afl'))||null,
@@ -303,7 +331,7 @@ async function speichereMa() {
   const id = document.getElementById('mf-id').value;
   let error;
   if (id) { ({ error } = await sb.from('mitarbeiter').update(data).eq('id', id)); }
-  else { data.status = 'aktiv'; data.azk_sichtbar = (bereich !== 'sonstige'); ({ error } = await sb.from('mitarbeiter').insert(data)); }
+  else { data.status = 'aktiv'; data.azk_sichtbar = (bereich !== 'sonstige' && bereich !== 'extern'); ({ error } = await sb.from('mitarbeiter').insert(data)); }
   if (error) { toast('Fehler: ' + error.message,'err'); return; }
   window.logAenderung?.('personal', id ? 'Mitarbeiter bearbeitet' : 'Mitarbeiter angelegt', `${data.vorname||''} ${data.nachname||''}`.trim());
   schliesseMaForm();
