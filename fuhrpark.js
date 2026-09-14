@@ -34,6 +34,51 @@ function faelligkeitStatus(datum) {
 
 function haltungLabel(h) { return (FZ_HALTUNG.find(x=>x[0]===h)||[])[1] || h; }
 
+// ── Strich-Icons ─────────────────────────────────
+// groesse steuert die Kantenlaenge in Pixeln (Standard 14).
+function FIC(n, groesse){
+  const g = groesse || 14;
+  const P = {
+    drucker:'<polyline points="6 9 6 2 18 2 18 9"/>'
+      +'<path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>'
+      +'<rect x="6" y="14" width="12" height="8"/>',
+    auto:'<path d="M5 17h14M5 17a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm18 0a2 2 0 1 1-4 0 2 2 0 0 1 4 0z"/>'
+      +'<path d="M3 17v-5l2-5h11l3 5v5"/><line x1="7" y1="12" x2="19" y2="12"/>',
+    ausweis:'<rect x="2" y="5" width="20" height="14" rx="2"/>'
+      +'<circle cx="8" cy="11" r="2"/><path d="M5 16c.7-1.3 1.8-2 3-2s2.3.7 3 2"/>'
+      +'<line x1="15" y1="10" x2="19" y2="10"/><line x1="15" y1="14" x2="19" y2="14"/>',
+    doc:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>'
+      +'<polyline points="14 2 14 8 20 8"/>'
+      +'<line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/>',
+    stift:'<path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/>',
+    muell:'<polyline points="3 6 5 6 21 6"/>'
+      +'<path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>',
+    warnung:'<path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/>'
+      +'<line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>',
+    zahnrad:'<circle cx="12" cy="12" r="3"/>'
+      +'<path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06'
+      +'a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09'
+      +'A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06'
+      +'A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9'
+      +'a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6'
+      +'a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33'
+      +'l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9V9a1.65 1.65 0 0 0 1.51 1H21'
+      +'a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>',
+    sonne:'<circle cx="12" cy="12" r="4"/>'
+      +'<line x1="12" y1="2" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="22"/>'
+      +'<line x1="2" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="22" y2="12"/>'
+      +'<line x1="4.9" y1="4.9" x2="7" y2="7"/><line x1="17" y1="17" x2="19.1" y2="19.1"/>'
+      +'<line x1="4.9" y1="19.1" x2="7" y2="17"/><line x1="17" y1="7" x2="19.1" y2="4.9"/>',
+    ordner:'<path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>',
+    schlossauf:'<rect x="3" y="11" width="18" height="11" rx="2"/>'
+      +'<path d="M7 11V7a5 5 0 0 1 9.9-1"/>'
+  };
+  return '<svg viewBox="0 0 24 24" width="'+g+'" height="'+g+'" fill="none" '
+    +'stroke="currentColor" stroke-width="2" stroke-linecap="round" '
+    +'stroke-linejoin="round" style="vertical-align:-2px;flex:none">'
+    +(P[n]||'')+'</svg>';
+}
+
 window.renderFuhrpark = async function() {
   const view = document.getElementById('view-fuhrpark');
   if (!fuhrparkState.loaded) {
@@ -96,10 +141,10 @@ window.renderFuhrpark = async function() {
     <div class="toolbar" style="margin-bottom:16px">
       ${canWrite()?'<button class="btn btn-primary btn-sm" onclick="oeffneFahrzeugForm()">＋ Fahrzeug</button>':''}
       <button class="btn btn-outline btn-sm" onclick="exportFuhrparkXlsx()">⬇ Excel</button>
-      <button class="btn btn-outline btn-sm" onclick="fuhrparkBerichte()" title="Berichte">🖨</button>
+      <button class="btn btn-outline btn-sm" onclick="fuhrparkBerichte()" title="Berichte">${FIC('drucker')}</button>
     </div>
     ${liste.length===0
-      ? `<div class="module-placeholder"><div class="ph-icon">🚗</div><h3>Keine Fahrzeuge</h3><p>${canWrite()?'Lege mit „＋ Fahrzeug" das erste an.':'Noch keine Fahrzeuge erfasst.'}</p></div>`
+      ? `<div class="module-placeholder"><div class="ph-icon">${FIC('auto',44)}</div><h3>Keine Fahrzeuge</h3><p>${canWrite()?'Lege mit „＋ Fahrzeug" das erste an.':'Noch keine Fahrzeuge erfasst.'}</p></div>`
       : `<div class="fz-grid">${cards}</div>`}`;
 };
 
@@ -123,7 +168,7 @@ function oeffneFahrzeugForm(id) {
         <input type="hidden" id="fz-id" value="${v?.id||''}">
 
         ${canWrite()?`<div style="background:#EFF6FF;border:1px solid #93c5fd;border-radius:8px;padding:12px 14px;margin-bottom:16px;">
-          <div style="font-weight:600;font-size:13px;color:var(--blau-dark);margin-bottom:3px;">🪪 Fahrzeugschein automatisch auslesen</div>
+          <div style="font-weight:600;font-size:13px;color:var(--blau-dark);margin-bottom:3px;">${FIC('ausweis')} Fahrzeugschein automatisch auslesen</div>
           <div style="font-size:12px;color:var(--grau);margin-bottom:8px;">Foto oder PDF der Zulassungsbescheinigung Teil I wählen – die Felder werden automatisch vorausgefüllt. Bitte danach prüfen.</div>
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
             <input type="file" id="fz-scan-file" accept="application/pdf,image/*" style="font-size:12px;">
@@ -261,7 +306,7 @@ function oeffneFahrzeug(id) {
   }
 
   const zb1 = v.zb1_path
-    ? `<div class="doc-row"><span>📄 ${v.zb1_dateiname||'Zulassungsbescheinigung Teil 1'}</span><button class="btn btn-outline btn-sm" onclick="oeffneFzDoc('${v.zb1_path}')">Öffnen</button></div>`
+    ? `<div class="doc-row"><span>${FIC('doc')} ${v.zb1_dateiname||'Zulassungsbescheinigung Teil 1'}</span><button class="btn btn-outline btn-sm" onclick="oeffneFzDoc('${v.zb1_path}')">Öffnen</button></div>`
     : `<div class="doc-row" style="color:var(--grau)">Noch nicht hinterlegt</div>`;
 
   const modal = document.createElement('div');
@@ -276,9 +321,9 @@ function oeffneFahrzeug(id) {
       <div class="modal-body">
         <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
           ${statusBtn}
-          ${canWrite()?`<button class="btn btn-outline btn-sm" onclick="document.getElementById('fz-detail').remove();oeffneFahrzeugForm('${v.id}')">✎ Bearbeiten</button>`:''}
-          <button class="btn btn-outline btn-sm" onclick="druckeFahrzeugDatenblatt('${v.id}')">🖨 Datenblatt</button>
-          ${(v.status==='archiviert'&&canWrite())?`<button class="btn btn-danger btn-sm" style="margin-left:auto" onclick="loescheFahrzeug('${v.id}')">🗑 Endgültig löschen</button>`:''}
+          ${canWrite()?`<button class="btn btn-outline btn-sm" onclick="document.getElementById('fz-detail').remove();oeffneFahrzeugForm('${v.id}')">${FIC('stift')} Bearbeiten</button>`:''}
+          <button class="btn btn-outline btn-sm" onclick="druckeFahrzeugDatenblatt('${v.id}')">${FIC('drucker')} Datenblatt</button>
+          ${(v.status==='archiviert'&&canWrite())?`<button class="btn btn-danger btn-sm" style="margin-left:auto" onclick="loescheFahrzeug('${v.id}')">${FIC('muell')} Endgültig löschen</button>`:''}
         </div>
         <table class="akte-table"><tbody>${rows}</tbody></table>
 
@@ -287,7 +332,7 @@ function oeffneFahrzeug(id) {
         ${canWrite()?`<div style="margin-top:6px"><input type="file" id="fz-zb1-file" accept="application/pdf,image/*" style="font-size:12px"><button class="btn btn-outline btn-sm" onclick="uploadZB1('${v.id}')">⬆ Hochladen</button></div>`:''}
 
         <div class="fsec">TÜV-Datenblatt Fahrerassistenzsysteme</div>
-        <div class="doc-row"><span>🛂 FAS-Datenblatt (TÜV-Original, vorausgefüllt)</span><button class="btn btn-outline btn-sm" onclick="druckeFASDatenblatt('${v.id}')">⬇ Erstellen</button></div>
+        <div class="doc-row"><span>${FIC('ausweis')} FAS-Datenblatt (TÜV-Original, vorausgefüllt)</span><button class="btn btn-outline btn-sm" onclick="druckeFASDatenblatt('${v.id}')">⬇ Erstellen</button></div>
         ${canWrite()?`
         <div style="background:var(--hell);border-radius:8px;padding:10px 12px;margin-top:7px;font-size:12px">
           <div style="margin-bottom:6px">Verbaute Assistenzsysteme automatisch ankreuzen lassen: Fahrzeug-Bestellung oder Ausstattungsliste (PDF/Foto) hochladen.</div>
@@ -295,7 +340,7 @@ function oeffneFahrzeug(id) {
           <button class="btn btn-primary btn-sm" onclick="leseBestellungFAS('${v.id}')">Bestellung auslesen</button>
           <div id="fz-best-status" style="margin-top:6px"></div>
         </div>`:''}
-        <div class="doc-row" id="unfall-row"><span>🚧 EU-Unfallbericht (offizielles Formular zum Ausdrucken)</span><button class="btn btn-outline btn-sm" onclick="oeffneUnfallVorlage()">⬇ Öffnen / Drucken</button></div>
+        <div class="doc-row" id="unfall-row"><span>${FIC('warnung')} EU-Unfallbericht (offizielles Formular zum Ausdrucken)</span><button class="btn btn-outline btn-sm" onclick="oeffneUnfallVorlage()">⬇ Öffnen / Drucken</button></div>
       </div>
       <div class="modal-footer">
         <button class="btn btn-outline" onclick="document.getElementById('fz-detail').remove()">Schließen</button>
@@ -333,10 +378,10 @@ function fuhrparkBerichte() {
   modal.id = 'fp-ber-modal';
   modal.innerHTML = `
     <div class="modal" style="width:560px">
-      <div class="modal-header"><h3>🖨 Fuhrpark-Berichte</h3><button class="close-btn" onclick="document.getElementById('fp-ber-modal').remove()">✕</button></div>
+      <div class="modal-header"><h3>${FIC('drucker')} Fuhrpark-Berichte</h3><button class="close-btn" onclick="document.getElementById('fp-ber-modal').remove()">✕</button></div>
       <div class="modal-body">
         <div class="ber-sec">Fahrzeugliste</div>
-        <div class="ber-row"><button class="btn btn-outline" onclick="druckeFahrzeugliste()">🖨 Komplette Liste (nach Eigentum/finanziert/geleast, mit Salden)</button></div>
+        <div class="ber-row"><button class="btn btn-outline" onclick="druckeFahrzeugliste()">${FIC('drucker')} Komplette Liste (nach Eigentum/finanziert/geleast, mit Salden)</button></div>
       </div>
       <div class="modal-footer"><button class="btn btn-outline" onclick="document.getElementById('fp-ber-modal').remove()">Schließen</button></div>
     </div>`;

@@ -63,6 +63,51 @@ function _uTageImJahr(j) {
   return ((j % 4 === 0 && j % 100 !== 0) || j % 400 === 0) ? 366 : 365;
 }
 
+// ── Strich-Icons ─────────────────────────────────
+// groesse steuert die Kantenlaenge in Pixeln (Standard 14).
+function ZIC(n, groesse){
+  const g = groesse || 14;
+  const P = {
+    drucker:'<polyline points="6 9 6 2 18 2 18 9"/>'
+      +'<path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>'
+      +'<rect x="6" y="14" width="12" height="8"/>',
+    auto:'<path d="M5 17h14M5 17a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm18 0a2 2 0 1 1-4 0 2 2 0 0 1 4 0z"/>'
+      +'<path d="M3 17v-5l2-5h11l3 5v5"/><line x1="7" y1="12" x2="19" y2="12"/>',
+    ausweis:'<rect x="2" y="5" width="20" height="14" rx="2"/>'
+      +'<circle cx="8" cy="11" r="2"/><path d="M5 16c.7-1.3 1.8-2 3-2s2.3.7 3 2"/>'
+      +'<line x1="15" y1="10" x2="19" y2="10"/><line x1="15" y1="14" x2="19" y2="14"/>',
+    doc:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>'
+      +'<polyline points="14 2 14 8 20 8"/>'
+      +'<line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/>',
+    stift:'<path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/>',
+    muell:'<polyline points="3 6 5 6 21 6"/>'
+      +'<path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>',
+    warnung:'<path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/>'
+      +'<line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>',
+    zahnrad:'<circle cx="12" cy="12" r="3"/>'
+      +'<path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06'
+      +'a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09'
+      +'A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06'
+      +'A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9'
+      +'a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6'
+      +'a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33'
+      +'l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9V9a1.65 1.65 0 0 0 1.51 1H21'
+      +'a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>',
+    sonne:'<circle cx="12" cy="12" r="4"/>'
+      +'<line x1="12" y1="2" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="22"/>'
+      +'<line x1="2" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="22" y2="12"/>'
+      +'<line x1="4.9" y1="4.9" x2="7" y2="7"/><line x1="17" y1="17" x2="19.1" y2="19.1"/>'
+      +'<line x1="4.9" y1="19.1" x2="7" y2="17"/><line x1="17" y1="7" x2="19.1" y2="4.9"/>',
+    ordner:'<path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>',
+    schlossauf:'<rect x="3" y="11" width="18" height="11" rx="2"/>'
+      +'<path d="M7 11V7a5 5 0 0 1 9.9-1"/>'
+  };
+  return '<svg viewBox="0 0 24 24" width="'+g+'" height="'+g+'" fill="none" '
+    +'stroke="currentColor" stroke-width="2" stroke-linecap="round" '
+    +'stroke-linejoin="round" style="vertical-align:-2px;flex:none">'
+    +(P[n]||'')+'</svg>';
+}
+
 function renderUrlaub() {
   const jahr = urlaubState.jahr;
   const tage = _uTageImJahr(jahr);
@@ -501,7 +546,7 @@ window.renderAZK = async function() {
       <td class="num ${negCls(ber.urlaubRest)}"><strong>${fmtNum(ber.urlaubRest)}</strong></td>
       <td class="num">${e ? fmtNum(e.krankheitstage) : '–'}</td>
       <td>
-        ${canWrite() ? `<button class="btn btn-outline btn-sm" onclick="azkErfassen('${ma.id}')" title="Bearbeiten">✎</button>` : ''}
+        ${canWrite() ? `<button class="btn btn-outline btn-sm" onclick="azkErfassen('${ma.id}')" title="Bearbeiten">${ZIC('stift')}</button>` : ''}
         ${canWrite() ? `<button class="btn btn-outline btn-sm" style="color:var(--rot)" onclick="azkMitarbeiterEntfernen('${ma.id}')" title="Aus der Liste entfernen">✕</button>` : ''}
       </td>
     </tr>`;
@@ -553,9 +598,9 @@ window.renderAZK = async function() {
       <h2>Arbeitszeit & Urlaub</h2>
       <select id="azk-monat" onchange="azkSetMonat(this.value)" class="azk-select">${monatOpts}</select>
       <span style="color:var(--grau);font-size:13px">${azkState.jahr}</span>
-      ${canWrite()?'<button class="btn btn-outline btn-sm" onclick="azkStartwerte()">⚙ Startwerte</button>':''}
-      <button class="btn btn-outline btn-sm" onclick="azkBerichte()">🖨 Berichte</button>
-      <button class="btn btn-outline btn-sm" onclick="azkSetAnsicht('urlaub')">🏖 Urlaubsjahr</button>
+      ${canWrite()?'<button class="btn btn-outline btn-sm" onclick="azkStartwerte()">'+ZIC('zahnrad')+' Startwerte</button>':''}
+      <button class="btn btn-outline btn-sm" onclick="azkBerichte()">${ZIC('drucker')} Berichte</button>
+      <button class="btn btn-outline btn-sm" onclick="azkSetAnsicht('urlaub')">${ZIC('sonne')} Urlaubsjahr</button>
       ${canWrite()?'<button class="btn btn-primary btn-sm" onclick="azkMitarbeiterHinzufuegen()">＋ Mitarbeiter</button>':''}
     </div>
     ${mas.length===0 ? '<div class="module-placeholder"><div class="ph-icon">⏱</div><h3>Keine Mitarbeiter</h3><p>Lege zuerst im Personal-Modul Mitarbeiter an.</p></div>' : `
@@ -725,18 +770,18 @@ function azkBerichte() {
   modal.id = 'azk-ber-modal';
   modal.innerHTML = `
     <div class="modal" style="width:480px;max-height:90vh">
-      <div class="modal-header"><h3>🖨 Arbeitszeit-Berichte</h3><button class="close-btn" onclick="document.getElementById('azk-ber-modal').remove()">✕</button></div>
+      <div class="modal-header"><h3>${ZIC('drucker')} Arbeitszeit-Berichte</h3><button class="close-btn" onclick="document.getElementById('azk-ber-modal').remove()">✕</button></div>
       <div class="modal-body">
         <div class="ber-sec">Gesamtübersicht</div>
         <p style="font-size:11px;color:var(--grau);margin-bottom:6px">Mitarbeiter für die Jahresübersicht ${azkState.jahr} hinzufügen oder entfernen (auch ausgeschiedene möglich):</p>
         <div style="max-height:180px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--radius);padding:6px 10px;margin-bottom:10px">
           ${checkRows || '<span style="font-size:12px;color:var(--grau)">Keine Mitarbeiter vorhanden.</span>'}
         </div>
-        <div class="ber-row"><button class="btn btn-outline" onclick="azkDruckGesamtAuswahl()">🖨 Gesamtübersicht drucken (Querformat)</button></div>
+        <div class="ber-row"><button class="btn btn-outline" onclick="azkDruckGesamtAuswahl()">${ZIC('drucker')} Gesamtübersicht drucken (Querformat)</button></div>
         <div class="ber-sec">Einzelner Mitarbeiter</div>
         <div class="ber-row">
           <select id="azk-ber-ma" style="flex:1">${opts}</select>
-          <button class="btn btn-outline" onclick="azkDruckEinzel(document.getElementById('azk-ber-ma').value)">🖨 Drucken</button>
+          <button class="btn btn-outline" onclick="azkDruckEinzel(document.getElementById('azk-ber-ma').value)">${ZIC('drucker')} Drucken</button>
         </div>
         <div class="ber-sec">Speicherort für unterschriebene Übersichten</div>
         <div id="azk-dir-status" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">${azkDirStatusHtml()}</div>
@@ -995,16 +1040,16 @@ async function azkClearDir() {
 }
 function azkDirStatusHtml() {
   if (!_azkDir) {
-    return `<button class="btn btn-outline" onclick="azkPickDir()" style="font-size:12px">📁 OneDrive-Ordner wählen</button>
+    return `<button class="btn btn-outline" onclick="azkPickDir()" style="font-size:12px">${ZIC('ordner')} OneDrive-Ordner wählen</button>
        <span style="font-size:11px;color:var(--grau)">Unterschriebene Übersichten werden dort je Mitarbeiter abgelegt.</span>`;
   }
   if (_azkPerm !== 'granted') {
-    return `<span class="tag" style="font-size:11px;background:#FFF7ED;color:#92400e">📁 ${_azkDir.name}</span>
-       <button class="btn btn-outline" onclick="azkReaktiviereDir()" style="font-size:12px">🔓 Zugriff erneuern</button>
+    return `<span class="tag" style="font-size:11px;background:#FFF7ED;color:#92400e">${ZIC('ordner')} ${_azkDir.name}</span>
+       <button class="btn btn-outline" onclick="azkReaktiviereDir()" style="font-size:12px">${ZIC('schlossauf')} Zugriff erneuern</button>
        <span style="font-size:11px;color:var(--grau)">Nach Browser-Neustart einmal bestätigen.</span>
        <button class="btn ghost sm" onclick="azkClearDir()" style="font-size:11px">Entfernen</button>`;
   }
-  return `<span class="tag green" style="font-size:11px">📁 ${_azkDir.name} ✓</span>
+  return `<span class="tag green" style="font-size:11px">${ZIC('ordner')} ${_azkDir.name} ✓</span>
        <button class="btn ghost sm" onclick="azkClearDir()" style="font-size:11px">Entfernen</button>`;
 }
 async function azkReaktiviereDir() {
