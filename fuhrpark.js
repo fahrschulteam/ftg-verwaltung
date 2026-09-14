@@ -6,6 +6,8 @@
 const fuhrparkState = {
   fahrzeuge: [],
   filter: 'aktiv',      // bestellt | aktiv | archiviert
+  sortFeld: 'kennzeichen',   // Spalte, nach der sortiert wird
+  sortRichtung: 1,           // 1 = aufsteigend, -1 = absteigend
   loaded: false,
 };
 
@@ -89,27 +91,37 @@ window.renderFuhrpark = async function() {
   const liste = fuhrparkState.fahrzeuge.filter(v => v.status === f);
   const anz = s => fuhrparkState.fahrzeuge.filter(v=>v.status===s).length;
 
-  const cards = liste.map(v => {
+  // Sortierung anwenden
+  const sf = fuhrparkState.sortFeld, sr = fuhrparkState.sortRichtung;
+  const sortiert = liste.slice().sort((a, b) => {
+    let x = a[sf], y = b[sf];
+    if (sf === 'rate') { x = Number(x) || 0; y = Number(y) || 0; return (x - y) * sr; }
+    if (sf === 'hu_faellig' || sf === 'sp_faellig') {
+      x = x || '9999-12-31'; y = y || '9999-12-31';
+      return String(x).localeCompare(String(y)) * sr;
+    }
+    x = (x || '').toString(); y = (y || '').toString();
+    if (!x && y) return 1;      // Leere immer ans Ende
+    if (x && !y) return -1;
+    return x.localeCompare(y, 'de', { numeric: true }) * sr;
+  });
+
+  const zeilen = sortiert.map(v => {
     const hu = faelligkeitStatus(v.hu_faellig);
     const sp = faelligkeitStatus(v.sp_faellig);
-    const titel = [v.marke, v.modell].filter(Boolean).join(' ') || v.kennzeichen;
-    return `<div class="fz-card" onclick="oeffneFahrzeug('${v.id}')">
-      <div class="fz-head">
-        <div>
-          <div class="fz-kennz">${v.kennzeichen||'–'}</div>
-          <div class="fz-titel">${titel}</div>
-        </div>
-        ${v.fahrzeugklasse?`<span class="fz-klasse">${v.fahrzeugklasse}</span>`:''}
-      </div>
-      <div class="fz-meta">
-        <span class="fz-tag fz-tag-${v.haltung}">${haltungLabel(v.haltung)}</span>
-        ${v.rate?`<span class="fz-rate">${Number(v.rate).toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2})} €/Mon.</span>`:''}
-      </div>
-      <div class="fz-faellig">
-        <span><span class="fz-dot" style="background:${hu.farbe}"></span>HU: ${hu.label}</span>
-        ${v.sp_faellig?`<span><span class="fz-dot" style="background:${sp.farbe}"></span>SP: ${sp.label}</span>`:''}
-      </div>
-    </div>`;
+    const rate = v.rate
+      ? Number(v.rate).toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2}) + ' €'
+      : '–';
+    return `<tr onclick="oeffneFahrzeug('${v.id}')" style="cursor:pointer">
+      <td style="font-weight:700">${v.kennzeichen||'–'}</td>
+      <td>${v.marke||'–'}</td>
+      <td>${v.modell||'–'}</td>
+      <td>${v.fahrzeugklasse?`<span class="fz-klasse">${v.fahrzeugklasse}</span>`:'–'}</td>
+      <td><span class="fz-tag fz-tag-${v.haltung}">${haltungLabel(v.haltung)}</span></td>
+      <td style="text-align:right;white-space:nowrap">${rate}</td>
+      <td style="white-space:nowrap"><span class="fz-dot" style="background:${hu.farbe}"></span>${hu.label}</td>
+      <td style="white-space:nowrap">${v.sp_faellig?`<span class="fz-dot" style="background:${sp.farbe}"></span>${sp.label}`:'–'}</td>
+    </tr>`;
   }).join('');
 
   // Sidebar nur beim ersten Mal rendern
@@ -145,10 +157,43 @@ window.renderFuhrpark = async function() {
     </div>
     ${liste.length===0
       ? `<div class="module-placeholder"><div class="ph-icon">${FIC('auto',44)}</div><h3>Keine Fahrzeuge</h3><p>${canWrite()?'Lege mit „＋ Fahrzeug" das erste an.':'Noch keine Fahrzeuge erfasst.'}</p></div>`
-      : `<div class="fz-grid">${cards}</div>`}`;
+      : `<div class="card" style="padding:0;overflow-x:auto">
+          <table class="ma-table fz-table">
+            <thead><tr>
+              ${fzKopf('kennzeichen','Kennzeichen')}
+              ${fzKopf('marke','Hersteller')}
+              ${fzKopf('modell','Modell')}
+              ${fzKopf('fahrzeugklasse','Klasse')}
+              ${fzKopf('haltung','Haltung')}
+              ${fzKopf('rate','Rate','text-align:right')}
+              ${fzKopf('hu_faellig','HU')}
+              ${fzKopf('sp_faellig','SP')}
+            </tr></thead>
+            <tbody>${zeilen}</tbody>
+          </table>
+        </div>`}`;
 };
 
 function setFuhrparkFilter(f) { fuhrparkState.filter = f; renderFuhrpark(); }
+
+// Spaltenkopf mit Sortierpfeil
+function fzKopf(feld, label, extra) {
+  const aktiv = fuhrparkState.sortFeld === feld;
+  const pfeil = aktiv ? (fuhrparkState.sortRichtung > 0 ? ' ▲' : ' ▼') : '';
+  return `<th onclick="setFuhrparkSort('${feld}')" title="Sortieren"
+    style="cursor:pointer;white-space:nowrap;${extra||''}">${label}${pfeil}</th>`;
+}
+
+// Spalte sortieren - erneuter Klick dreht die Richtung um
+function setFuhrparkSort(feld) {
+  if (fuhrparkState.sortFeld === feld) {
+    fuhrparkState.sortRichtung = -fuhrparkState.sortRichtung;
+  } else {
+    fuhrparkState.sortFeld = feld;
+    fuhrparkState.sortRichtung = 1;
+  }
+  renderFuhrpark();
+}
 
 // ── Fahrzeug-Formular ──
 function oeffneFahrzeugForm(id) {
