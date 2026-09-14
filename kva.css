@@ -181,4 +181,10 @@ input:focus,textarea:focus{outline:2px solid var(--blau);border-color:transparen
 #view-kva .cb{padding:6px 9px;}
 #view-kva .stunden-box{padding:10px 12px;margin-bottom:8px;}
 #view-kva .ib{padding:7px 10px;margin-bottom:6px;}
+/* Aussenabstand des Moduls: weniger Leerraum oben */
+#view-kva .mod-main{padding:4px 22px 26px 18px;}
+#view-kva .mod-side{padding-top:6px;}
+#view-kva .st{padding:0 0 2px;}
+#view-kva .card{margin-top:6px;}
+
 /* === KOMPAKT-ENDE === */
