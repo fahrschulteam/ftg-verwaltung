@@ -38,17 +38,45 @@ function kontaktIcons(m) {
   if (wa)   html += `<a href="${wa}" target="_blank" title="WhatsApp: ${m.telefon}"
     onclick="event.stopPropagation()"
     style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;
-    border-radius:6px;background:#25D366;color:#fff;font-size:13px;text-decoration:none">💬</a>`;
+    border-radius:6px;background:#25D366;color:#fff;font-size:13px;text-decoration:none">${DIC('chat')}</a>`;
   if (mail) html += `<a href="${mail}" title="E-Mail: ${m.email}"
     onclick="event.stopPropagation()"
     style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;
-    border-radius:6px;background:#2A6CAE;color:#fff;font-size:13px;text-decoration:none">✉</a>`;
+    border-radius:6px;background:#2A6CAE;color:#fff;font-size:13px;text-decoration:none">${DIC('mail')}</a>`;
   if (!wa && !mail) html += `<span style="font-size:10px;color:var(--grau)">–</span>`;
   html += `</div>`;
   return html;
 }
 
 // ── Rundruf-Modal ──
+// ── Strich-Icons fuers Dashboard ───────────────────────
+// groesse steuert die Kantenlaenge in Pixeln (Standard 14).
+function DIC(n, groesse){
+  const g = groesse || 14;
+  const P = {
+    liste:'<path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>'
+      +'<rect x="8" y="2" width="8" height="4" rx="1"/>'
+      +'<line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="15" y2="16"/>',
+    hut:'<path d="M22 10L12 5 2 10l10 5 10-5z"/>'
+      +'<path d="M6 12v5c0 1 2.7 2.5 6 2.5s6-1.5 6-2.5v-5"/>',
+    personen:'<path d="M17 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>'
+      +'<circle cx="9.5" cy="7" r="4"/>'
+      +'<path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+    auto:'<path d="M5 17h14M5 17a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm18 0a2 2 0 1 1-4 0 2 2 0 0 1 4 0z"/>'
+      +'<path d="M3 17v-5l2-5h11l3 5v5"/><line x1="7" y1="12" x2="19" y2="12"/>',
+    mail:'<rect x="2" y="4" width="20" height="16" rx="2"/>'
+      +'<polyline points="2 7 12 13 22 7"/>',
+    chat:'<path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 8.9 8.9 0 0 1-4-.9L3 21l1.9-4.9A8.4 8.4 0 0 1 4 11.5'
+      +' 8.4 8.4 0 0 1 12.5 3 8.4 8.4 0 0 1 21 11.5z"/>',
+    megafon:'<path d="M3 11v2a1 1 0 0 0 1 1h3l5 4V6L7 10H4a1 1 0 0 0-1 1z"/>'
+      +'<path d="M16 9a3 3 0 0 1 0 6"/><path d="M19 6.5a7 7 0 0 1 0 11"/>'
+  };
+  return '<svg viewBox="0 0 24 24" width="'+g+'" height="'+g+'" fill="none" '
+    +'stroke="currentColor" stroke-width="2" stroke-linecap="round" '
+    +'stroke-linejoin="round" style="vertical-align:-2px;flex:none">'
+    +(P[n]||'')+'</svg>';
+}
+
 function oeffneRundruf(mitarbeiter) {
   const mailListe = mitarbeiter.filter(m => m.email).map(m => m.email);
   const telListe  = mitarbeiter.filter(m => m.telefon);
@@ -62,20 +90,20 @@ function oeffneRundruf(mitarbeiter) {
   modal.innerHTML = `
     <div class="modal" style="width:min(580px,96vw)">
       <div class="modal-header">
-        <h3>📣 Rundruf – alle Mitarbeiter</h3>
+        <h3>${DIC('megafon',16)} Rundruf – alle Mitarbeiter</h3>
         <button class="close-btn" onclick="document.getElementById('rundruf-modal').remove()">✕</button>
       </div>
       <div class="modal-body" style="padding:20px">
         <div style="margin-bottom:20px">
           <div style="font-size:11px;font-weight:700;color:var(--blau);text-transform:uppercase;
             letter-spacing:.06em;margin-bottom:10px;border-bottom:1px solid var(--border);padding-bottom:4px">
-            ✉ E-Mail an alle (BCC)
+            ${DIC('mail')} E-Mail an alle (BCC)
           </div>
           ${mailHref
             ? `<a href="${mailHref}"
                 style="display:inline-flex;align-items:center;gap:8px;background:#2A6CAE;color:#fff;
                 padding:9px 18px;border-radius:8px;font-size:13px;font-weight:700;text-decoration:none">
-                ✉ Outlook öffnen
+                ${DIC('mail')} Outlook öffnen
                 <span style="font-size:11px;opacity:.8">(${mailListe.length} Empfänger im BCC)</span>
               </a>
               <div style="font-size:11px;color:var(--grau);margin-top:6px">
@@ -86,7 +114,7 @@ function oeffneRundruf(mitarbeiter) {
         <div>
           <div style="font-size:11px;font-weight:700;color:var(--blau);text-transform:uppercase;
             letter-spacing:.06em;margin-bottom:8px;border-bottom:1px solid var(--border);padding-bottom:4px">
-            💬 WhatsApp – Einzelkontakte
+            ${DIC('chat')} WhatsApp – Einzelkontakte
           </div>
           <div style="font-size:11px;color:var(--grau);margin-bottom:10px">
             WhatsApp-Gruppen lassen sich nicht per Link erstellen. Jeden direkt anschreiben:
@@ -102,7 +130,7 @@ function oeffneRundruf(mitarbeiter) {
                 ? `<a href="${wa}" target="_blank"
                     style="display:inline-flex;align-items:center;gap:6px;background:#25D366;color:#fff;
                     padding:6px 12px;border-radius:7px;font-size:12px;font-weight:700;text-decoration:none">
-                    💬 WhatsApp</a>`
+                    ${DIC('chat')} WhatsApp</a>`
                 : `<span style="font-size:11px;color:var(--grau)">Nr. nicht verwertbar</span>`}
             </div>`;
           }).join('')
@@ -268,18 +296,18 @@ window.renderDashboard = async function() {
 
       <!-- KPI-Kacheln (nur 3: Todos, Fortbildungen, Mitarbeiter) -->
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px;margin-bottom:24px">
-        ${kpiCard('📋','Offene To-Dos', todosMeins.length,
+        ${kpiCard(DIC('liste',22),'Offene To-Dos', todosMeins.length,
           todosUeberfaellig
             ? `<span style="color:#C0001A;font-weight:700">${todosUeberfaellig} überfällig</span>`
             : 'Alle im Plan',
           rotTodos ? '#FFF0F1' : '#fff', 'todos')}
-        ${kpiCard('🎓','Fortbildungen',
+        ${kpiCard(DIC('hut',22),'Fortbildungen',
           flZeilen.filter(z=>z.status==='ueberschritten').length
             ? flZeilen.filter(z=>z.status==='ueberschritten').length+' überfällig'
             : flZeilen.filter(z=>z.restTage>0&&z.status!=='naechster_ok').length+' offen',
           flZeilen.length+' Pflichten gesamt',
           rotFl ? '#FFF0F1' : '#fff', 'personal')}
-        ${kpiCard('👥','Mitarbeiter',
+        ${kpiCard(DIC('personen',22),'Mitarbeiter',
           alleMA.length+' aktiv',
           alleMA.filter(m=>m.email||m.telefon).length+' mit Kontaktdaten',
           '#fff', 'personal')}
@@ -291,7 +319,7 @@ window.renderDashboard = async function() {
         <!-- To-Dos (primär, links) -->
         <div class="card" style="padding:0;overflow:hidden">
           <div class="dash-card-head" style="background:#fff0f1">
-            <span style="color:var(--rot);font-weight:700">📋 Meine offenen To-Dos</span>
+            <span style="color:var(--rot);font-weight:700">${DIC('liste')} Meine offenen To-Dos</span>
             <button class="btn btn-sm btn-danger" onclick="showView('todos')">Alle →</button>
           </div>
           ${todosMeins.length
@@ -310,18 +338,18 @@ window.renderDashboard = async function() {
         <!-- Schnellkontakt (primär, rechts) -->
         <div class="card" style="padding:0;overflow:hidden">
           <div class="dash-card-head" style="background:#EFF6FF">
-            <span style="color:var(--blau);font-weight:700">📣 Schnellkontakt</span>
+            <span style="color:var(--blau);font-weight:700">${DIC('megafon')} Schnellkontakt</span>
           </div>
           <div style="padding:14px 16px">
             <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
               <button class="btn btn-primary" onclick="oeffneRundruf(window._dashMitarbeiter)">
-                📣 Rundruf öffnen
+                ${DIC('megafon')} Rundruf öffnen
               </button>
               ${alleMA.filter(m=>m.email).length
                 ? `<a href="mailto:?bcc=${encodeURIComponent(alleMA.filter(m=>m.email).map(m=>m.email).join(','))}&subject=${encodeURIComponent('Fahrschulteam Lingen')}"
                     style="display:inline-flex;align-items:center;gap:6px;background:#2A6CAE;color:#fff;
                     padding:8px 14px;border-radius:6px;font-size:13px;font-weight:500;text-decoration:none">
-                    ✉ Alle per E-Mail (BCC)</a>` : ''}
+                    ${DIC('mail')} Alle per E-Mail (BCC)</a>` : ''}
             </div>
             <div style="border-top:1px solid var(--border);padding-top:10px">
               ${alleMA.slice(0,7).map(m => `
@@ -349,7 +377,7 @@ window.renderDashboard = async function() {
       ${fzVertragsende.length ? `
       <div class="card" style="padding:0;overflow:hidden;margin-bottom:18px">
         <div class="dash-card-head" style="background:#FFFBEB">
-          <span style="color:#D97706;font-weight:700">🚗 Vertragsende Leasing / Finanzierung</span>
+          <span style="color:#D97706;font-weight:700">${DIC('auto')} Vertragsende Leasing / Finanzierung</span>
           <button class="btn btn-sm" onclick="showView('fuhrpark')">Fuhrpark →</button>
         </div>
         ${fzVertragsende.map(v => `
@@ -373,7 +401,7 @@ window.renderDashboard = async function() {
       <!-- ZWEITE REIHE: Fahrlehrerfortbildungen (volle Breite) -->
       <div class="card" style="padding:0;overflow:hidden">
         <div class="dash-card-head">
-          <span>🎓 Fahrlehrerfortbildungen</span>
+          <span>${DIC('hut')} Fahrlehrerfortbildungen</span>
           <button class="btn btn-sm" onclick="showView('personal')">Personal →</button>
         </div>
         ${flZeilen.length
