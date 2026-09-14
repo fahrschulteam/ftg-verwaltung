@@ -380,7 +380,7 @@ function showView(view) {
   if (view === 'schulung') {
     const f = document.getElementById('schulungFrame');
     if (f && !f.getAttribute('src')) {
-      f.setAttribute('src', '20260907c');
+    f.setAttribute('src', 'schulung.html?v=20260914a');
       // src neu gesetzt → load-Event feuert, Handler sendet dann
     } else {
       // iframe bereits geladen → sofort senden (z.B. nach Tab-Wechsel zurück)
