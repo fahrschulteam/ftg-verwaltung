@@ -17,6 +17,8 @@ let wettbewerbState = {
   briefings: {},       // quelle_id -> letzter Recherchebericht
   loaded: false,
   filterKat: 'alle',   // alle | wettbewerber | autor | recht
+  sortFeld: 'name',    // Spalte, nach der sortiert wird
+  sortRichtung: 1,     // 1 = aufsteigend, -1 = absteigend
 };
 
 const WB_KAT_LABEL = { wettbewerber: 'Wettbewerber', autor: 'Fachautor', recht: 'Rechtsquelle' };
@@ -99,6 +101,57 @@ window.renderWettbewerb = async function () {
 
 function setWbFilter(k) { wettbewerbState.filterKat = k; renderWettbewerb(); }
 
+// ── Sortierung ────────────────────────────────────
+function wbSortiert(liste) {
+  const sf = wettbewerbState.sortFeld, sr = wettbewerbState.sortRichtung;
+  return liste.slice().sort((a, b) => {
+    if (sf === 'geprueft') {
+      const x = a._snap?.geprueft_am || '', y = b._snap?.geprueft_am || '';
+      if (!x && y) return 1;
+      if (x && !y) return -1;
+      return String(x).localeCompare(String(y)) * sr;
+    }
+    const x = (a[sf] || '').toString(), y = (b[sf] || '').toString();
+    if (!x && y) return 1;
+    if (x && !y) return -1;
+    return x.localeCompare(y, 'de', { numeric: true }) * sr;
+  });
+}
+
+function wbKopf(feld, label) {
+  const aktiv = wettbewerbState.sortFeld === feld;
+  const pfeil = aktiv ? (wettbewerbState.sortRichtung > 0 ? ' ▲' : ' ▼') : '';
+  return `<th onclick="setWbSort('${feld}')" title="Sortieren"
+    style="cursor:pointer; white-space:nowrap;">${label}${pfeil}</th>`;
+}
+
+function setWbSort(feld) {
+  if (wettbewerbState.sortFeld === feld) {
+    wettbewerbState.sortRichtung = -wettbewerbState.sortRichtung;
+  } else {
+    wettbewerbState.sortFeld = feld;
+    wettbewerbState.sortRichtung = 1;
+  }
+  renderWettbewerb();
+}
+
+// ── Strich-Icons fuer die Aktionsknoepfe ──────────────────
+function WIC(n) {
+  const P = {
+    lupe:'<circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.7" y2="16.7"/>',
+    stift:'<path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/>',
+    pause:'<rect x="6" y="4" width="4" height="16" rx="1"/>'
+      +'<rect x="14" y="4" width="4" height="16" rx="1"/>',
+    play:'<polygon points="6 3 20 12 6 21 6 3"/>',
+    muell:'<polyline points="3 6 5 6 21 6"/>'
+      +'<path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>'
+  };
+  return '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" '
+    +'stroke="currentColor" stroke-width="2" stroke-linecap="round" '
+    +'stroke-linejoin="round" style="vertical-align:-2px;flex:none">'
+    +(P[n]||'')+'</svg>';
+}
+
 function renderWbContent() {
   const el = document.getElementById('wb-content');
   if (!el) return;
@@ -122,7 +175,20 @@ function renderWbContent() {
     </div>
 
     <div style="padding:14px 0 6px;">
-      ${liste.length ? liste.map(wbCardHtml).join('') : `
+      ${liste.length ? `
+        <div class="card" style="padding:0; overflow-x:auto;">
+          <table class="ma-table wb-table">
+            <thead><tr>
+              ${wbKopf('name','Quelle')}
+              ${wbKopf('kategorie','Art')}
+              <th>Adresse</th>
+              ${wbKopf('geprueft','Zuletzt geprüft')}
+              <th>Hinweise</th>
+              ${canWrite() ? '<th style="text-align:right">Aktionen</th>' : ''}
+            </tr></thead>
+            <tbody>${wbSortiert(liste).map(wbZeileHtml).join('')}</tbody>
+          </table>
+        </div>` : `
         <div class="module-placeholder">
           <div class="ph-icon">🔎</div>
           <h3>Keine Quellen</h3>
@@ -144,55 +210,86 @@ function renderWbContent() {
         </div>` : `<p style="color:var(--grau); font-size:13px;">Noch keine Änderungen erkannt. Der tägliche Check läuft automatisch im Hintergrund.</p>`}
     </div>`;
 
-  function wbCardHtml(q) {
-    return `
-            <div class="card" style="display:flex; gap:12px; align-items:flex-start; flex-wrap:wrap; padding:14px 16px; margin-bottom:10px; ${q.aktiv ? '' : 'opacity:.5;'}">
-        <div style="flex:1; min-width:0;">
-          <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-            <strong style="font-size:14px;">${escWb(q.name)}</strong>
-            <span style="font-size:10px; font-weight:700; padding:2px 7px; border-radius:10px; color:#fff; background:${WB_KAT_FARBE[q.kategorie]};">${WB_KAT_LABEL[q.kategorie]}</span>
-            ${q.prioritaet === 'hoch' ? '<span style="font-size:10px; font-weight:700; padding:2px 7px; border-radius:10px; color:#fff; background:#C0001A;">⬆ Hohe Priorität</span>' : ''}
-            ${!q.aktiv ? '<span style="font-size:10px; font-weight:700; padding:2px 7px; border-radius:10px; background:var(--hell); color:var(--grau);">Deaktiviert</span>' : ''}
-          </div>
-          <div style="font-size:12px; margin-top:4px;"><a href="${escWb(q.url)}" target="_blank" rel="noopener">${escWb(q.url)}</a></div>
-          ${q.ort ? `<div style="font-size:11px; color:var(--grau); margin-top:2px;">📍 ${escWb(q.ort)}</div>` : ''}
-          ${q.notiz ? `<div style="font-size:12px; color:var(--grau); margin-top:4px; white-space:pre-wrap;">${escWb(q.notiz)}</div>` : ''}
-          <div style="font-size:11px; color:var(--grau); margin-top:6px; display:flex; gap:12px; flex-wrap:wrap;">
-            ${q._snap?.geprueft_am ? `<span>🕓 Zuletzt geprüft: ${new Date(q._snap.geprueft_am).toLocaleString('de-DE')}</span>` : '<span>Noch nicht geprüft</span>'}
-            ${q._snap?.review_count != null ? `<span>⭐ ${q._snap.rating ?? '–'} (${q._snap.review_count} Google-Bewertungen)</span>` : ''}
-            ${q.feed_url ? '<span>📡 RSS-Feed aktiv</span>' : ''}
-            ${q.recherche_rhythmus === 'woechentlich' ? '<span>🕵 Recherche: wöchentlich</span>' : q.recherche_rhythmus === 'monatlich' ? '<span>🕵 Recherche: monatlich</span>' : ''}
-          </div>
-          ${q._snap?.fehler_seit ? `<div style="font-size:11px; color:#C0001A; margin-top:6px;">⚠️ Fehler seit ${new Date(q._snap.fehler_seit).toLocaleDateString('de-DE')} (${q._snap.fehler_anzahl}×): ${escWb(q._snap.letzter_fehler || '')}</div>` : ''}
-        </div>
-               ${(() => {
-          const b = wettbewerbState.briefings[q.id];
-          if (!b) return '';
-          const farbe = b.relevanz === 'hoch' ? '#C0001A' : b.relevanz === 'niedrig' ? 'var(--grau)' : '#2A6CAE';
-          return `
-          <div style="width:100%; margin-top:10px; padding:10px 12px; border-left:3px solid ${farbe}; background:var(--hell); border-radius:0 8px 8px 0; box-sizing:border-box;">
-            <div style="display:flex; align-items:flex-start; gap:10px; flex-wrap:wrap;">
-              <div style="flex:1; min-width:0;">
-                <div style="font-size:12px; font-weight:700;">${escWb(b.titel || 'Recherchebericht')}</div>
-                <div style="font-size:11px; color:var(--grau); margin-top:2px;">Recherche vom ${new Date(b.erstellt_am).toLocaleDateString('de-DE')}</div>
-              </div>
-              <div style="display:flex; gap:6px; flex-shrink:0;">
-                <button class="btn" style="padding:4px 9px; font-size:11px;" onclick="zeigeBriefing('${q.id}')">Bericht lesen</button>
-                ${canWrite() ? `<button class="btn" style="padding:4px 9px; font-size:11px; color:#C0001A; border-color:#C0001A;" onclick="loescheBriefing('${b.id}','${q.id}')">Löschen</button>` : ''}
-              </div>
-            </div>
-          </div>`;
-        })()}
-        ${canWrite() ? `
-        <div style="display:flex; gap:6px; flex-shrink:0; flex-wrap:wrap; justify-content:flex-end;">
-          <button class="btn btn-primary" style="padding:6px 10px; font-size:12px;" onclick="starteRecherche('${q.id}')" title="Die KI durchsucht das Internet und erstellt einen Bericht (kostet ca. 20 Cent)">🕵 Jetzt recherchieren</button>
-          <button class="btn" style="padding:6px 10px; font-size:12px;" onclick="oeffneWbForm('${q.id}')">Bearbeiten</button>
-          <button class="btn" style="padding:6px 10px; font-size:12px;" onclick="toggleWbAktiv('${q.id}', ${!q.aktiv})">${q.aktiv ? 'Deaktivieren' : 'Aktivieren'}</button>
-          <button onclick="loescheWbQuelle('${q.id}')" title="Löschen" style="flex-shrink:0; background:none; border:none; cursor:pointer; color:var(--grau); font-size:15px; padding:4px;">🗑</button>
-        </div>` : ''}
-      </div>`;
-  }
+  // Eine Tabellenzeile je Quelle (plus Zusatzzeile bei Recherchebericht)
+  function wbZeileHtml(q) {
+    const inaktiv = q.aktiv ? '' : 'opacity:.5;';
+    let kurzUrl = q.url || '';
+    try { kurzUrl = new URL(q.url).hostname.replace(/^www\./, ''); } catch (e) {}
 
+    const hinweise = [
+      q.feed_url ? 'RSS' : '',
+      q.recherche_rhythmus === 'woechentlich' ? 'Recherche wöchentlich'
+        : q.recherche_rhythmus === 'monatlich' ? 'Recherche monatlich' : '',
+      q._snap?.review_count != null
+        ? `${q._snap.rating ?? '–'} ★ (${q._snap.review_count})` : '',
+    ].filter(Boolean).join(' · ');
+
+    const spalten = canWrite() ? 6 : 5;
+
+    const kopfzeile = `
+      <tr style="${inaktiv}">
+        <td>
+          <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+            <strong>${escWb(q.name)}</strong>
+            ${q.prioritaet === 'hoch' ? '<span style="font-size:10px; font-weight:700; padding:1px 6px; border-radius:10px; color:#fff; background:#C0001A;">Hohe Priorität</span>' : ''}
+            ${!q.aktiv ? '<span style="font-size:10px; font-weight:700; padding:1px 6px; border-radius:10px; background:var(--hell); color:var(--grau);">Deaktiviert</span>' : ''}
+          </div>
+          ${q.ort ? `<div style="font-size:11px; color:var(--grau); margin-top:2px;">${escWb(q.ort)}</div>` : ''}
+        </td>
+        <td><span style="font-size:10px; font-weight:700; padding:2px 7px; border-radius:10px; color:#fff;
+          background:${WB_KAT_FARBE[q.kategorie]};">${WB_KAT_LABEL[q.kategorie]}</span></td>
+        <td style="max-width:240px; overflow:hidden; text-overflow:ellipsis;">
+          <a href="${escWb(q.url)}" target="_blank" rel="noopener" title="${escWb(q.url)}">${escWb(kurzUrl)}</a></td>
+        <td style="font-size:12px; color:var(--grau);">
+          ${q._snap?.geprueft_am
+            ? new Date(q._snap.geprueft_am).toLocaleString('de-DE')
+            : 'noch nicht geprüft'}</td>
+        <td style="font-size:11px; color:var(--grau);">${hinweise || '–'}</td>
+        ${canWrite() ? `
+        <td style="text-align:right; white-space:nowrap;">
+          <button class="btn btn-sm" onclick="starteRecherche('${q.id}')"
+            title="Jetzt recherchieren – die KI durchsucht das Internet und erstellt einen Bericht (ca. 20 Cent)"
+            style="padding:4px 8px;">${WIC('lupe')}</button>
+          <button class="btn btn-sm" onclick="oeffneWbForm('${q.id}')" title="Bearbeiten"
+            style="padding:4px 8px;">${WIC('stift')}</button>
+          <button class="btn btn-sm" onclick="toggleWbAktiv('${q.id}', ${!q.aktiv})"
+            title="${q.aktiv ? 'Deaktivieren' : 'Aktivieren'}"
+            style="padding:4px 8px;">${WIC(q.aktiv ? 'pause' : 'play')}</button>
+          <button class="btn btn-sm" onclick="loescheWbQuelle('${q.id}')" title="Löschen"
+            style="padding:4px 8px; color:#C0001A;">${WIC('muell')}</button>
+        </td>` : ''}
+      </tr>`;
+
+    // Fehlerhinweis als eigene Zeile
+    const fehlerzeile = q._snap?.fehler_seit ? `
+      <tr style="${inaktiv}"><td colspan="${spalten}"
+        style="padding-top:0; font-size:11px; color:#C0001A;">
+        Fehler seit ${new Date(q._snap.fehler_seit).toLocaleDateString('de-DE')}
+        (${q._snap.fehler_anzahl}×): ${escWb(q._snap.letzter_fehler || '')}</td></tr>` : '';
+
+    // Recherchebericht als eigene Zeile
+    const b = wettbewerbState.briefings[q.id];
+    const berichtzeile = !b ? '' : (() => {
+      const farbe = b.relevanz === 'hoch' ? '#C0001A'
+        : b.relevanz === 'niedrig' ? 'var(--grau)' : '#2A6CAE';
+      return `<tr style="${inaktiv}"><td colspan="${spalten}" style="padding-top:0;">
+        <div style="padding:8px 12px; border-left:3px solid ${farbe}; background:var(--hell);
+          border-radius:0 8px 8px 0; display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+          <div style="flex:1; min-width:0;">
+            <div style="font-size:12px; font-weight:700;">${escWb(b.titel || 'Recherchebericht')}</div>
+            <div style="font-size:11px; color:var(--grau);">Recherche vom
+              ${new Date(b.erstellt_am).toLocaleDateString('de-DE')}</div>
+          </div>
+          <button class="btn btn-sm" style="padding:4px 9px; font-size:11px;"
+            onclick="zeigeBriefing('${q.id}')">Bericht lesen</button>
+          ${canWrite() ? `<button class="btn btn-sm" style="padding:4px 9px; font-size:11px;
+            color:#C0001A; border-color:#C0001A;"
+            onclick="loescheBriefing('${b.id}','${q.id}')">Löschen</button>` : ''}
+        </div></td></tr>`;
+    })();
+
+    return kopfzeile + fehlerzeile + berichtzeile;
+  }
   function entdeckungHtml(e) {
     return `
       <div class="card" style="display:flex; gap:12px; align-items:flex-start; padding:14px 16px; margin-bottom:10px;">
