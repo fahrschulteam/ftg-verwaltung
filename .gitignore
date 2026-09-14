@@ -7,3 +7,11 @@ aufraeumen.js
 
 Unterrichtsplan/
 fahrschulverwaltung/
+
+# Sicherungskopien der Patch-Scripte
+*.bak
+*.bak-*
+
+# Windows / Explorer
+Thumbs.db
+desktop.ini
