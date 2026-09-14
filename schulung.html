@@ -31,7 +31,7 @@
 window.onerror=function(msg,src,line,col,err){
   var b=document.body||document.documentElement;
   var d=document.createElement('div');
-  d.style.cssText='position:fixed;top:60px;left:0;right:0;z-index:99999;background:#CC0000;color:#fff;padding:10px 16px;font-family:monospace;font-size:12px;white-space:pre-wrap;max-height:120px;overflow:auto';
+  d.style.cssText='position:fixed;top:60px;left:0;right:0;z-index:99999;background:#C0001A;color:#fff;padding:10px 16px;font-family:monospace;font-size:12px;white-space:pre-wrap;max-height:120px;overflow:auto';
   d.textContent='JS-Fehler: '+msg+'\nZeile: '+line+(src?' in '+(src||'').split('/').pop():'');
   if(b)b.appendChild(d);
   return false;
@@ -44,7 +44,7 @@ window.onerror=function(msg,src,line,col,err){
 @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&display=swap');
 
 :root{
-  --red:#CC0000;--red-light:#fff5f5;--red-border:#fce8e8;
+  --red:#C0001A;--red-light:#fff5f5;--red-border:#fce8e8;
   --green:#16a34a;--green-light:#dcfce7;
   --warn-col:#92400e;--warn-bg:#fffbeb;--warn-border:#fde68a;
   --bg:#ffffff;--surface:#ffffff;--surface-2:#fafafa;--surface-3:#f8f9fa;
@@ -52,11 +52,11 @@ window.onerror=function(msg,src,line,col,err){
   --ink:#333333;--ink-2:#555555;--ink-3:#777777;--ink-4:#9ca3af;--muted:#888888;
   --shadow-sm:0 1px 8px rgba(0,0,0,.07);--shadow-md:0 2px 14px rgba(0,0,0,.10);--shadow-lg:0 4px 24px rgba(0,0,0,.13);
   /* Legacy compat */
-  --brand:var(--red);--brand-mid:#aa0000;--brand-light:var(--red-light);
-  --brand-accent:var(--red);--brand-accent-dark:#aa0000;
+  --brand:var(--red);--brand-mid:#9a0015;--brand-light:var(--red-light);
+  --brand-accent:var(--red);--brand-accent-dark:#9a0015;
   --ok:var(--green);--ok-bg:var(--green-light);--warn:var(--warn-col);--crit:var(--red);--crit-bg:var(--red-light);
   --sand:var(--surface-3);--line:var(--border);--card:var(--surface);--paper:var(--bg);
-  --steel:var(--ink);--steel-light:#555;--accent:var(--red);--accent-dark:#aa0000;
+  --steel:var(--ink);--steel-light:#555;--accent:var(--red);--accent-dark:#9a0015;
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 body{font-family:'Segoe UI',-apple-system,BlinkMacSystemFont,Arial,sans-serif;background:#f0f0f0;color:var(--ink-2);font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
@@ -76,8 +76,8 @@ nav button.active{background:var(--red-light);color:var(--red);border-bottom:2px
 .sync-dot--connecting{background:#ddd}
 .sync-dot--connected{background:#16a34a;box-shadow:0 0 0 0 rgba(22,163,74,.5);animation:pulse-green 2.5s ease-in-out infinite}
 .sync-dot--saving{background:#f59e0b;animation:pulse-amber 1s ease-in-out infinite}
-.sync-dot--offline{background:#CC0000}
-.sync-dot--error{background:#CC0000;animation:blink .8s step-end infinite}
+.sync-dot--offline{background:#C0001A}
+.sync-dot--error{background:#C0001A;animation:blink .8s step-end infinite}
 @keyframes pulse-green{0%,100%{box-shadow:0 0 0 0 rgba(22,163,74,.5)}50%{box-shadow:0 0 0 6px rgba(22,163,74,0)}}
 @keyframes pulse-amber{0%,100%{box-shadow:0 0 0 0 rgba(245,158,11,.5)}50%{box-shadow:0 0 0 5px rgba(245,158,11,0)}}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
@@ -350,7 +350,7 @@ header{padding:0 18px!important}
 <!-- Ladebildschirm – verschwindet IMMER nach spätestens 2 Sekunden -->
 <div id="appLoader" style="position:fixed;inset:0;z-index:9999;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;transition:opacity .3s ease;">
   <div style="display:flex;align-items:center;gap:14px">
-    <div style="width:52px;height:52px;border-radius:14px;background:#CC0000;display:grid;place-items:center;box-shadow:0 4px 16px rgba(204,0,0,.25)">
+    <div style="width:52px;height:52px;border-radius:14px;background:#C0001A;display:grid;place-items:center;box-shadow:0 4px 16px rgba(204,0,0,.25)">
       <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
     </div>
     <div>
@@ -359,7 +359,7 @@ header{padding:0 18px!important}
     </div>
   </div>
   <div style="display:flex;flex-direction:column;align-items:center;gap:10px">
-    <div style="width:34px;height:34px;border:3px solid #eee;border-top-color:#CC0000;border-radius:50%;animation:ldSpin .7s linear infinite"></div>
+    <div style="width:34px;height:34px;border:3px solid #eee;border-top-color:#C0001A;border-radius:50%;animation:ldSpin .7s linear infinite"></div>
     <div id="loaderMsg" style="font-family:'Poppins',sans-serif;font-size:.82rem;color:#bbb">Wird gestartet…</div>
   </div>
 </div>
@@ -3363,7 +3363,7 @@ function openDuePanel(mode){
 
   // Konfiguration je Mode
   var CFG = {
-    overdue:   { label:'⚠ Überfällige Unterweisungen',   color:'#b3261e', bg:'#fde8e8', border:'#CC0000',
+    overdue:   { label:'⚠ Überfällige Unterweisungen',   color:'#b3261e', bg:'#fde8e8', border:'#C0001A',
                   sepColor:'#fde8e8', nav:'instructions', navLbl:'Zu Unterweisungen →',
                   filter: function(d){ return d < 0; },
                   badgeTxt: function(d){ return Math.abs(d) + ' T. überfällig'; } },
@@ -3375,7 +3375,7 @@ function openDuePanel(mode){
                   sepColor:'#fde68a', nav:'instructions', navLbl:'Zu Unterweisungen →',
                   filter: function(d){ return d >= 0 && d <= w; },
                   badgeTxt: function(d){ return 'fällig in ' + d + ' T.'; } },
-    adrExpired:{ label:'🚫 ADR-Schein abgelaufen',        color:'#b3261e', bg:'#fde8e8', border:'#CC0000',
+    adrExpired:{ label:'🚫 ADR-Schein abgelaufen',        color:'#b3261e', bg:'#fde8e8', border:'#C0001A',
                   sepColor:'#fde8e8', nav:'instructions', navLbl:'Zu Unterweisungen →',
                   filter: function(d){ return d < 0; },
                   badgeTxt: function(d){ return 'seit ' + Math.abs(d) + ' T. abgelaufen'; } }
@@ -5033,7 +5033,7 @@ function renderCourses(){
         +'<span style="flex:1;min-width:100px;font-size:.88rem;'+nameStyle+'">'+nm+'</span>'
         +invBadge+remBadge+remBtn
         +'<button class="btn ghost sm ie-edit-btn" data-eid="'+e.id+'"'+(p?' data-pid="'+p.id+'" title="Teilnehmer bearbeiten"':' title="Termin bearbeiten"')+' style="padding:3px 8px;font-size:.75rem">✎</button>'
-        +'<button class="btn ghost sm ie-del-btn" data-eid="'+e.id+'" title="Teilnehmer aus diesem Lehrgang entfernen" style="padding:3px 8px;font-size:.75rem;color:#c00">✕</button>'
+        +'<button class="btn ghost sm ie-del-btn" data-eid="'+e.id+'" title="Teilnehmer aus diesem Lehrgang entfernen" style="padding:3px 8px;font-size:.75rem;color:#C0001A">✕</button>'
         +'</div>';
     };
 
@@ -5042,7 +5042,7 @@ function renderCourses(){
       tnListHtml = '<div style="color:#aaa;font-size:.85rem;font-style:italic;padding:4px 0">Noch keine Teilnehmer zugewiesen</div>'
         +g.entries.map(e=>'<div style="display:flex;align-items:center;gap:8px;padding:4px 0" data-eid="'+e.id+'">'
           +'<button class="btn ghost sm ie-edit-btn" data-eid="'+e.id+'" style="padding:3px 8px;font-size:.75rem">✎ Termin bearbeiten</button>'
-          +'<button class="btn ghost sm ie-del-btn" data-eid="'+e.id+'" style="padding:3px 8px;font-size:.75rem;color:#c00">✕ Löschen</button>'
+          +'<button class="btn ghost sm ie-del-btn" data-eid="'+e.id+'" style="padding:3px 8px;font-size:.75rem;color:#C0001A">✕ Löschen</button>'
           +'</div>').join('');
     } else {
       pending_e.forEach(e=>{ tnListHtml += makeEntryRow(e, false); });
@@ -5363,7 +5363,7 @@ function renderInstructions(){
         +'<span style="flex:1;min-width:100px;font-size:.88rem;'+nameStyle+'">'+nm+'</span>'
         +invBadge+remBadge+remBtn
         +'<button class="btn ghost sm ie-edit-btn" data-eid="'+e.id+'" style="padding:3px 8px;font-size:.75rem">\u270e</button>'
-        +'<button class="btn ghost sm ie-del-btn" data-eid="'+e.id+'" style="padding:3px 8px;font-size:.75rem;color:#c00">\u2715</button>'
+        +'<button class="btn ghost sm ie-del-btn" data-eid="'+e.id+'" style="padding:3px 8px;font-size:.75rem;color:#C0001A">\u2715</button>'
         +'</div>';
     };
 
@@ -5372,7 +5372,7 @@ function renderInstructions(){
       tnListHtml = '<div style="color:#aaa;font-size:.85rem;font-style:italic;padding:4px 0">Noch keine Teilnehmer zugewiesen</div>'
         +g.entries.map(e=>'<div style="display:flex;align-items:center;gap:8px;padding:4px 0" data-eid="'+e.id+'">'
           +'<button class="btn ghost sm ie-edit-btn" data-eid="'+e.id+'" style="padding:3px 8px;font-size:.75rem">\u270e Termin bearbeiten</button>'
-          +'<button class="btn ghost sm ie-del-btn" data-eid="'+e.id+'" style="padding:3px 8px;font-size:.75rem;color:#c00">\u2715 L\u00f6schen</button>'
+          +'<button class="btn ghost sm ie-del-btn" data-eid="'+e.id+'" style="padding:3px 8px;font-size:.75rem;color:#C0001A">\u2715 L\u00f6schen</button>'
           +'</div>').join('');
     } else {
       // Pending entries first
@@ -5546,10 +5546,10 @@ function openInstrGroupInvoiceDialog(g){
     const statusSpan=r.billed
       ?'<span style="font-size:.75rem;color:#16a34a;font-weight:700">\u2713 '+(r.inv?r.inv.number:'abgerechnet')+'</span>'
       :'<span style="font-size:.72rem;color:#888">offen</span>';
-    const borderCol=r.billed?'#e0e0e0':'#CC0000';
+    const borderCol=r.billed?'#e0e0e0':'#C0001A';
     const bgCol=r.billed?'#f5f5f5':'#fff5f5';
-    const boxBorder=r.billed?'#ccc':'#CC0000';
-    const boxBg=r.billed?'#ddd':'#CC0000';
+    const boxBorder=r.billed?'#ccc':'#C0001A';
+    const boxBg=r.billed?'#ddd':'#C0001A';
     const tick=!r.billed?'\u2713':'';
     return '<div id="iirow_'+i+'" onclick="iiToggleRow('+i+','+r.billed+')"'
       +' data-cid="'+r.e.id+'" data-checked="'+(r.billed?0:1)+'"'
@@ -5566,7 +5566,7 @@ function openInstrGroupInvoiceDialog(g){
   const recipChips=[
     ...firmList.map(f=>'<button type="button" onclick="iiPickRecipient(this)"'
       +' data-name="'+f.name.replace(/"/g,'&quot;')+'" data-email="'+(f.email||'')+'"'
-      +' style="padding:5px 14px;border-radius:20px;border:1.5px solid '+(f.name===defRecipient?'#CC0000':'#ddd')+';'
+      +' style="padding:5px 14px;border-radius:20px;border:1.5px solid '+(f.name===defRecipient?'#C0001A':'#ddd')+';'
       +'background:'+(f.name===defRecipient?'#fff5f5':'#fff')+';cursor:pointer;font-size:.84rem;font-weight:600">'
       +'\uD83C\uDFE2 '+f.name+(f.count>1?' ('+f.count+' TN)':'')+'</button>'),
     ...tnRows.filter(r=>!r.firm).map(r=>'<button type="button" onclick="iiPickRecipient(this)"'
@@ -5598,7 +5598,7 @@ function openInstrGroupInvoiceDialog(g){
     +'<div style="font-size:.72rem;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Rechnungsempf\u00e4nger</div>'
     +(recipChips?'<div style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:10px">'+recipChips+'</div>':'')
     +'<input id="ii_recipient_input" type="text" placeholder="Name der Firma oder Person\u2026"'
-    +' style="width:100%;padding:8px 12px;border-radius:8px;border:1.5px solid #CC0000;font-size:.9rem;font-weight:600;box-sizing:border-box">'
+    +' style="width:100%;padding:8px 12px;border-radius:8px;border:1.5px solid #C0001A;font-size:.9rem;font-weight:600;box-sizing:border-box">'
     +'<textarea id="ii_recipient_addr" rows="2" placeholder="Anschrift (Stra\u00dfe, PLZ Ort) \u2013 nur n\u00f6tig, wenn keine Firma hinterlegt"'
     +' style="width:100%;margin-top:7px;padding:8px 12px;border-radius:8px;border:1px solid #ddd;font-size:.85rem;box-sizing:border-box;resize:vertical"></textarea>'
     +'<input id="ii_recipient_email" type="hidden">'
@@ -5616,7 +5616,7 @@ function openInstrGroupInvoiceDialog(g){
     +'<div style="background:#f0f0f0;border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:10px">'
     +'<div style="font-size:.78rem;font-weight:700;color:#555">Was m\u00f6chten Sie erstellen?</div>'
     +'<div style="display:flex;gap:10px;flex-wrap:wrap">'
-    +'<button class="btn" style="background:#CC0000;flex:1;min-width:180px;justify-content:center;color:#fff;border-color:transparent" onclick="iiCreateCollective()">'
+    +'<button class="btn" style="background:#C0001A;flex:1;min-width:180px;justify-content:center;color:#fff;border-color:transparent" onclick="iiCreateCollective()">'
     +'\uD83E\uDDFE 1 Sammelrechnung<br><span style="font-size:.75rem;font-weight:400;opacity:.85">(alle Ausgew\u00e4hlten)</span></button>'
     +'<button class="btn ghost" style="flex:1;min-width:180px;justify-content:center" onclick="iiCreateEach()">'
     +'\uD83D\uDCC4 Einzelrechnungen<br><span style="font-size:.75rem;font-weight:400;color:#888">(je Person eine Rechnung)</span></button>'
@@ -5640,8 +5640,8 @@ function iiToggleRow(i,billed){
   const checked=row.dataset.checked==='1';
   row.dataset.checked=checked?'0':'1';
   box.textContent=checked?'':'\u2713';
-  box.style.background=checked?'#fff':'#CC0000';
-  box.style.borderColor=checked?'#ccc':'#CC0000';
+  box.style.background=checked?'#fff':'#C0001A';
+  box.style.borderColor=checked?'#ccc':'#C0001A';
   iiUpdateSummary();
 }
 function iiSelectAll(on){
@@ -5652,8 +5652,8 @@ function iiSelectAll(on){
       const box=document.getElementById('iibox_'+i);
       row.dataset.checked=on?'1':'0';
       box.textContent=on?'\u2713':'';
-      box.style.background=on?'#CC0000':'#fff';
-      box.style.borderColor=on?'#CC0000':'#ccc';
+      box.style.background=on?'#C0001A':'#fff';
+      box.style.borderColor=on?'#C0001A':'#ccc';
     }
   });
   iiUpdateSummary();
@@ -5662,7 +5662,7 @@ function iiPickRecipient(btn){
   document.querySelectorAll('[onclick^="iiPickRecipient"]').forEach(b=>{
     b.style.borderColor='#ddd';b.style.background='#fff';
   });
-  btn.style.borderColor='#CC0000';btn.style.background='#fff5f5';
+  btn.style.borderColor='#C0001A';btn.style.background='#fff5f5';
   const inp=document.getElementById('ii_recipient_input');
   const em=document.getElementById('ii_recipient_email');
   if(inp) inp.value=btn.dataset.name||'';
@@ -5691,7 +5691,7 @@ function iiUpdateSummary(){
   const tax=state.settings.tax!=null?state.settings.tax:0;
   const net=price*sel.length,taxAmt=net*tax/100,gross=net+taxAmt;
   el.innerHTML='<span><strong>'+sel.length+' Teilnehmer</strong> \u00b7 Netto: <strong>'+eur(net)+'</strong>'
-    +(tax>0?' \u00b7 USt '+tax+'%: <strong>'+eur(taxAmt)+'</strong> \u00b7 Gesamt: <strong style="color:#CC0000">'+eur(gross)+'</strong>':'')
+    +(tax>0?' \u00b7 USt '+tax+'%: <strong>'+eur(taxAmt)+'</strong> \u00b7 Gesamt: <strong style="color:#C0001A">'+eur(gross)+'</strong>':'')
     +(tax===0?' <span style="color:#16a34a;font-size:.8rem">steuerfrei</span>':'')+'</span>';
 }
 function _iiMakeInv(eids,recipName,recipEmail,desc,recipAddr){
@@ -6210,7 +6210,7 @@ function instrGroupCerts(g){
 function _renderAdrCertPage(doc, i, p){
   const s=state.settings;
   const PL=20, PR=190, PC=105, PW=170;
-  const ac=hx(s.accent||'#CC0000');
+  const ac=hx(s.accent||'#C0001A');
   const INK=[30,30,30], MUTED=[100,100,100], LIGHT=[150,150,150];
   let y = pdfHeader(doc,'');
   y += 4;
@@ -6294,7 +6294,7 @@ function _renderAdrCertPage(doc, i, p){
 function _renderInstrCertPage(doc, i, p){
   const s=state.settings;
   const PL=20, PR=190, PC=105, PW=170;
-  const ac=hx(s.accent||'#CC0000');
+  const ac=hx(s.accent||'#C0001A');
   const INK=[30,30,30], MUTED=[100,100,100], LIGHT=[150,150,150];
   const itype=i.instrType||'Gabelstapler';
   const titleMap={'Gabelstapler':'Nachweis der j\u00e4hrlichen Unterweisung','Ladekran':'Nachweis der j\u00e4hrlichen Unterweisung','Fahrtenschreiber':'Nachweis der j\u00e4hrlichen Unterweisung','Baumaschinen':'Nachweis der j\u00e4hrlichen Unterweisung'};
@@ -6676,7 +6676,7 @@ function printAttendanceList(g, isInstr){ try{
   const PH=210;                       // A4 quer: 297 x 210 mm
   // DIN-Ränder: links 20 mm (Heftrand), rechts/oben/unten je 10 mm.
   const PL=20, PR=287, PW=PR-PL, PC=(PL+PR)/2;   // PW = 267 mm nutzbare Breite
-  const ac=hx(s.accent||'#CC0000');
+  const ac=hx(s.accent||'#C0001A');
 
   // Die feste Fußzeile (APV/QR/Adresse) sitzt im Hochformat 7 mm über der
   // Blattkante. Im Querformat wird sie um FOOT_LIFT angehoben, damit auch unten
@@ -7208,7 +7208,7 @@ function openScanUpload(groupKey, isInstr){
         +'<span style="font-size:.82rem;font-weight:600;flex:1">'+scan.name+'</span>'
         +'<span style="font-size:.75rem;color:#aaa">'+scan.date+'</span>'
         +'<button class="btn ghost sm" onclick="viewScan(\''+groupKey+'\','+i+')" style="padding:3px 8px;font-size:.75rem">🔍 Ansehen</button>'
-        +'<button class="btn ghost sm" onclick="deleteScan(\''+groupKey+'\','+i+')" style="padding:3px 8px;font-size:.75rem;color:#c00">✕</button>'
+        +'<button class="btn ghost sm" onclick="deleteScan(\''+groupKey+'\','+i+')" style="padding:3px 8px;font-size:.75rem;color:#C0001A">✕</button>'
       +'</div>'
       +thumb
       +'</div>';
@@ -7220,10 +7220,10 @@ function openScanUpload(groupKey, isInstr){
     +(existing.length
       ? '<div style="max-height:50vh;overflow-y:auto;margin-bottom:14px">'+previewHtml+'</div>'
       : '<div style="padding:16px;background:#f5f5f5;border-radius:8px;text-align:center;color:#888;margin-bottom:14px;font-size:.85rem">Noch kein Scan hinterlegt.</div>')
-    +'<div style="border:2px dashed #CC0000;border-radius:10px;padding:20px;text-align:center;cursor:pointer;background:#fff5f5" '
+    +'<div style="border:2px dashed #C0001A;border-radius:10px;padding:20px;text-align:center;cursor:pointer;background:#fff5f5" '
       +'onclick="document.getElementById(\'scanFileInput\').click()">'
       +'<div style="font-size:2rem;margin-bottom:6px">📸</div>'
-      +'<div style="font-weight:600;color:#CC0000;margin-bottom:4px">Scan hochladen</div>'
+      +'<div style="font-weight:600;color:#C0001A;margin-bottom:4px">Scan hochladen</div>'
       +'<div style="font-size:.8rem;color:#888">JPG, PNG, PDF · Klicken oder Datei hierher ziehen</div>'
       +'<input type="file" id="scanFileInput" accept="image/*,application/pdf" style="display:none" multiple '
         +'onchange="handleScanUpload(\''+groupKey+'\',this)">'
@@ -8418,9 +8418,9 @@ function _renderThemesBox(boxId, allThemes, selected){
         const checked=sel.has(t);
         const esc=_esc(t);
         const escQ=esc.replace(/'/g,'&#39;');
-        const bg=checked?'#CC0000':'#f5f5f5';
+        const bg=checked?'#C0001A':'#f5f5f5';
         const col=checked?'#fff':'#555';
-        const bc=checked?'#CC0000':'#e0e0e0';
+        const bc=checked?'#C0001A':'#e0e0e0';
         const tick=checked?'✓':'';
         return `<label onclick="_toggleThemeChip(this,'${boxId}')" style="display:inline-flex;align-items:center;gap:6px;padding:6px 11px;border-radius:7px;cursor:pointer;font-size:.83rem;font-weight:600;user-select:none;transition:all .12s;background:${bg};color:${col};border:1.5px solid ${bc}">
           <input type="checkbox" value="${esc}" ${checked?'checked':''} style="position:absolute;opacity:0;width:0;height:0;pointer-events:none">
@@ -8433,7 +8433,7 @@ function _renderThemesBox(boxId, allThemes, selected){
     <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
       <input id="${boxId}_new" type="text" placeholder="Neues Thema eingeben…"
         style="flex:1;min-width:180px;padding:6px 10px;border-radius:7px;border:1.5px solid #e0e0e0;background:#fff;font-size:.85rem;outline:none"
-        onfocus="this.style.borderColor='#CC0000'" onblur="this.style.borderColor='#e0e0e0'"
+        onfocus="this.style.borderColor='#C0001A'" onblur="this.style.borderColor='#e0e0e0'"
         onkeydown="if(event.key==='Enter'){event.preventDefault();_addTheme('${boxId}');}">
       <button class="btn ghost sm" type="button" onclick="_addTheme('${boxId}')">+ Hinzufügen</button>
       <button class="btn ghost sm" type="button" onclick="_checkAllThemes('${boxId}')">Alle ✓</button>
@@ -8448,9 +8448,9 @@ function _toggleThemeChip(label, boxId){
   if(!cb)return;
   cb.checked=!cb.checked;
   const on=cb.checked;
-  label.style.background=on?'#CC0000':'#f5f5f5';
+  label.style.background=on?'#C0001A':'#f5f5f5';
   label.style.color=on?'#fff':'#555';
-  label.style.borderColor=on?'#CC0000':'#e0e0e0';
+  label.style.borderColor=on?'#C0001A':'#e0e0e0';
   const tk=label.querySelector('.tk');
   if(tk)tk.textContent=on?'✓':'';
   _updateThemeCounter(boxId);
@@ -8462,7 +8462,7 @@ function _updateThemeCounter(boxId){
   const all=document.querySelectorAll('#'+boxId+'_checks input[type=checkbox]');
   const n=document.querySelectorAll('#'+boxId+'_checks input[type=checkbox]:checked').length;
   el.textContent=all.length?n+' von '+all.length+' Themen ausgewählt':'';
-  el.style.color=n>0?'#CC0000':'#aaa';
+  el.style.color=n>0?'#C0001A':'#aaa';
 }
 
 function _addTheme(boxId){
@@ -8490,7 +8490,7 @@ function _checkAllThemes(boxId){
   document.querySelectorAll('#'+boxId+'_checks label').forEach(label=>{
     const cb=label.querySelector('input[type=checkbox]');
     if(cb)cb.checked=true;
-    label.style.background='#CC0000';label.style.color='#fff';label.style.borderColor='#CC0000';
+    label.style.background='#C0001A';label.style.color='#fff';label.style.borderColor='#C0001A';
     const tk=label.querySelector('.tk');if(tk)tk.textContent='✓';
   });
   _updateThemeCounter(boxId);
@@ -9526,7 +9526,7 @@ function ciCalc(){
     +(tax===0
       ?'<span style="color:#16a34a;font-size:.8rem">§ 4 Nr. 21 UStG – steuerbefreit</span>'
       :'<span>USt '+tax+'%: <strong>'+eur(gross-net)+'</strong></span>')
-    +'<span>Rechnungsbetrag: <strong style="color:#CC0000;font-size:1rem">'+eur(gross)+'</strong></span>'
+    +'<span>Rechnungsbetrag: <strong style="color:#C0001A;font-size:1rem">'+eur(gross)+'</strong></span>'
     +'</div>';
 }
 
@@ -9591,7 +9591,7 @@ function openAssignToGroup(g){
                 border:1.5px solid #e0e0e0;border-radius:8px;cursor:pointer;
                 background:#fff;transition:all .12s;user-select:none">
               <input type="checkbox" value="${p.id}"
-                style="width:16px;height:16px;flex-shrink:0;accent-color:#CC0000;cursor:pointer;pointer-events:none">
+                style="width:16px;height:16px;flex-shrink:0;accent-color:#C0001A;cursor:pointer;pointer-events:none">
               <span style="flex:1">
                 <strong style="font-size:.9rem">${pFullName(p)}</strong>
                 <span style="display:flex;gap:10px;flex-wrap:wrap;margin-top:1px">
@@ -9619,7 +9619,7 @@ function toggleAssignChip(label){
   cb.checked=!cb.checked;
   if(cb.checked){
     label.style.background='#fff5f5';
-    label.style.borderColor='#CC0000';
+    label.style.borderColor='#C0001A';
   }else{
     label.style.background='#fff';
     label.style.borderColor='#e0e0e0';
@@ -9711,10 +9711,10 @@ function openGroupInvoiceDialog(g){
       ?'<span style="font-size:.75rem;color:#16a34a;font-weight:700">\u2713 '+(r.inv?r.inv.number:'abgerechnet')+'</span>'
       :r.e.passed?'<span class="tag green" style="font-size:.72rem">bestanden</span>'
       :'<span style="font-size:.72rem;color:#aaa">offen</span>';
-    const borderCol=r.billed?'#e0e0e0':r.e.passed?'#CC0000':'#ddd';
+    const borderCol=r.billed?'#e0e0e0':r.e.passed?'#C0001A':'#ddd';
     const bgCol=r.billed?'#f5f5f5':r.e.passed?'#fff5f5':'#fff';
-    const boxBorder=r.billed?'#ccc':r.e.passed?'#CC0000':'#ccc';
-    const boxBg=r.billed?'#ddd':r.e.passed?'#CC0000':'#fff';
+    const boxBorder=r.billed?'#ccc':r.e.passed?'#C0001A':'#ccc';
+    const boxBg=r.billed?'#ddd':r.e.passed?'#C0001A':'#fff';
     const tick=(r.e.passed&&!r.billed)?'\u2713':'';
     return '<div id="girow_'+i+'" onclick="giToggleRow('+i+','+r.billed+')"'
       +' data-cid="'+r.e.id+'" data-checked="'+(r.billed?0:1)+'"'
@@ -9732,7 +9732,7 @@ function openGroupInvoiceDialog(g){
   const recipChips=[
     ...firmList.map(f=>'<button type="button" onclick="giPickRecipient(this)"'
       +' data-name="'+f.name.replace(/"/g,'&quot;')+'" data-email="'+(f.email||'')+'"'
-      +' style="padding:5px 14px;border-radius:20px;border:1.5px solid '+(f.name===defRecipient?'#CC0000':'#ddd')+';'
+      +' style="padding:5px 14px;border-radius:20px;border:1.5px solid '+(f.name===defRecipient?'#C0001A':'#ddd')+';'
       +'background:'+(f.name===defRecipient?'#fff5f5':'#fff')+';'
       +'cursor:pointer;font-size:.84rem;font-weight:600;transition:all .12s">'
       +'\uD83C\uDFE2 '+f.name+(f.count>1?' ('+f.count+' TN)':'')+'</button>'),
@@ -9751,7 +9751,7 @@ function openGroupInvoiceDialog(g){
     // Preis + Datum
     // Preis-Modus Toggle
     +'<div style="display:flex;gap:6px;margin-bottom:10px">'
-      +'<button id="gi_mode_pp" class="btn sm" style="background:#CC0000;flex:1;color:#fff;border-color:transparent" onclick="giSetPriceMode(\'pp\')">'
+      +'<button id="gi_mode_pp" class="btn sm" style="background:#C0001A;flex:1;color:#fff;border-color:transparent" onclick="giSetPriceMode(\'pp\')">'
         +'👤 Preis pro Person</button>'
       +'<button id="gi_mode_flat" class="btn sm ghost" style="flex:1" onclick="giSetPriceMode(\'flat\')">'
         +'📦 Pauschalpreis gesamt</button>'
@@ -9766,7 +9766,7 @@ function openGroupInvoiceDialog(g){
     +'<div style="font-size:.72rem;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Rechnungsempfänger</div>'
     +(recipChips?'<div style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:10px">'+recipChips+'</div>':'')
     +'<input id="gi_recipient_input" type="text" placeholder="Name der Firma oder Person…"'
-    +' style="width:100%;padding:8px 12px;border-radius:8px;border:1.5px solid #CC0000;font-size:.9rem;font-weight:600;box-sizing:border-box">'
+    +' style="width:100%;padding:8px 12px;border-radius:8px;border:1.5px solid #C0001A;font-size:.9rem;font-weight:600;box-sizing:border-box">'
     +'<textarea id="gi_recipient_addr" rows="2" placeholder="Anschrift (Straße, PLZ Ort) – nur nötig, wenn keine Firma hinterlegt"'
     +' style="width:100%;margin-top:7px;padding:8px 12px;border-radius:8px;border:1px solid #ddd;font-size:.85rem;box-sizing:border-box;resize:vertical"></textarea>'
     +'<input id="gi_recipient_email" type="hidden">'
@@ -9786,7 +9786,7 @@ function openGroupInvoiceDialog(g){
     +'<div style="background:#f0f0f0;border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:10px">'
     +'<div style="font-size:.78rem;font-weight:700;color:#555">Was m\u00f6chten Sie erstellen?</div>'
     +'<div style="display:flex;gap:10px;flex-wrap:wrap">'
-    +'<button class="btn" style="background:#CC0000;flex:1;min-width:180px;justify-content:center;color:#fff;border-color:transparent" onclick="giCreateCollectiveAll()">'
+    +'<button class="btn" style="background:#C0001A;flex:1;min-width:180px;justify-content:center;color:#fff;border-color:transparent" onclick="giCreateCollectiveAll()">'
     +'\uD83E\uDDFE 1 Sammelrechnung<br><span style="font-size:.75rem;font-weight:400;opacity:.85">(alle Ausgew\u00e4hlten, Empf\u00e4nger wie oben)</span></button>'
     +'<button class="btn ghost" style="flex:1;min-width:180px;justify-content:center" onclick="giCreateEach()">'
     +'\uD83D\uDCC4 Einzelrechnungen<br><span style="font-size:.75rem;font-weight:400;color:#888">(je Person eine eigene Rechnung)</span></button>'
@@ -9813,8 +9813,8 @@ function giToggleRow(i,billed){
   const nowOn=row.dataset.checked!=='1'&&row.dataset.checked!=1;
   row.dataset.checked=nowOn?'1':'0';
   if(nowOn){
-    row.style.border='1.5px solid #CC0000';row.style.background='#fff5f5';
-    box.style.background='#CC0000';box.style.borderColor='#CC0000';box.textContent='✓';
+    row.style.border='1.5px solid #C0001A';row.style.background='#fff5f5';
+    box.style.background='#C0001A';box.style.borderColor='#C0001A';box.textContent='✓';
   }else{
     row.style.border='1.5px solid #ddd';row.style.background='#fff';
     box.style.background='#fff';box.style.borderColor='#ccc';box.textContent='';
@@ -9829,7 +9829,7 @@ function giSelectAll(val){
     const box=document.getElementById('gibox_'+i);
     if(!row||!box)return;
     row.dataset.checked=val?'1':'0';
-    if(val){row.style.border='1.5px solid #CC0000';row.style.background='#fff5f5';box.style.background='#CC0000';box.style.borderColor='#CC0000';box.textContent='✓';}
+    if(val){row.style.border='1.5px solid #C0001A';row.style.background='#fff5f5';box.style.background='#C0001A';box.style.borderColor='#C0001A';box.textContent='✓';}
     else{row.style.border='1.5px solid #ddd';row.style.background='#fff';box.style.background='#fff';box.style.borderColor='#ccc';box.textContent='';}
   });
   giUpdateSummary();
@@ -9849,10 +9849,10 @@ function giSetPriceMode(mode){
   const lbl = document.getElementById('gi_price_label');
   if(mode==='flat'){
     if(ppBtn){ppBtn.className='btn sm ghost';ppBtn.style.flex='1';}
-    if(flatBtn){flatBtn.className='btn sm';flatBtn.style.cssText='flex:1;background:#CC0000';}
+    if(flatBtn){flatBtn.className='btn sm';flatBtn.style.cssText='flex:1;background:#C0001A';}
     if(lbl) lbl.childNodes[0].textContent='Pauschalpreis gesamt netto (€)';
   } else {
-    if(ppBtn){ppBtn.className='btn sm';ppBtn.style.cssText='flex:1;background:#CC0000';}
+    if(ppBtn){ppBtn.className='btn sm';ppBtn.style.cssText='flex:1;background:#C0001A';}
     if(flatBtn){flatBtn.className='btn sm ghost';flatBtn.style.flex='1';}
     if(lbl) lbl.childNodes[0].textContent='Einzelpreis netto (€)';
   }
@@ -9886,7 +9886,7 @@ function giUpdateSummary(){
       +(tax===0
         ?'<span style="color:#16a34a;font-size:.82rem">§ 4 Nr. 21 UStG – steuerbefreit</span>'
         :'<span>inkl. '+tax+'% USt</span>')
-      +'<span>Rechnungsbetrag: <strong style="color:#CC0000;font-size:1rem">'+eur(gross)+'</strong></span>'
+      +'<span>Rechnungsbetrag: <strong style="color:#C0001A;font-size:1rem">'+eur(gross)+'</strong></span>'
       +'</div>';
   }
 
@@ -9923,7 +9923,7 @@ function giPickRecipient(btn){
     b.style.background='#fff';
   });
   // Diesen markieren
-  btn.style.border='1.5px solid #CC0000';
+  btn.style.border='1.5px solid #C0001A';
   btn.style.background='#fff5f5';
   // Werte ins Input-Feld setzen
   const inp=document.getElementById('gi_recipient_input');
@@ -10039,13 +10039,13 @@ function openWorkflow(presetParticipantId){
   const p=pid?state.participants.find(x=>x.id===pid):null;
   document.getElementById('modalContent').innerHTML=`
     <h3 style="display:flex;align-items:center;gap:10px;padding-bottom:14px;margin-bottom:0">
-      <span style="background:#CC0000;color:#fff;border-radius:8px;padding:5px 11px;font-size:.85rem;font-weight:700">Workflow</span>
+      <span style="background:#C0001A;color:#fff;border-radius:8px;padding:5px 11px;font-size:.85rem;font-weight:700">Workflow</span>
       <span style="font-size:1rem">${p?pFullName(p):'Anmeldung & Ablauf'}</span>
     </h3>
     <div style="display:flex;margin:14px 0 18px;position:relative">
       ${[['1','Anmeldung'],['2','Bestätigung'],['3','Lehrgangstag'],['4','Rechnungen']].map(([n,lbl],i)=>`
         <div style="flex:1;text-align:center;position:relative;z-index:1">
-          <div id="wfStep${n}" style="width:30px;height:30px;border-radius:50%;margin:0 auto 4px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.82rem;transition:all .2s;position:relative;z-index:1;background:${n==='1'?'#CC0000':'#e0e0e0'};color:${n==='1'?'#fff':'#999'}">${n}</div>
+          <div id="wfStep${n}" style="width:30px;height:30px;border-radius:50%;margin:0 auto 4px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.82rem;transition:all .2s;position:relative;z-index:1;background:${n==='1'?'#C0001A':'#e0e0e0'};color:${n==='1'?'#fff':'#999'}">${n}</div>
           <div style="font-size:.65rem;color:#888;font-weight:700;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap">${lbl}</div>
           ${i<3?'<div id="wfLine'+n+'" style="position:absolute;top:15px;left:50%;right:-50%;height:2px;background:#e0e0e0;z-index:0"></div>':''}
         </div>`).join('')}
@@ -10059,7 +10059,7 @@ function _wfActivateStep(n){
   [1,2,3,4].forEach(i=>{
     const el=document.getElementById('wfStep'+i);if(!el)return;
     if(i<n){el.style.background='#16a34a';el.style.color='#fff';el.textContent='✓';}
-    else if(i===n){el.style.background='#CC0000';el.style.color='#fff';el.textContent=i;}
+    else if(i===n){el.style.background='#C0001A';el.style.color='#fff';el.textContent=i;}
     else{el.style.background='#e0e0e0';el.style.color='#999';el.textContent=i;}
     const ln=document.getElementById('wfLine'+i);
     if(ln)ln.style.background=i<n?'#16a34a':'#e0e0e0';
@@ -10446,10 +10446,10 @@ function _wfStep4(){
         ${fd.entries.map(e=>{const b=billedIds.has(e.id);return`
           <div onclick="${!b?`toggleInvRow(this,'wf4_tn','${fk}','${e.id}')`:''}" data-fk="${fk}" data-cid="${e.id}"
             style="display:flex;align-items:center;gap:10px;padding:7px 10px;border-radius:7px;cursor:${b?'default':'pointer'};
-            border:1.5px solid ${!b?'#CC0000':'#e0e0e0'};background:${!b?'#fff5f5':'#f8f8f8'};
+            border:1.5px solid ${!b?'#C0001A':'#e0e0e0'};background:${!b?'#fff5f5':'#f8f8f8'};
             transition:all .15s;${b?'opacity:.5':''}">
-            <div style="width:18px;height:18px;border-radius:4px;border:2px solid ${!b?'#CC0000':'#ccc'};
-              background:${!b?'#CC0000':'#fff'};display:flex;align-items:center;justify-content:center;
+            <div style="width:18px;height:18px;border-radius:4px;border:2px solid ${!b?'#C0001A':'#ccc'};
+              background:${!b?'#C0001A':'#fff'};display:flex;align-items:center;justify-content:center;
               flex-shrink:0;font-size:11px;color:#fff;font-weight:900">${!b?'✓':''}</div>
             <input type="checkbox" class="wf4_tn" data-fk="${fk}" data-cid="${e.id}" ${!b?'checked':''} ${b?'disabled':''}
               style="display:none">
@@ -10988,7 +10988,7 @@ function adrInstrCert(id){
     const doc=new jsPDF();
     const s=state.settings;
     const PL=20, PR=190, PC=105, PW=170, PH=297;
-    const ac=hx(s.accent||'#CC0000');
+    const ac=hx(s.accent||'#C0001A');
     const INK=[30,30,30], MUTED=[100,100,100], LIGHT=[150,150,150];
 
     // ── 1. Header ──────────────────────────────────────────────────────
@@ -12401,7 +12401,7 @@ function openMahnungDialog(invId){
       +(mStufe>=2&&zinsen>0?'<div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid #eee"><span>Verzugszinsen '+(bz+9).toFixed(2)+'% p.a. (§ 288 Abs. 2 BGB)</span><strong>'+eur(zinsen)+'</strong></div>':'')
       +(mStufe>=2&&cfg.gebuehr>0?'<div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid #eee"><span>Mahngebühr</span><strong>'+eur(cfg.gebuehr)+'</strong></div>':'')
       +(mStufe>=3?'<div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid #eee"><span>Verzugspauschale B2B (§ 288 Abs. 5 BGB)</span><strong>'+eur(40)+'</strong></div>':'')
-      +'<div style="display:flex;justify-content:space-between;padding:5px 0;font-weight:700;font-size:1rem;color:#CC0000"><span>Gesamtforderung</span><span>'+eur(gesamt)+'</span></div>'
+      +'<div style="display:flex;justify-content:space-between;padding:5px 0;font-weight:700;font-size:1rem;color:#C0001A"><span>Gesamtforderung</span><span>'+eur(gesamt)+'</span></div>'
     +'</div>':'')
     +'<div class="grid grid-2" style="margin-bottom:14px">'
       +'<div class="field"><label>Mahnungsdatum</label><input type="date" id="mahn_datum" value="'+today()+'"></div>'
@@ -12475,7 +12475,7 @@ function mahnungPDF(invId,stufe){
   const s=state.settings;
   const doc=new jsPDF('p','mm','a4');
   const PL=20,PR=190,PC=105,PW=170;
-  const ac=hx(s.accent||'#CC0000');
+  const ac=hx(s.accent||'#C0001A');
   const INK=[30,30,30], MUTED=[100,100,100], LIGHT=[150,150,150];
   const cfg=MAHN_CONFIG[stufe];
   const datum=(document.getElementById('mahn_datum')||{}).value||today();
@@ -12929,7 +12929,7 @@ function renderDozQualChips(selected, containerId){
   el.innerHTML = DOZENT_QUALIFIKATIONEN.map(q=>{
     const isOn = selected.indexOf(q)>=0;
     const style = isOn
-      ? 'background:#fff5f5;border:1.5px solid #CC0000;color:#CC0000'
+      ? 'background:#fff5f5;border:1.5px solid #C0001A;color:#C0001A'
       : 'background:#fff;border:1.5px solid #ddd;color:#555';
     return '<button type="button" data-qual="'+_esc(q)+'" onclick="toggleDozQualChip(this,\''+containerId+'\')" '
       +'style="padding:5px 12px;border-radius:18px;font-size:.78rem;font-weight:600;cursor:pointer;transition:all .12s;'+style+'">'
@@ -12937,7 +12937,7 @@ function renderDozQualChips(selected, containerId){
   }).join('');
 }
 function toggleDozQualChip(btn, containerId){
-  const isOn = btn.style.color==='rgb(204, 0, 0)' || btn.style.color==='#CC0000';
+  const isOn = btn.style.color==='rgb(204, 0, 0)' || btn.style.color==='#C0001A';
   if(isOn){
     btn.style.background='#fff';
     btn.style.border='1.5px solid #ddd';
@@ -12945,8 +12945,8 @@ function toggleDozQualChip(btn, containerId){
     btn.textContent = btn.dataset.qual;
   }else{
     btn.style.background='#fff5f5';
-    btn.style.border='1.5px solid #CC0000';
-    btn.style.color='#CC0000';
+    btn.style.border='1.5px solid #C0001A';
+    btn.style.color='#C0001A';
     btn.textContent = '✓ ' + btn.dataset.qual;
   }
 }
@@ -12954,7 +12954,7 @@ function getDozQualSelection(containerId){
   const el = document.getElementById(containerId);
   if(!el) return [];
   return [...el.querySelectorAll('button')].filter(b=>{
-    return b.style.color==='rgb(204, 0, 0)' || b.style.color==='#CC0000';
+    return b.style.color==='rgb(204, 0, 0)' || b.style.color==='#C0001A';
   }).map(b=>b.dataset.qual);
 }
 
@@ -13084,15 +13084,15 @@ function openSignatureUpload(dozId){
       ? '<div style="margin-bottom:14px;padding:10px;background:#f9f9f9;border:1px solid #e0e0e0;border-radius:8px">'
           +'<div style="font-size:.75rem;font-weight:700;color:#888;margin-bottom:6px">AKTUELLE UNTERSCHRIFT</div>'
           +'<img src="'+d.signature+'" style="max-height:60px;max-width:220px;border-radius:4px;border:1px solid #ddd;background:#fff;padding:4px;display:block">'
-          +'<button class="btn ghost sm" onclick="removeSignature(\''+dozId+'\')" style="margin-top:8px;color:#c00;font-size:.78rem">✕ Unterschrift entfernen</button>'
+          +'<button class="btn ghost sm" onclick="removeSignature(\''+dozId+'\')" style="margin-top:8px;color:#C0001A;font-size:.78rem">✕ Unterschrift entfernen</button>'
         +'</div>'
       : '')
 
     // Upload-Bereich
-    +'<div style="border:2px dashed #CC0000;border-radius:10px;padding:24px;text-align:center;cursor:pointer;background:#fff5f5" '
+    +'<div style="border:2px dashed #C0001A;border-radius:10px;padding:24px;text-align:center;cursor:pointer;background:#fff5f5" '
       +'onclick="document.getElementById(\'sigFileInput_'+dozId+'\').click()">'
       +'<div style="font-size:1.8rem;margin-bottom:6px">\u270d\ufe0f</div>'
-      +'<div style="font-weight:600;color:#CC0000;margin-bottom:4px">'+(hasSig ? 'Neue Unterschrift hochladen' : 'Unterschrift hochladen')+'</div>'
+      +'<div style="font-weight:600;color:#C0001A;margin-bottom:4px">'+(hasSig ? 'Neue Unterschrift hochladen' : 'Unterschrift hochladen')+'</div>'
       +'<div style="font-size:.8rem;color:#888">JPG oder PNG \u00b7 Am besten auf wei\u00dfem Hintergrund</div>'
       +'<input type="file" id="sigFileInput_'+dozId+'" accept="image/*" style="display:none" onchange="handleSignatureUpload(\''+dozId+'\',this)">'
     +'</div>'
@@ -13737,7 +13737,7 @@ function pdfHeader(doc,title){
   if(s.taxId){doc.text('Steuer-Nr: '+s.taxId,PR,ry,{align:'right'});ry+=4;}
 
   // ── Trennlinie ────────────────────────────────────────────
-  const ac=hx(s.accent||'#CC0000');
+  const ac=hx(s.accent||'#C0001A');
   doc.setDrawColor(ac[0],ac[1],ac[2]);doc.setLineWidth(0.8);
   doc.line(PL,35,PR,35);
 
@@ -13770,7 +13770,7 @@ function pdfFooterImages(doc, isInvoice, lift){
 
   // ── Fußzeile Linie ────────────────────────────────────────
   const s=state.settings;
-  const ac=hx(s.accent||'#CC0000');
+  const ac=hx(s.accent||'#C0001A');
   doc.setDrawColor(ac[0],ac[1],ac[2]);doc.setLineWidth(0.4);
   doc.line(PL,_H-30-LI,PR,_H-30-LI);
   doc.setFont('helvetica','normal');doc.setFontSize(7);doc.setTextColor(140,140,140);
@@ -13785,7 +13785,7 @@ function pdfCertPage(doc, co, p){
   const s   = state.settings;
   const cfg = ctype(co.type);
   const PL=20, PR=190, PC=105, PW=170;
-  const ac    = hx(s.accent||'#CC0000');
+  const ac    = hx(s.accent||'#C0001A');
   const INK   = [30,30,30];
   const MUTED = [100,100,100];
   const LIGHT = [150,150,150];
@@ -14005,7 +14005,7 @@ function instructionCert(id){
   const doc=new jsPDF();
   const s=state.settings;
   const PL=20, PR=190, PC=105, PW=170;
-  const ac=hx(s.accent||'#CC0000');
+  const ac=hx(s.accent||'#C0001A');
   const INK=[30,30,30], MUTED=[100,100,100], LIGHT=[150,150,150];
 
   // ── 1. Header ──────────────────────────────────────────────────────
