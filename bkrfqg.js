@@ -618,7 +618,7 @@ function bkrfqgRenderStandortListe() {
     <div class="card" style="padding:14px 16px;margin-bottom:12px;border-left:3px solid ${s.status==='anerkannt'?'#059669':'var(--gelb)'}">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid var(--border)">
         <div>
-          <div style="font-weight:700;font-size:15px;color:var(--dunkel);display:flex;align-items:center;gap:8px">${s.name} ${bBadge(s.status)}</div>
+          <div style="font-weight:700;font-size:16px;color:var(--dunkel);display:flex;align-items:center;gap:8px">${s.name} ${bBadge(s.status)}</div>
           <div style="font-size:12px;color:var(--grau);margin-top:3px">${s.strasse||''}, ${s.plz||''} ${s.ort||''}</div>
           ${s.aktenzeichen?`<div style="font-size:11px;color:var(--grau);font-family:monospace;margin-top:2px">AZ: ${s.aktenzeichen}</div>`:''}
         </div>

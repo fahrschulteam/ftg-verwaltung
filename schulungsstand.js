@@ -244,7 +244,7 @@ window.renderSchulungsstand = async function() {
       <!-- Kopfzeile -->
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
         <div>
-          <h2 style="margin:0;font-size:18px;font-weight:700;color:var(--dunkel)">Offene Schulungen & Unterweisungen</h2>
+          <h2 style="margin:0;font-size:20px;font-weight:700;color:var(--dunkel)">Offene Schulungen & Unterweisungen</h2>
           <div style="font-size:12px;color:var(--grau);margin-top:2px">
             Bevorstehende Termine aus der Schulungsverwaltung · Stand: ${new Date().toLocaleDateString('de-DE')}
           </div>
