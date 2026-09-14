@@ -436,6 +436,12 @@ body.schulung-active main{padding:0;max-width:none;}
   .dok-actions { flex-direction:row; align-items:stretch; }
   .dok-act { padding:0 11px; font-size:13px; }
   .dok-act:first-child { border-bottom:none; border-right:1px solid var(--border); }
+
+  /* Kopfzeile: Filter und Knopf in einer Zeile, wenig Leerraum oben */
+  #view-dokumente.view.active { padding:14px 24px 28px; }
+  .dok-kopfzeile { display:flex; align-items:center; gap:14px;
+    flex-wrap:wrap; margin-bottom:12px; }
+  .dok-kopfzeile .dok-chips { margin-bottom:0; flex:1; }
   /* === VORLAGEN-LISTE-ENDE === */
 
 </style>
@@ -565,7 +571,7 @@ body.schulung-active main{padding:0;max-width:none;}
 <script src="fuhrpark.js?v=20260702a"></script>
 <script src="todos.js?v=20260630a"></script>
 <script src="kva.js?v=20260708b"></script>
-<script src="dokumente.js?v=20260914a"></script>
+<script src="dokumente.js?v=20260914b"></script>
   <script src="einstellungen.js?v=20260826b"></script>
 <script src="bkrfqg.js?v=20260902"></script>
 </body>

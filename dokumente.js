@@ -104,13 +104,11 @@ window.renderDokumente = async function () {
   }
 
   view.innerHTML = `
-    <div class="modul-head">
-      <div>
-        <h2 class="modul-titel">Vorlagen & Dokumente</h2>
-      </div>
+    <div class="dok-kopfzeile">
+      <h2 class="modul-titel">Vorlagen & Dokumente</h2>
+      <div class="dok-chips">${filterChips}</div>
       ${darfVerwalten ? '<button class="btn btn-primary" onclick="oeffneDokModal()">+ Dokument</button>' : ''}
     </div>
-    ${kategorien.length ? `<div class="dok-chips">${filterChips}</div>` : ''}
     ${inhalt}
   `;
 };
