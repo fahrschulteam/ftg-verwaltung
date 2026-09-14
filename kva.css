@@ -141,12 +141,15 @@ input:focus,textarea:focus{outline:2px solid var(--blau);border-color:transparen
    KVA-Modul. Zum Rueckgaengigmachen den Bereich bis
    KOMPAKT-ENDE loeschen. */
 
-/* Schrittleiste: kleinere Kreise, weniger Luft */
-#view-kva .st{padding:8px 0 4px;}
-#view-kva .sd{width:26px;height:26px;font-size:10px;}
-#view-kva .sd.ac{box-shadow:0 0 0 3px rgba(192,0,26,.18);}
-#view-kva .sl{font-size:9.5px;margin-top:2px;}
-#view-kva .sl2{margin-top:12px;}
+/* Schrittleiste: einzeilige Darstellung - Kreis und Text nebeneinander */
+#view-kva .st{padding:4px 0 2px;align-items:center;}
+#view-kva .si{flex-direction:row;align-items:center;gap:6px;flex:0 0 auto;}
+#view-kva .sd{width:22px;height:22px;font-size:10px;}
+#view-kva .sd.ac{box-shadow:0 0 0 2px rgba(192,0,26,.18);}
+#view-kva .sl{font-size:11px;margin-top:0;white-space:nowrap;}
+#view-kva .sl2{margin-top:0;align-self:center;flex:1;min-width:14px;}
+/* Auf schmalen Bildschirmen nur die Nummernkreise zeigen */
+@media(max-width:1100px){#view-kva .si .sl{display:none;}}
 
 /* Karte: schmalerer Innenabstand */
 #view-kva .card{padding:18px 22px;margin:10px 0 0;}
