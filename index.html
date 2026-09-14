@@ -415,6 +415,29 @@ body.schulung-active main{padding:0;max-width:none;}
 #schulungFrame{height:100%!important;border-radius:0!important;box-shadow:none!important;}
 #view-teilnehmer{height:calc(100vh - 115px);}
 #teilnehmerFrame{height:100%!important;border-radius:0!important;box-shadow:none!important;}
+
+  /* === VORLAGEN-LISTE-ANFANG: Kacheln als kompakte Liste ===
+     Zum Rueckgaengigmachen den Bereich bis VORLAGEN-LISTE-ENDE loeschen. */
+
+  /* eine Spalte statt Kachelraster, enge Zeilenabstaende */
+  .dok-grid { grid-template-columns:1fr; gap:5px; }
+  .dok-gruppe { margin-bottom:14px; }
+  .dok-gruppe-titel { margin-bottom:6px; }
+  .dok-chips { margin-bottom:12px; gap:6px; }
+  .dok-chip { padding:5px 13px; font-size:12.5px; }
+
+  /* Zeile: flach, Name bekommt die volle Breite */
+  .dok-main { padding:7px 12px; gap:10px; }
+  .dok-icon { font-size:17px; line-height:1; }
+  .dok-name { font-size:13.5px; }
+  .dok-desc { font-size:11.5px; }
+
+  /* Bearbeiten und Entfernen nebeneinander statt uebereinander */
+  .dok-actions { flex-direction:row; align-items:stretch; }
+  .dok-act { padding:0 11px; font-size:13px; }
+  .dok-act:first-child { border-bottom:none; border-right:1px solid var(--border); }
+  /* === VORLAGEN-LISTE-ENDE === */
+
 </style>
   <link rel="stylesheet" href="kva.css?v=20260914c">
 </head>
