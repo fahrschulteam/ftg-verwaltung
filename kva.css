@@ -136,3 +136,46 @@ input:focus,textarea:focus{outline:2px solid var(--blau);border-color:transparen
 }
 
   .kvr:hover{background:#eef4fb;}
+/* === KOMPAKT-ANFANG: engere Darstellung des KVA-Assistenten ===
+   Alles hier ist auf #view-kva beschraenkt und wirkt damit nur im
+   KVA-Modul. Zum Rueckgaengigmachen den Bereich bis
+   KOMPAKT-ENDE loeschen. */
+
+/* Schrittleiste: kleinere Kreise, weniger Luft */
+#view-kva .st{padding:8px 0 4px;}
+#view-kva .sd{width:26px;height:26px;font-size:10px;}
+#view-kva .sd.ac{box-shadow:0 0 0 3px rgba(192,0,26,.18);}
+#view-kva .sl{font-size:9.5px;margin-top:2px;}
+#view-kva .sl2{margin-top:12px;}
+
+/* Karte: schmalerer Innenabstand */
+#view-kva .card{padding:18px 22px;margin:10px 0 0;}
+
+/* Raster und Felder enger setzen */
+#view-kva .fgrid{gap:11px 18px;}
+#view-kva .lbl{margin-top:0;margin-bottom:2px;letter-spacing:.4px;}
+#view-kva input{padding:7px 10px;font-size:13.5px;}
+#view-kva textarea{padding:8px 10px;min-height:70px;}
+
+/* Abschnittsueberschriften: deutlich weniger Abstand */
+#view-kva .fsec-top{margin-top:12px;}
+#view-kva .fsec-h,#view-kva .sec{margin:18px 0 10px;padding-bottom:5px;}
+#view-kva .fbox{margin-top:10px;}
+#view-kva .gh{margin:16px 0 8px;padding-bottom:4px;}
+
+/* Ja/Nein- und Anrede-Schalter flacher */
+#view-kva .yn{gap:8px;margin-top:2px;}
+#view-kva .yb{height:36px;font-size:12.5px;}
+
+/* Anrede-Gruppe nicht ueber die volle Breite ziehen */
+#view-kva .fsec-top .yn{max-width:440px;}
+
+/* Weiter-Knopf: weniger Abstand, nicht ueber die volle Breite */
+#view-kva .nr{margin-top:18px;}
+#view-kva .nxt{flex:0 0 auto;min-width:230px;padding:9px 18px;}
+
+/* Klassen- und Positionsauswahl ebenfalls etwas dichter */
+#view-kva .cb{padding:6px 9px;}
+#view-kva .stunden-box{padding:10px 12px;margin-bottom:8px;}
+#view-kva .ib{padding:7px 10px;margin-bottom:6px;}
+/* === KOMPAKT-ENDE === */
