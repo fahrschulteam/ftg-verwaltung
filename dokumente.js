@@ -107,7 +107,6 @@ window.renderDokumente = async function () {
     <div class="modul-head">
       <div>
         <h2 class="modul-titel">Vorlagen & Dokumente</h2>
-        <p class="modul-sub">Klick öffnet die Datei in Microsoft Office zum Bearbeiten</p>
       </div>
       ${darfVerwalten ? '<button class="btn btn-primary" onclick="oeffneDokModal()">+ Dokument</button>' : ''}
     </div>
