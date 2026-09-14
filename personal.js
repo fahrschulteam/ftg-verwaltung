@@ -142,9 +142,9 @@ function maZeile(m) {
     <td><div class="qchips">${quals||'–'}</div></td>
     <td>${eintritt}</td>
     <td><div class="tbl-actions">
-      <button class="btn btn-outline btn-sm" onclick="oeffneMaAkte('${m.id}')">👁 Akte</button>
-      ${canWrite()?`<button class="btn btn-outline btn-sm" onclick="oeffneMaForm('${m.id}')">✎</button>`:''}
-      ${canWrite()&&m.status==='aktiv'?`<button class="btn btn-outline btn-sm" onclick="archiviereMa('${m.id}')" title="Archivieren">📦</button>`:''}
+      <button class="btn btn-outline btn-sm" onclick="oeffneMaAkte('${m.id}')">${PIC('auge')} Akte</button>
+      ${canWrite()?`<button class="btn btn-outline btn-sm" onclick="oeffneMaForm('${m.id}')" title="Bearbeiten">${PIC('stift')}</button>`:''}
+      ${canWrite()&&m.status==='aktiv'?`<button class="btn btn-outline btn-sm" onclick="archiviereMa('${m.id}')" title="Archivieren">${PIC('archiv')}</button>`:''}
       ${canWrite()&&m.status==='archiviert'?`<button class="btn btn-outline btn-sm" onclick="reaktiviereMa('${m.id}')" title="Reaktivieren">↩</button>`:''}
     </div></td></tr>`;
 }
@@ -275,6 +275,30 @@ function customFieldRow(label='', value='') {
   return `<div class="cf-row"><input class="cf-label" placeholder="Bezeichnung" value="${(label||'').replace(/"/g,'&quot;')}"><input class="cf-val" placeholder="Wert" value="${(value||'').replace(/"/g,'&quot;')}"><button class="btn btn-danger btn-sm" onclick="this.parentElement.remove()">✕</button></div>`;
 }
 function mfAddCustom() { document.getElementById('mf-custom').insertAdjacentHTML('beforeend', customFieldRow()); }
+// ── Strich-Icons fuer Knoepfe ───────────────────────────
+// Die Farbe kommt ueber currentColor vom umgebenden Knopf.
+function PIC(n){
+  const P = {
+    auge:'<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/>'
+      +'<circle cx="12" cy="12" r="3"/>',
+    stift:'<path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/>',
+    archiv:'<rect x="2" y="4" width="20" height="5" rx="1"/>'
+      +'<path d="M4 9v10a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V9"/>'
+      +'<line x1="10" y1="13" x2="14" y2="13"/>',
+    doc:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>'
+      +'<polyline points="14 2 14 8 20 8"/>'
+      +'<line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/>',
+    drucker:'<polyline points="6 9 6 2 18 2 18 9"/>'
+      +'<path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>'
+      +'<rect x="6" y="14" width="12" height="8"/>',
+    x:'<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>'
+  };
+  return '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" '
+    +'stroke="currentColor" stroke-width="2" stroke-linecap="round" '
+    +'stroke-linejoin="round" style="vertical-align:-2px;flex:none">'
+    +(P[n]||'')+'</svg>';
+}
+
 function mfRolleChange() {
   const rolle = document.getElementById('mf-rolle').value;
   const istFL = ['Fahrlehrer','Fahrlehrerin','Fahrlehrer-Anwärter'].includes(rolle);
@@ -411,8 +435,8 @@ async function oeffneMaAkte(id) {
         ${m.notiz?`<div class="fsec">Notiz</div><p style="font-size:13px;color:var(--dunkel)">${m.notiz}</p>`:''}
       </div>
       <div class="modal-footer">
-        <button class="btn btn-outline" onclick="druckeDatenblatt('${m.id}')">🖨 Datenblatt drucken</button>
-        ${canWrite()?`<button class="btn btn-primary" onclick="document.getElementById('ma-akte-modal').remove();oeffneMaForm('${m.id}')">✎ Bearbeiten</button>`:''}
+        <button class="btn btn-outline" onclick="druckeDatenblatt('${m.id}')">${PIC('drucker')} Datenblatt drucken</button>
+        ${canWrite()?`<button class="btn btn-primary" onclick="document.getElementById('ma-akte-modal').remove();oeffneMaForm('${m.id}')">${PIC('stift')} Bearbeiten</button>`:''}
       </div>
     </div>`;
   document.body.appendChild(modal);
@@ -722,8 +746,8 @@ function maDokumenteBlockHTML(m) {
       <span class="fb-art">${d.kategorie}</span>
       <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${d.dateiname||''}</span>
             <span style="font-size:11px;color:var(--grau)">${d.hochgeladen?new Date(d.hochgeladen).toLocaleDateString('de-DE'):''}</span>
-      <button class="btn btn-outline btn-sm" onclick="oeffneMaDokument('${d.storage_path}')">📄</button>
-      ${canWrite()?`<button class="btn btn-outline btn-sm" onclick="loescheMaDokument('${d.id}','${m.id}')">✕</button>`:''}
+      <button class="btn btn-outline btn-sm" onclick="oeffneMaDokument('${d.storage_path}')" title="Dokument öffnen">${PIC('doc')}</button>
+      ${canWrite()?`<button class="btn btn-outline btn-sm" onclick="loescheMaDokument('${d.id}','${m.id}')" title="Dokument löschen">${PIC('x')}</button>`:''}
     </div>`).join('') : '<p style="font-size:12px;color:var(--grau)">Noch keine Dokumente hinterlegt.</p>';
 
   return `
@@ -835,9 +859,9 @@ function fortbildungsBlockHTML(m) {
       <span>${new Date(f.datum).toLocaleDateString('de-DE')}</span>
       <span>${f.tage||1} Tag(e)</span>
       <span style="flex:1">${f.thema||''}</span>
-      ${f.storage_path?`<button class="btn btn-outline btn-sm" onclick="oeffneUrkunde('${f.storage_path}')">📄</button>`:''}
-      ${canWrite()?`<button class="btn btn-outline btn-sm" onclick="oeffneFortbildungForm('${m.id}','${f.id}')" title="Bearbeiten">✎</button>`:''}
-      ${canWrite()?`<button class="btn btn-outline btn-sm" onclick="loescheFortbildung('${f.id}','${m.id}')">✕</button>`:''}
+      ${f.storage_path?`<button class="btn btn-outline btn-sm" onclick="oeffneUrkunde('${f.storage_path}')" title="Urkunde öffnen">${PIC('doc')}</button>`:''}
+      ${canWrite()?`<button class="btn btn-outline btn-sm" onclick="oeffneFortbildungForm('${m.id}','${f.id}')" title="Bearbeiten">${PIC('stift')}</button>`:''}
+      ${canWrite()?`<button class="btn btn-outline btn-sm" onclick="loescheFortbildung('${f.id}','${m.id}')" title="Fortbildung löschen">${PIC('x')}</button>`:''}
     </div>`;}).join('') : '<p style="font-size:12px;color:var(--grau)">Noch keine Fortbildungen erfasst.</p>';
 
   return `
