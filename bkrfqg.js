@@ -19,19 +19,19 @@ const bkrfqgState = {
 // BGQ = beschleunigte Grundqualifikation  ·  140 Std. = 8 400 min gesamt
 // ── DEGENER Rahmenpläne – alle 7 Kurstypen (Anlage 1 BKrFQV, Stand 2021/2022) ──
 const BKRFQV_KURSE_META = {
-  bgq_g:    { label:'BGQ Güter',      icon:'🚛', std:140, min:8400,  typ:'BGQ'  },
-  bgq_p:    { label:'BGQ Person',     icon:'🚌', std:140, min:8400,  typ:'BGQ'  },
-  qe_g:     { label:'QE Güter',       icon:'🚛', std: 96, min:5760,  typ:'QE'   },
-  qe_p:     { label:'QE Person',      icon:'🚌', std: 96, min:5760,  typ:'QE'   },
-  umst_g2p: { label:'Umst. GK→P',    icon:'🔄', std: 35, min:2100,  typ:'Umst' },
-  umst_p2g: { label:'Umst. P→GK',    icon:'🔄', std: 35, min:2100,  typ:'Umst' },
-  wb_r3_g:  { label:'WB Runde 3 G',  icon:'📚', std: 35, min:2100,  typ:'WB'   },
-  wb_t1:    { label:'WB Modul 1 (T1)',icon:'📚', std:  7, min: 420,  typ:'WB'   },
-  wb_t2:    { label:'WB Modul 2 (T2)',icon:'📚', std:  7, min: 420,  typ:'WB'   },
-  wb_t3:    { label:'WB Modul 3 (T3)',icon:'📚', std:  7, min: 420,  typ:'WB'   },
-  wb_t4:    { label:'WB Modul 4 (T4)',icon:'📚', std:  7, min: 420,  typ:'WB'   },
-  wb_t5:    { label:'WB Modul 5 (T5)',icon:'📚', std:  7, min: 420,  typ:'WB'   },
-  kombi_gp: { label:'Kombi G+P',     icon:'🚛🚌', std:130, min:7800,  typ:'Kombi' },
+  bgq_g:    { label:'BGQ Güter',      icon:BIC('lkw'), std:140, min:8400,  typ:'BGQ'  },
+  bgq_p:    { label:'BGQ Person',     icon:BIC('bus'), std:140, min:8400,  typ:'BGQ'  },
+  qe_g:     { label:'QE Güter',       icon:BIC('lkw'), std: 96, min:5760,  typ:'QE'   },
+  qe_p:     { label:'QE Person',      icon:BIC('bus'), std: 96, min:5760,  typ:'QE'   },
+  umst_g2p: { label:'Umst. GK→P',    icon:BIC('wiederholen'), std: 35, min:2100,  typ:'Umst' },
+  umst_p2g: { label:'Umst. P→GK',    icon:BIC('wiederholen'), std: 35, min:2100,  typ:'Umst' },
+  wb_r3_g:  { label:'WB Runde 3 G',  icon:BIC('buch'), std: 35, min:2100,  typ:'WB'   },
+  wb_t1:    { label:'WB Modul 1 (T1)',icon:BIC('buch'), std:  7, min: 420,  typ:'WB'   },
+  wb_t2:    { label:'WB Modul 2 (T2)',icon:BIC('buch'), std:  7, min: 420,  typ:'WB'   },
+  wb_t3:    { label:'WB Modul 3 (T3)',icon:BIC('buch'), std:  7, min: 420,  typ:'WB'   },
+  wb_t4:    { label:'WB Modul 4 (T4)',icon:BIC('buch'), std:  7, min: 420,  typ:'WB'   },
+  wb_t5:    { label:'WB Modul 5 (T5)',icon:BIC('buch'), std:  7, min: 420,  typ:'WB'   },
+  kombi_gp: { label:'Kombi G+P',     icon:BIC('lkw')+BIC('bus'), std:130, min:7800,  typ:'Kombi' },
 };
 
 // Unterthemen + Zeitansätze dienen der Kursplanung pro Dozent
@@ -525,6 +525,36 @@ function bkrfqgRenderTab(tab) {
 function BIC(n, groesse){
   const g = groesse || 13;
   const P = {
+    lkw:'<rect x="1" y="6" width="13" height="10" rx="1"/>'
+      +'<path d="M14 9h4l3 3v4h-7z"/>'
+      +'<circle cx="6" cy="18" r="2"/><circle cx="18" cy="18" r="2"/>',
+    bus:'<rect x="3" y="4" width="18" height="12" rx="2"/>'
+      +'<line x1="3" y1="10" x2="21" y2="10"/><line x1="12" y1="4" x2="12" y2="10"/>'
+      +'<circle cx="7" cy="18" r="2"/><circle cx="17" cy="18" r="2"/>',
+    wiederholen:'<polyline points="17 1 21 5 17 9"/>'
+      +'<path d="M3 11V9a4 4 0 0 1 4-4h14"/>'
+      +'<polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/>',
+    buch:'<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>'
+      +'<path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>',
+    ziel:'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/>'
+      +'<circle cx="12" cy="12" r="1.5"/>',
+    schule:'<path d="M3 21h18"/><path d="M5 21V9l7-5 7 5v12"/>'
+      +'<rect x="10" y="14" width="4" height="7"/>',
+    kalender:'<rect x="3" y="4" width="18" height="18" rx="2"/>'
+      +'<line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/>'
+      +'<line x1="3" y1="10" x2="21" y2="10"/>',
+    diagramm:'<line x1="18" y1="20" x2="18" y2="10"/>'
+      +'<line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>',
+    personen:'<path d="M17 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>'
+      +'<circle cx="9.5" cy="7" r="4"/>'
+      +'<path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+    person:'<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>'
+      +'<circle cx="12" cy="7" r="4"/>',
+    amt:'<line x1="3" y1="21" x2="21" y2="21"/><path d="M4 21V10l8-6 8 6v11"/>'
+      +'<line x1="9" y1="21" x2="9" y2="13"/><line x1="15" y1="21" x2="15" y2="13"/>',
+    firma:'<rect x="3" y="3" width="18" height="18" rx="2"/>'
+      +'<line x1="9" y1="3" x2="9" y2="21"/>'
+      +'<line x1="13" y1="8" x2="17" y2="8"/><line x1="13" y1="12" x2="17" y2="12"/>',
     pin:'<path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>'
       +'<circle cx="12" cy="10" r="3"/>',
     stift:'<path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/>',
@@ -593,7 +623,7 @@ function bkrfqgDashboard(el) {
     </div>`;
 
   el.innerHTML = `
-    ${bKopf('📊 Übersicht', 'Anerkennungen, Fristen und Kurse auf einen Blick')}
+    ${bKopf(BIC('diagramm',15)+' Übersicht', 'Anerkennungen, Fristen und Kurse auf einen Blick')}
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin-bottom:18px">
       ${kpi(s.standorte.length,'Standorte',`${anerkannt} anerkannt`,'var(--rot)')}
       ${kpi(s.fahrlehrer.length,'BKF-Dozenten','aus Personal-Modul','var(--blau)')}
@@ -691,7 +721,7 @@ function bkrfqgStandortModalHTML() {
         <input type="hidden" id="bs-id">
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
           <div>
-            <div class="fsec" style="color:var(--rot)">🏢 Ausbildungsstätte</div>
+            <div class="fsec" style="color:var(--rot)">${BIC('firma')} Ausbildungsstätte</div>
             <div class="frow"><label>Bezeichnung</label><input id="bs-name" placeholder="z.B. Lingen Hauptstelle"></div>
             <div class="frow"><label>Straße</label><input id="bs-strasse"></div>
             <div class="fgrid">
@@ -720,7 +750,7 @@ function bkrfqgStandortModalHTML() {
             <div class="frow"><label>Nächste Behördenprüfung</label><input type="date" id="bs-pruefung"></div>
           </div>
           <div>
-            <div class="fsec">🏛️ Zuständige Behörde</div>
+            <div class="fsec">${BIC('amt')} Zuständige Behörde</div>
             <div class="frow"><label>Behörde Name</label><input id="bs-bname" placeholder="z.B. Landkreis Emsland"></div>
             <div class="frow"><label>Abteilung</label><input id="bs-babt" placeholder="z.B. Straßenverkehrsamt"></div>
             <div class="frow"><label>Ansprechpartner</label><input id="bs-bap"></div>
@@ -865,13 +895,13 @@ async function bkrfqgStandortSpeichern() {
 // ════════════════════════════════════════════════════════════════════
 function bkrfqgFahrlehrer(el) {
   const fl = bkrfqgState.fahrlehrer;
-  el.innerHTML = bKopf('👤 BKF-Dozenten', `${fl.length} Dozenten aus dem Personal-Modul (§ 7 BKrFQV)`,
+  el.innerHTML = bKopf(BIC('person',15)+' BKF-Dozenten', `${fl.length} Dozenten aus dem Personal-Modul (§ 7 BKrFQV)`,
     '<button class="btn btn-outline btn-sm" onclick="showView(\'personal\')">→ Personal-Modul</button>')
     + `<div class="card" style="background:#eff6ff;border-color:#bfdbfe;padding:12px 16px;font-size:13px;margin-bottom:16px;color:#1e40af">
         💡 BKF-Dozenten werden automatisch aus dem Personal-Modul gezogen (Qualifikation „BKF-Dozent" aktiviert). Fortbildungsfristen stammen aus den dort hinterlegten Urkunden.
       </div>`
     + (fl.length===0
-      ? bLeer('👤','Keine BKF-Dozenten','Aktiviere im Personal-Modul bei Fahrlehrern die Qualifikation „BKF-Dozent".')
+      ? bLeer(BIC('person',40),'Keine BKF-Dozenten','Aktiviere im Personal-Modul bei Fahrlehrern die Qualifikation „BKF-Dozent".')
       : `<div class="card" style="padding:0;overflow:hidden">
           <table class="ma-table"><thead><tr>
             <th>Name</th><th>Bereich</th><th>BKF-Fortbildung fällig</th><th>Status</th><th></th>
@@ -914,7 +944,7 @@ function bkrfqgDozenten(el) {
     return min % 60 === 0 ? `${min/60}h` : `${Math.floor(min/60)}h ${min%60}min`;
   };
 
-  el.innerHTML = bKopf('🎯 Dozenten-Themen',
+  el.innerHTML = bKopf(BIC('ziel',15)+' Dozenten-Themen',
     `Themenplan BKrFQV Anlage 1 · ${meta.label} · ${meta.std} Std.`,
     `<div style="display:flex;gap:4px;flex-wrap:wrap;row-gap:4px">
       ${Object.entries(BKRFQV_KURSE_META).map(([id,m]) => {
@@ -1144,13 +1174,13 @@ function bkrfqgRaeume(el) {
     if(!gruppen[key]) gruppen[key]={raeume:[],sid:r.standort_id};
     gruppen[key].raeume.push(r);
   });
-  el.innerHTML = bKopf('🏫 Unterrichtsräume', '§ 9 Abs. 3 BKrFQG – nur genehmigte Räume nutzbar',
+  el.innerHTML = bKopf(BIC('schule',15)+' Unterrichtsräume', '§ 9 Abs. 3 BKrFQG – nur genehmigte Räume nutzbar',
     '<button class="btn btn-primary btn-sm" onclick="bkrfqgRaumNeu()">＋ Raum</button>')
     + `<div class="card" style="background:#fffbeb;border-color:#fde68a;padding:10px 14px;font-size:12px;margin-bottom:16px;color:#92400e">
         ⚠️ Präsenzunterricht darf nur in den im Anerkennungsbescheid aufgeführten Räumen stattfinden.
       </div>`
     + (Object.keys(gruppen).length===0
-      ? bLeer('🏫','Keine Räume','Noch keine Unterrichtsräume angelegt.')
+      ? bLeer(BIC('schule',40),'Keine Räume','Noch keine Unterrichtsräume angelegt.')
       : Object.entries(gruppen).map(([standort,g])=>`
         <div class="card" style="padding:0;overflow:hidden;margin-bottom:12px">
           <div style="background:var(--hell);padding:12px 16px;font-weight:600;font-size:13px;color:var(--dunkel);display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border)">
@@ -1256,11 +1286,11 @@ function bkrfqgKursplaene(el) {
   // Detail-Ansicht wenn Kursplan ausgewählt
   if (bkrfqgKPSelected) { bkrfqgKPDetailView(el); return; }
   const kp = bkrfqgState.kursplaene;
-  el.innerHTML = bKopf('📅 Kurspläne', 'Lehrgänge und Kurstage – manuell oder per KI generiert',
+  el.innerHTML = bKopf(BIC('kalender',15)+' Kurspläne', 'Lehrgänge und Kurstage – manuell oder per KI generiert',
     '<button class="btn btn-primary btn-sm" onclick="bkrfqgKPNeu()">＋ Kursplan</button>')
 
     + (kp.length===0
-      ? bLeer('📅','Keine Kurspläne','Erstelle einen Kursplan manuell oder per KI-Generator oben.')
+      ? bLeer(BIC('kalender',40),'Keine Kurspläne','Erstelle einen Kursplan manuell oder per KI-Generator oben.')
       : kp.map(k=>`
         <div class="card" style="margin-bottom:10px;border-left:4px solid ${k.status==='aktiv'?'var(--rot)':k.status==='abgeschlossen'?'#059669':'var(--blau)'};padding-left:20px">
           <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
@@ -1727,7 +1757,7 @@ function bkrfqgKPDetailView(el) {
   const WT = ['So','Mo','Di','Mi','Do','Fr','Sa'];
 
   el.innerHTML = bKopf(
-    `📅 ${kp.titel}`,
+    BIC('kalender')+` ${kp.titel}`,
     `${kp.kurstyp} · ${kp.bkrfqg_standorte?.name||''} · ${bfmtD(kp.startdatum)} – ${bfmtD(kp.enddatum)} · ${totalH} Std.`,
     `<div style="display:flex;gap:6px;flex-wrap:wrap">
       <button class="btn btn-outline btn-sm" onclick="bkrfqgKPZurueck()">← Zurück</button>
@@ -1735,7 +1765,7 @@ function bkrfqgKPDetailView(el) {
       <button class="btn btn-outline btn-sm" onclick="bkrfqgDrucken('lehrplan')">${BIC('liste')} Lehrplan</button>
       <button class="btn btn-outline btn-sm" onclick="bkrfqgDruckenAnwesenheit()">\u270D Anwesenheit</button>
       <button class="btn btn-outline btn-sm" onclick="bkrfqgDrucken('dozent')">${BIC('drucker')} Dozenten</button>
-      <button class="btn btn-outline btn-sm" onclick="bkrfqgDruckenDozentenplaene()">👥 Dozenten-Pläne</button>
+      <button class="btn btn-outline btn-sm" onclick="bkrfqgDruckenDozentenplaene()">${BIC('personen')} Dozenten-Pläne</button>
       <!-- Teilnehmererfassung entfaellt: Teilnehmer werden ausschliesslich im
            Dialog "Lehrgang dokumentieren" erfasst.
            Der Knopf "KBA-Meldung" ist vorerst mit ausgeblendet, weil
@@ -1743,8 +1773,8 @@ function bkrfqgKPDetailView(el) {
            liest und ohne Erfassung nur leere Meldungen erzeugen wuerde.
            Beides kommt zurueck, sobald der Export auf die Lehrgangsteilnehmer
            umgebaut ist. -->
-      ${bkrfqgIstBgq(kp.kurstyp) ? `<button class="btn btn-outline btn-sm" onclick="bkrfqgTnSuchDialog()">👥 Teilnehmer (${bkrfqgKPTeilnehmer.length})</button>` : ''}
-      ${bkrfqgIstBgq(kp.kurstyp) ? `<button class="btn btn-outline btn-sm" onclick="bkrfqgBgqDialog('${kp.id}')">🏛 BQR-Meldung</button>` : ''}
+      ${bkrfqgIstBgq(kp.kurstyp) ? `<button class="btn btn-outline btn-sm" onclick="bkrfqgTnSuchDialog()">${BIC('personen')} Teilnehmer (${bkrfqgKPTeilnehmer.length})</button>` : ''}
+      ${bkrfqgIstBgq(kp.kurstyp) ? `<button class="btn btn-outline btn-sm" onclick="bkrfqgBgqDialog('${kp.id}')">${BIC('amt')} BQR-Meldung</button>` : ''}
       <button class="btn btn-primary btn-sm" onclick="bkrfqgKurstagNeu('${kp.id}')">＋ Kurstag</button>
     </div>`
   );
@@ -2549,7 +2579,7 @@ function bkrfqgDrucken(modus) {
     <div class="kurs-typ">${isDoz ? 'Dozenten-Kursplan' : 'Teilnehmer-Stundenplan'} · BKrFQG § 11</div>
     <div class="kurs-titel">${bKursTypLabel(kp.kurstyp)} ${isDoz?'':''}– ${kp.bkrfqg_standorte?.name||'Fahrschulteam Lingen'}</div>
     <div class="kurs-meta">
-      <span>📅 ${bfmtD(kp.startdatum)} – ${bfmtD(kp.enddatum)}</span>
+      <span>${BIC('kalender')} ${bfmtD(kp.startdatum)} – ${bfmtD(kp.enddatum)}</span>
       <span>⏱ ${totalH} Unterrichtsstunden</span>
       <span>${BIC('pin')} ${kp.bkrfqg_standorte?.name||'Lingen'}</span>
       ${kp.bkrfqg_standorte?.ort?`<span>🏙 ${kp.bkrfqg_standorte.ort}</span>`:''}
@@ -3644,7 +3674,7 @@ function bkrfqgTnKarteHTML(kp){
   return `
     <div class="card" id="bgq-tn-karte" style="padding:0;margin-bottom:16px">
       <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid var(--border)">
-        <div class="card-titel">👥 Teilnehmer (${liste.length})</div>
+        <div class="card-titel">${BIC('personen',15)} Teilnehmer (${liste.length})</div>
         <button class="btn btn-outline btn-sm" onclick="bkrfqgTnSuchDialog()">＋ Teilnehmer</button>
       </div>
       ${liste.length ? `<div style="overflow-x:auto"><table class="ma-table" style="min-width:980px">
@@ -3865,7 +3895,7 @@ function bkrfqgBgqDialog(kursplanId){
   <div class="modal-overlay open" id="bkrfqg-bgq-modal">
     <div class="modal" style="width:640px">
       <div class="modal-header">
-        <h3>🏛 BGQ-Meldung ans KBA</h3>
+        <h3>${BIC('amt',15)} BGQ-Meldung ans KBA</h3>
         <button class="close-btn" onclick="bkrfqgCloseModal('bkrfqg-bgq-modal')">×</button>
       </div>
       <div class="modal-body">
