@@ -516,20 +516,20 @@ input[type="checkbox"]:checked::after{
       <div class="sumbar-item"><label>Unterrichtsstunden</label><span id="sh">0</span></div>
       <div class="sumbar-item"><label>Gesamtkosten</label><span id="sk">0,00 €</span></div>
       <div style="margin-left:auto;display:flex;gap:8px;">
-        <button class="btn sm" onclick="clearTnForm()">✕ Alles zurücksetzen</button>
+        <button class="btn sm" onclick="clearTnForm()"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;flex:none"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Alles zurücksetzen</button>
       </div>
     </div>
-    <div class="mk-group">🚛 Güterverkehr – Vollmaßnahmen</div>
+    <div class="mk-group"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;flex:none"><rect x="1" y="6" width="13" height="10" rx="1"/><path d="M14 9h4l3 3v4h-7z"/><circle cx="6" cy="18" r="2"/><circle cx="18" cy="18" r="2"/></svg> Güterverkehr – Vollmaßnahmen</div>
     <div class="mk-grid" id="g-gv"></div>
-    <div class="mk-group">📦 Güterverkehr – Bausteine</div>
+    <div class="mk-group"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;flex:none"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.3 7 12 12 20.7 7"/><line x1="12" y1="22" x2="12" y2="12"/></svg> Güterverkehr – Bausteine</div>
     <div class="mk-grid" id="g-gb"></div>
-    <div class="mk-group">🚌 Personenverkehr – Vollmaßnahmen</div>
+    <div class="mk-group"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;flex:none"><rect x="3" y="4" width="18" height="12" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="12" y1="4" x2="12" y2="10"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="18" r="2"/></svg> Personenverkehr – Vollmaßnahmen</div>
     <div class="mk-grid" id="g-pv"></div>
-    <div class="mk-group">📦 Personenverkehr – Bausteine</div>
+    <div class="mk-group"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;flex:none"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.3 7 12 12 20.7 7"/><line x1="12" y1="22" x2="12" y2="12"/></svg> Personenverkehr – Bausteine</div>
     <div class="mk-grid" id="g-pb"></div>
   </div>
   <div style="display:flex;gap:8px;flex-wrap:wrap;">
-    <button class="btn red" onclick="showPlan()">📄 Zeit- &amp; Kostenplan erstellen</button>
+    <button class="btn red" onclick="showPlan()"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;flex:none"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/></svg> Zeit- &amp; Kostenplan erstellen</button>
     <button class="btn green" onclick="addTeilnehmer()">＋ Teilnehmer anlegen &amp; Plan speichern</button>
   </div>
   <div id="plan-area" style="margin-top:1.5rem;"></div>
@@ -1093,7 +1093,7 @@ function renderCards(){
       html+='<div class="mk-meta">'+m.h+" UStd"+(m.bp>0?" (inkl. "+m.bp+" Std. betr.)":"")+"</div>";
       html+='<span class="mk-code">'+m.code+" · "+fmt(m.c)+"</span>";
       html+="</div></div>";
-      html+='<div class="mk-loc"><label>📍 Ausbildungsort(e)</label>';
+      html+='<div class="mk-loc"><label>'+TIC('pin')+' Ausbildungsort(e)</label>';
       html+='<textarea rows="2" onclick="event.stopPropagation()" onchange="mkSaveLoc(this)">'+locVal+"</textarea>";
       html+="</div></div>";
     });
@@ -1244,7 +1244,7 @@ function renderPapierkorb(){
       +'<div class="empty" style="margin-top:2rem;">🗑 Der Papierkorb ist leer.</div>';
     return;
   }
-  var html='<div class="page-header"><div><div class="page-title">🗑 Papierkorb</div>'
+  var html='<div class="page-header"><div><div class="page-title">'+TIC('muell',18)+' Papierkorb</div>'
     +'<div class="page-sub">'+total+' Einträge</div></div>'
     +'<button class="btn" style="margin-left:auto;" onclick="showPage(\'uebersicht\')">← Zur Übersicht</button>'
     +'</div>';
@@ -1269,7 +1269,7 @@ function renderPapierkorb(){
     r+='</div>';
     r+='<div style="display:flex;gap:8px;flex-shrink:0;">';
     r+='<button class="btn sm" style="background:#22c55e;color:#fff;border-color:#22c55e;" onclick="wiederherstellenTn('+tn.id+')">↩ Wiederherstellen</button>';
-    r+='<button class="btn sm" style="color:#dc2626;border-color:#dc2626;" onclick="endgueltigLoeschenTn('+tn.id+')">🗑 Endgültig löschen</button>';
+    r+='<button class="btn sm" style="color:#dc2626;border-color:#dc2626;" onclick="endgueltigLoeschenTn('+tn.id+')">'+TIC('muell')+' Endgültig löschen</button>';
     r+='</div></div></div>';
     return r;
   }
@@ -1590,7 +1590,7 @@ function renderAkte(){
     var t='';
     t+='<div class="doc-item'+(confirmed?' signed':'')+'" style="'+tileStyle+'flex-direction:column;align-items:flex-start;gap:6px;padding:10px 12px;cursor:pointer;" data-cb="'+opIdx+'">';
     t+='<div style="display:flex;align-items:center;justify-content:space-between;width:100%;">';
-    t+='<span style="font-size:20px;">📄</span>';
+    t+='<span style="font-size:20px;">'+TIC('doc',20)+'</span>';
     t+='<button data-cb="'+ckIdx+'" onclick="event.stopPropagation()" style="width:22px;height:22px;flex-shrink:0;border-radius:5px;font-size:12px;font-weight:700;cursor:pointer;border:2px solid;display:inline-flex;align-items:center;justify-content:center;'+(confirmed?'background:#22c55e;border-color:#16a34a;color:#fff;':'background:var(--bg);border-color:#ccc;color:#ccc;')+'" title="Status umschalten">&#10003;</button>';
     t+='</div>';
     t+='<div style="font-size:11.5px;font-weight:700;line-height:1.3;color:var(--tx);">'+d.name+'</div>';
@@ -1819,7 +1819,7 @@ function renderFahrlehrerUebersicht(){
   html+='<div class="page-sub">'+aktive.length+' Teilnehmer mit offenen Maßnahmen · sortiert nach Dringlichkeit</div>';
   html+='</div>';
   html+='<div style="display:flex;gap:8px;margin-left:auto;">';
-  html+='<button class="btn" onclick="showPage(\'papierkorb\')" style="position:relative;">🗑 Papierkorb'
+  html+='<button class="btn" onclick="showPage(\'papierkorb\')" style="position:relative;">'+TIC('muell')+' Papierkorb'
     +'<span id="pk-badge" style="display:none;position:absolute;top:-6px;right:-6px;background:#9ca3af;color:#fff;border-radius:50%;width:18px;height:18px;font-size:10px;font-weight:700;line-height:18px;text-align:center;"></span>'
     +'</button>';
   html+='<button class="btn red" onclick="printUebersicht()">&#128424; Drucken / PDF</button>';
@@ -2033,6 +2033,49 @@ function deleteScan(tnId, scanType){
   renderAkte();
   });
 }
+// ── Strich-Icons ─────────────────────────────────
+function TIC(n, groesse){
+  var g = groesse || 13;
+  var P = {
+    x:'<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>',
+    lkw:'<rect x="1" y="6" width="13" height="10" rx="1"/>'
+      +'<path d="M14 9h4l3 3v4h-7z"/>'
+      +'<circle cx="6" cy="18" r="2"/><circle cx="18" cy="18" r="2"/>',
+    bus:'<rect x="3" y="4" width="18" height="12" rx="2"/>'
+      +'<line x1="3" y1="10" x2="21" y2="10"/><line x1="12" y1="4" x2="12" y2="10"/>'
+      +'<circle cx="7" cy="18" r="2"/><circle cx="17" cy="18" r="2"/>',
+    paket:'<path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8'
+      +'a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>'
+      +'<polyline points="3.3 7 12 12 20.7 7"/><line x1="12" y1="22" x2="12" y2="12"/>',
+    doc:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>'
+      +'<polyline points="14 2 14 8 20 8"/>'
+      +'<line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/>',
+    pin:'<path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>'
+      +'<circle cx="12" cy="10" r="3"/>',
+    muell:'<polyline points="3 6 5 6 21 6"/>'
+      +'<path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>',
+    drucker:'<polyline points="6 9 6 2 18 2 18 9"/>'
+      +'<path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>'
+      +'<rect x="6" y="14" width="12" height="8"/>',
+    diskette:'<path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>'
+      +'<polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/>',
+    stift:'<path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/>',
+    ordner:'<path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>',
+    kalender:'<rect x="3" y="4" width="18" height="18" rx="2"/>'
+      +'<line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/>'
+      +'<line x1="3" y1="10" x2="21" y2="10"/>',
+    ziel:'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/>'
+      +'<circle cx="12" cy="12" r="1.5"/>',
+    euro:'<circle cx="12" cy="12" r="10"/>'
+      +'<path d="M15.5 8.5a4.5 4.5 0 0 0-6.3 1.2 5.5 5.5 0 0 0 0 4.6 4.5 4.5 0 0 0 6.3 1.2"/>'
+      +'<line x1="7" y1="11" x2="13" y2="11"/><line x1="7" y1="13.5" x2="13" y2="13.5"/>'
+  };
+  return '<svg viewBox="0 0 24 24" width="'+g+'" height="'+g+'" fill="none" '
+    +'stroke="currentColor" stroke-width="2" stroke-linecap="round" '
+    +'stroke-linejoin="round" style="vertical-align:-2px;flex:none">'
+    +(P[n]||'')+'</svg>';
+}
+
 function escHtml(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
 function openForm(type,tnId){
@@ -4432,11 +4475,11 @@ function renderVerlauf(){
       // Row 2: Kennzahlen
       html+='<div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:10px;padding-top:10px;border-top:1px solid var(--bd);">';
       html+='<div style="display:flex;align-items:center;gap:5px;">'
-        +'<span style="font-size:13px;">📅</span>'
+        +'<span style="font-size:13px;">'+TIC('kalender')+'</span>'
         +'<div><div style="font-size:9px;font-weight:700;color:var(--tx3);text-transform:uppercase;">Beginn</div>'
         +'<div style="font-size:12px;font-weight:600;color:var(--tx);">'+sd+'</div></div></div>';
       html+='<div style="display:flex;align-items:center;gap:5px;">'
-        +'<span style="font-size:13px;">🏁</span>'
+        +'<span style="font-size:13px;">'+TIC('ziel')+'</span>'
         +'<div><div style="font-size:9px;font-weight:700;color:var(--tx3);text-transform:uppercase;">Ende</div>'
         +'<div style="font-size:12px;font-weight:600;color:var(--tx);">'+ed+'</div></div></div>';
       html+='<div style="display:flex;align-items:center;gap:5px;">'
@@ -4445,7 +4488,7 @@ function renderVerlauf(){
         +'<div style="font-size:12px;font-weight:600;color:var(--tx);">'+(m.h||0)+' Std.</div></div></div>';
       if(m.c){
         html+='<div style="display:flex;align-items:center;gap:5px;">'
-          +'<span style="font-size:13px;">💶</span>'
+          +'<span style="font-size:13px;">'+TIC('euro')+'</span>'
           +'<div><div style="font-size:9px;font-weight:700;color:var(--tx3);text-transform:uppercase;">Kosten</div>'
           +'<div style="font-size:12px;font-weight:600;color:var(--tx);">'+m.c.toLocaleString('de-DE',{style:'currency',currency:'EUR'})+'</div></div></div>';
       }
@@ -4671,7 +4714,7 @@ function renderZertifikat(){
     return m.id==='tq1'||m.id==='tq1p'||m.id==='tq3'||m.id==='tq3p';
   });
   var html='<div class="page-header"><div><div class="page-title">Abschlusszertifikat</div><div class="page-sub">'+fmtName(tn)+"</div></div>"
-    +'<button class="btn red" style="margin-left:auto;" onclick="printZert('+tn.id+')">🖨 Drucken</button></div>';
+    +'<button class="btn red" style="margin-left:auto;" onclick="printZert('+tn.id+')">'+TIC('drucker')+' Drucken</button></div>';
   var ss = FIRMA.saved_sigs||[];
   var sigOpts = '<option value="">— keine Unterschrift —</option>'
     + ss.map(function(s){ return '<option value="'+s.id+'"'+(tn.zert_sig_id===s.id?' selected':'')+'>'+s.label+'</option>'; }).join('');
@@ -5152,7 +5195,7 @@ function renderCatSettings(){
     h+='<div class="cat-box" data-ci="'+ci+'" style="border:1.5px solid var(--bd);border-radius:10px;padding:12px;margin-bottom:12px;background:var(--bg2);">';
     // Kopfzeile: Titel + Rubrik-Sortierung
     h+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">';
-    h+='<span style="font-size:16px;">📂</span>';
+    h+='<span style="font-size:16px;">'+TIC('ordner',16)+'</span>';
     h+='<input value="'+escAttr(cat.title)+'" oninput="catRename('+ci+',this.value)" style="flex:1;font-size:14px;font-weight:700;color:var(--tx);border:1.5px solid var(--bd);border-radius:8px;padding:7px 10px;background:var(--bg);">';
     h+='<button class="btn sm" '+(ci===0?'disabled style="opacity:.4;"':'')+' onclick="catMove('+ci+',-1)" title="Rubrik nach oben">▲</button>';
     h+='<button class="btn sm" '+(ci===cats.length-1?'disabled style="opacity:.4;"':'')+' onclick="catMove('+ci+',1)" title="Rubrik nach unten">▼</button>';
@@ -5167,7 +5210,7 @@ function renderCatSettings(){
       var d=getDocByKey(k); if(!d) return;
       h+='<div class="doc-row" draggable="true" data-ci="'+ci+'" data-di="'+di+'" style="display:flex;align-items:center;gap:6px;padding:7px 6px;border-bottom:1px solid var(--bd);flex-wrap:wrap;background:var(--bg);border-radius:6px;margin-bottom:3px;">';
       h+='<span class="drag-handle" title="Zum Verschieben ziehen" style="cursor:grab;font-size:15px;color:var(--tx2);padding:0 2px;user-select:none;">⠿</span>';
-      h+='<span style="font-size:13px;">📄</span>';
+      h+='<span style="font-size:13px;">'+TIC('doc')+'</span>';
       h+='<span style="flex:1;min-width:140px;font-size:12.5px;color:var(--tx);">'+escHtml(d.name)+'</span>';
       // In andere Rubrik verschieben
       h+='<label style="font-size:10px;color:var(--tx2);white-space:nowrap;">Rubrik:</label>';
@@ -5339,7 +5382,7 @@ function renderEinstellungen(){
 
   var html = '<div class="page-header"><div><div class="page-title">Einstellungen</div>'
     +'<div class="page-sub">Firmendaten, Maßnahmen, Papierkorb und Darstellung konfigurieren</div></div>'
-    +'<button class="btn green" onclick="saveAllSettings()">💾 Alle Einstellungen speichern</button></div>';
+    +'<button class="btn green" onclick="saveAllSettings()">'+TIC('diskette')+' Alle Einstellungen speichern</button></div>';
 
   // ── Darstellung & Papierkorb ──
   var isDark = document.body.classList.contains('dark');
@@ -5355,7 +5398,7 @@ function renderEinstellungen(){
   html += '</div>';
   // Papierkorb
   html += '<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--bg3);border-radius:10px;border:1.5px solid var(--bd);">';
-  html += '<span style="font-size:18px;">🗑</span>';
+  html += '<span style="font-size:18px;">'+TIC('muell',18)+'</span>';
   html += '<div style="flex:1;"><div style="font-size:13px;font-weight:700;color:var(--tx);">Papierkorb</div>';
   html += '<div style="font-size:11px;color:var(--tx2);">'+(pkCount>0?pkCount+' Teilnehmer im Papierkorb':'Papierkorb ist leer')+'</div></div>';
   html += '<button class="btn" onclick="showPage(\'papierkorb\')" style="padding:6px 14px;font-size:12px;">&#128065; Öffnen'+(pkCount>0?' <span style=\'background:#CC0000;color:#fff;border-radius:9px;padding:1px 6px;font-size:10px;margin-left:4px;\'>'+pkCount+'</span>':'')+'</button>';
@@ -5363,10 +5406,10 @@ function renderEinstellungen(){
   // Unterschriften
   var sigCount = (FIRMA.saved_sigs||[]).length;
   html += '<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--bg3);border-radius:10px;border:1.5px solid var(--bd);">';
-  html += '<span style="font-size:18px;">✍️</span>';
+  html += '<span style="font-size:18px;">'+TIC('stift',18)+'</span>';
   html += '<div style="flex:1;"><div style="font-size:13px;font-weight:700;color:var(--tx);">Unterschriften</div>';
   html += '<div style="font-size:11px;color:var(--tx2);">'+(sigCount>0?sigCount+' Unterschrift'+(sigCount>1?'en':'')+ ' gespeichert':'Noch keine Unterschriften')+'</div></div>';
-  html += '<button class="btn" onclick="openAddSig()" style="padding:6px 14px;font-size:12px;">✍️ Verwalten</button>';
+  html += '<button class="btn" onclick="openAddSig()" style="padding:6px 14px;font-size:12px;">'+TIC('stift')+' Verwalten</button>';
   html += '</div>';
   html += '</div></div>';
 
