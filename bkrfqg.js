@@ -521,6 +521,34 @@ function bkrfqgRenderTab(tab) {
 }
 
 // Einheitlicher Seitenkopf – folgt App-Muster (.toolbar mit Buttons rechts)
+// ── Strich-Icons ─────────────────────────────────
+function BIC(n, groesse){
+  const g = groesse || 13;
+  const P = {
+    pin:'<path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>'
+      +'<circle cx="12" cy="10" r="3"/>',
+    stift:'<path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/>',
+    diskette:'<path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>'
+      +'<polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/>',
+    liste:'<path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>'
+      +'<rect x="8" y="2" width="8" height="4" rx="1"/>'
+      +'<line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="15" y2="16"/>',
+    brief:'<rect x="2" y="4" width="20" height="16" rx="2"/>'
+      +'<polyline points="2 7 12 13 22 7"/>',
+    muell:'<polyline points="3 6 5 6 21 6"/>'
+      +'<path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>',
+    drucker:'<polyline points="6 9 6 2 18 2 18 9"/>'
+      +'<path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>'
+      +'<rect x="6" y="14" width="12" height="8"/>',
+    ordner:'<path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>',
+    funke:'<path d="M12 2l1.8 5.6L19.5 9l-4.5 3.3 1.7 5.7L12 14.6 7.3 18l1.7-5.7L4.5 9l5.7-1.4z"/>'
+  };
+  return '<svg viewBox="0 0 24 24" width="'+g+'" height="'+g+'" fill="none" '
+    +'stroke="currentColor" stroke-width="2" stroke-linecap="round" '
+    +'stroke-linejoin="round" style="vertical-align:-2px;flex:none">'
+    +(P[n]||'')+'</svg>';
+}
+
 function bKopf(titel, sub, aktionHtml) {
   return `<div class="toolbar" style="margin-bottom:16px;justify-content:space-between">
     <div style="display:flex;flex-direction:column;gap:2px">
@@ -583,7 +611,7 @@ function bkrfqgDashboard(el) {
     </div>
 
     <div class="card" style="padding:14px 16px">
-      <div class="card-titel" style="margin-bottom:12px">📍 Standorte & Anerkennungsstatus</div>
+      <div class="card-titel" style="margin-bottom:12px">${BIC('pin',15)} Standorte & Anerkennungsstatus</div>
       ${s.standorte.length===0
         ? '<div style="color:var(--grau);font-size:13px;padding:8px 0">Noch keine Standorte angelegt.</div>'
         : `<table class="ma-table"><thead><tr>
@@ -602,7 +630,7 @@ function bkrfqgDashboard(el) {
 // STANDORTE
 // ════════════════════════════════════════════════════════════════════
 function bkrfqgStandorte(el) {
-  el.innerHTML = bKopf('📍 Standorte & Behörden', 'Jeder Standort hat eine eigene zuständige Behörde',
+  el.innerHTML = bKopf(BIC('pin',15)+' Standorte & Behörden', 'Jeder Standort hat eine eigene zuständige Behörde',
     '<button class="btn btn-primary btn-sm" onclick="bkrfqgStandortNeu()">＋ Standort</button>')
     + '<div id="bkrfqg-standorte-liste"></div>' + bkrfqgStandortModalHTML();
   bkrfqgRenderStandortListe();
@@ -611,7 +639,7 @@ function bkrfqgRenderStandortListe() {
   const el = document.getElementById('bkrfqg-standorte-liste');
   if (!el) return;
   if (!bkrfqgState.standorte.length) {
-    el.innerHTML = bLeer('📍','Keine Standorte','Noch keine Standorte angelegt. Klicke auf „＋ Standort".');
+    el.innerHTML = bLeer(BIC('pin',40),'Keine Standorte','Noch keine Standorte angelegt. Klicke auf „＋ Standort".');
     return;
   }
   el.innerHTML = bkrfqgState.standorte.map(s => `
@@ -623,7 +651,7 @@ function bkrfqgRenderStandortListe() {
           ${s.aktenzeichen?`<div style="font-size:11px;color:var(--grau);font-family:monospace;margin-top:2px">AZ: ${s.aktenzeichen}</div>`:''}
         </div>
         <div class="tbl-actions">
-          <button class="btn btn-outline btn-sm" onclick="bkrfqgStandortEdit('${s.id}')">✏️ Bearbeiten</button>
+          <button class="btn btn-outline btn-sm" onclick="bkrfqgStandortEdit('${s.id}')">${BIC('stift')} Bearbeiten</button>
           <button class="btn btn-sm" style="background:#f3e8ff;color:#6A1B9A;border-color:#e9d5ff" onclick="bkrfqgStandortEdit('${s.id}')">✨ Bescheid</button>
         </div>
       </div>
@@ -710,7 +738,7 @@ function bkrfqgStandortModalHTML() {
       </div>
       <div class="modal-footer">
         <button class="btn btn-outline" onclick="bkrfqgCloseModal('bkrfqg-standort-modal')">Abbrechen</button>
-        <button class="btn btn-primary" onclick="bkrfqgStandortSpeichern()">💾 Speichern</button>
+        <button class="btn btn-primary" onclick="bkrfqgStandortSpeichern()">${BIC('diskette')} Speichern</button>
       </div>
     </div>
   </div>`;
@@ -969,7 +997,7 @@ function bkrfqgDozenten(el) {
 
   el.innerHTML += `
     <div style="display:flex;justify-content:space-between;align-items:center;margin:0 0 10px">
-      <h3 style="margin:0;font-size:14px;font-weight:700;color:var(--dunkel)">📋 Themenplan · ${meta.label} · ${fmtH(gesamtMin)} gesamt</h3>
+      <h3 style="margin:0;font-size:14px;font-weight:700;color:var(--dunkel)">${BIC('liste')} Themenplan · ${meta.label} · ${fmtH(gesamtMin)} gesamt</h3>
       <span style="font-size:11px;color:var(--grau)">▸ Band anklicken zum Aufklappen</span>
     </div>
     ${istKombi ? `<div class="card" style="background:#faf5ff;border-color:#e9d5ff;padding:10px 14px;font-size:12px;color:#6A1B9A;margin-bottom:12px;line-height:1.6">
@@ -1126,7 +1154,7 @@ function bkrfqgRaeume(el) {
       : Object.entries(gruppen).map(([standort,g])=>`
         <div class="card" style="padding:0;overflow:hidden;margin-bottom:12px">
           <div style="background:var(--hell);padding:12px 16px;font-weight:600;font-size:13px;color:var(--dunkel);display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border)">
-            <span>📍 ${standort} <span style="color:var(--grau);font-weight:400">· ${g.raeume.length} Räume</span></span>
+            <span>${BIC('pin')} ${standort} <span style="color:var(--grau);font-weight:400">· ${g.raeume.length} Räume</span></span>
             <button class="btn btn-outline btn-sm" onclick="bkrfqgRaumNeuFuerStandort('${g.sid}')">＋ Raum</button>
           </div>
           <table class="ma-table"><thead><tr>
@@ -1138,7 +1166,7 @@ function bkrfqgRaeume(el) {
             <td>${r.max_teilnehmer||'–'}</td>
             <td><span class="qchip">${r.eigentum_oder_miete||'–'}</span></td>
             <td>${r.im_bescheid?bBadge('anerkannt'):'<span style="color:var(--rot);font-size:12px">✗ Nein</span>'}</td>
-            <td class="tbl-actions"><button class="btn btn-outline btn-sm" onclick="bkrfqgRaumEdit('${r.id}')">✏️</button></td>
+            <td class="tbl-actions"><button class="btn btn-outline btn-sm" onclick="bkrfqgRaumEdit('${r.id}')" title="Bearbeiten">${BIC('stift')}</button></td>
           </tr>`).join('')}</tbody></table>
         </div>`).join(''))
     + bkrfqgRaumModalHTML();
@@ -1173,7 +1201,7 @@ function bkrfqgRaumModalHTML() {
       </div>
       <div class="modal-footer">
         <button class="btn btn-outline" onclick="bkrfqgCloseModal('bkrfqg-raum-modal')">Abbrechen</button>
-        <button class="btn btn-primary" onclick="bkrfqgRaumSpeichern()">💾 Speichern</button>
+        <button class="btn btn-primary" onclick="bkrfqgRaumSpeichern()">${BIC('diskette')} Speichern</button>
       </div>
     </div>
   </div>`;
@@ -1246,9 +1274,9 @@ function bkrfqgKursplaene(el) {
               </div>
             </div>
             <div style="display:flex;gap:6px;flex-shrink:0">
-              <button class="btn btn-outline btn-sm" onclick="bkrfqgKPEdit('${k.id}')" title="Kursplan bearbeiten">✏️</button>
-              <button class="btn btn-outline btn-sm" onclick="bkrfqgSetTab('kursmeldung')" title="Kursmeldung">📨</button>
-              <button class="btn btn-primary btn-sm" onclick="bkrfqgKPOeffnen('${k.id}')">📋 Kurstage</button>
+              <button class="btn btn-outline btn-sm" onclick="bkrfqgKPEdit('${k.id}')" title="Kursplan bearbeiten">${BIC('stift')}</button>
+              <button class="btn btn-outline btn-sm" onclick="bkrfqgSetTab('kursmeldung')" title="Kursmeldung">${BIC('brief')}</button>
+              <button class="btn btn-primary btn-sm" onclick="bkrfqgKPOeffnen('${k.id}')">${BIC('liste')} Kurstage</button>
               <button class="btn btn-outline btn-sm" style="color:var(--rot);border-color:var(--rot)" onclick="event.stopPropagation();bkrfqgKPLoeschen('${k.id}','${(k.titel||'').replace(/'/g,'')}')">🗑</button>
             </div>
           </div>
@@ -1326,7 +1354,7 @@ function bkrfqgKPModalHTML() {
             <input type="radio" name="bkp-planer" value="manuell"
                 style="margin-top:3px;width:16px;height:16px;flex-shrink:0">
             <div>
-              <div style="font-weight:600;font-size:13px;color:var(--dunkel)">📋 Manuell planen</div>
+              <div style="font-weight:600;font-size:13px;color:var(--dunkel)">${BIC('liste')} Manuell planen</div>
               <div style="font-size:11px;color:var(--grau);margin-top:4px">
                 Kursplan wird angelegt – Kurstage trägst du selbst ein.
               </div>
@@ -1365,7 +1393,7 @@ function bkrfqgKIToggle(kiAn) {
   if (kiLabel) { kiLabel.style.border = kiAn ? '2px solid #6A1B9A' : '1px solid var(--border)'; kiLabel.style.background = kiAn ? '#f9f0ff' : 'var(--faint)'; }
   if (mnLabel) { mnLabel.style.border = kiAn ? '1px solid var(--border)' : '2px solid var(--dunkel)'; mnLabel.style.background = kiAn ? 'var(--faint)' : '#f5f5f5'; }
   const btn = document.getElementById('bkp-save-btn');
-  if (btn) btn.innerHTML = kiAn ? '✨ Kursplan anlegen &amp; generieren' : '💾 Kursplan anlegen';
+  if (btn) btn.innerHTML = kiAn ? BIC('funke')+' Kursplan anlegen &amp; generieren' : BIC('diskette')+' Kursplan anlegen';
 }
 
 function bkrfqgKPNeu() {
@@ -1398,7 +1426,7 @@ function bkrfqgKPEdit(id) {
   const ki=document.getElementById('bkp-ki-section'); if(ki)ki.style.display='none';
   const ed=document.getElementById('bkp-edit-section'); if(ed)ed.style.display='';
   const statusEl=document.getElementById('bkp-status'); if(statusEl)statusEl.value=k.status;
-  const btn=document.getElementById('bkp-save-btn'); if(btn)btn.innerHTML='💾 Speichern';
+  const btn=document.getElementById('bkp-save-btn'); if(btn)btn.innerHTML=BIC('diskette')+' Speichern';
   document.getElementById('bkrfqg-kp-titel').textContent='Kursplan bearbeiten';
   bkrfqgKPTypChange();  // Montag-Hinweis setzen
   bkrfqgOpenModal('bkrfqg-kp-modal');
@@ -1703,10 +1731,10 @@ function bkrfqgKPDetailView(el) {
     `${kp.kurstyp} · ${kp.bkrfqg_standorte?.name||''} · ${bfmtD(kp.startdatum)} – ${bfmtD(kp.enddatum)} · ${totalH} Std.`,
     `<div style="display:flex;gap:6px;flex-wrap:wrap">
       <button class="btn btn-outline btn-sm" onclick="bkrfqgKPZurueck()">← Zurück</button>
-      <button class="btn btn-outline btn-sm" onclick="bkrfqgKPEdit('${kp.id}');event.stopPropagation()">✏️ Kursplan</button>
-      <button class="btn btn-outline btn-sm" onclick="bkrfqgDrucken('lehrplan')">📋 Lehrplan</button>
+      <button class="btn btn-outline btn-sm" onclick="bkrfqgKPEdit('${kp.id}');event.stopPropagation()">${BIC('stift')} Kursplan</button>
+      <button class="btn btn-outline btn-sm" onclick="bkrfqgDrucken('lehrplan')">${BIC('liste')} Lehrplan</button>
       <button class="btn btn-outline btn-sm" onclick="bkrfqgDruckenAnwesenheit()">\u270D Anwesenheit</button>
-      <button class="btn btn-outline btn-sm" onclick="bkrfqgDrucken('dozent')">🖨️ Dozenten</button>
+      <button class="btn btn-outline btn-sm" onclick="bkrfqgDrucken('dozent')">${BIC('drucker')} Dozenten</button>
       <button class="btn btn-outline btn-sm" onclick="bkrfqgDruckenDozentenplaene()">👥 Dozenten-Pläne</button>
       <!-- Teilnehmererfassung entfaellt: Teilnehmer werden ausschliesslich im
            Dialog "Lehrgang dokumentieren" erfasst.
@@ -1808,8 +1836,8 @@ function bkrfqgKPDetailView(el) {
       ${isKombi?`<td>${gBadge}</td>`:''}
       <td>${mBadge}</td>
       <td class="tbl-actions" style="white-space:nowrap">
-        <button class="btn btn-outline btn-sm" onclick="bkrfqgKurstagEdit('${k.id}')">✏️</button>
-        <button class="btn btn-outline btn-sm" style="color:var(--rot)" onclick="bkrfqgKurstagLoeschen('${k.id}')">🗑</button>
+        <button class="btn btn-outline btn-sm" onclick="bkrfqgKurstagEdit('${k.id}')" title="Bearbeiten">${BIC('stift')}</button>
+        <button class="btn btn-outline btn-sm" style="color:var(--rot)" onclick="bkrfqgKurstagLoeschen('${k.id}')" title="Löschen">${BIC('muell')}</button>
       </td>
     </tr>`;
   }).join('');
@@ -2523,7 +2551,7 @@ function bkrfqgDrucken(modus) {
     <div class="kurs-meta">
       <span>📅 ${bfmtD(kp.startdatum)} – ${bfmtD(kp.enddatum)}</span>
       <span>⏱ ${totalH} Unterrichtsstunden</span>
-      <span>📍 ${kp.bkrfqg_standorte?.name||'Lingen'}</span>
+      <span>${BIC('pin')} ${kp.bkrfqg_standorte?.name||'Lingen'}</span>
       ${kp.bkrfqg_standorte?.ort?`<span>🏙 ${kp.bkrfqg_standorte.ort}</span>`:''}
     </div>
   </div>
@@ -2627,7 +2655,7 @@ function bkrfqgKurstagModalHTML(kpId) {
       </div>
       <div class="modal-footer">
         <button class="btn btn-outline" onclick="bkrfqgCloseModal('bkrfqg-kt-modal')">Abbrechen</button>
-        <button class="btn btn-primary" onclick="bkrfqgKurstagSpeichern()">💾 Speichern</button>
+        <button class="btn btn-primary" onclick="bkrfqgKurstagSpeichern()">${BIC('diskette')} Speichern</button>
       </div>
     </div>
   </div>`;
@@ -2844,7 +2872,7 @@ function bkrfqgNaechsterWerktag(d){
 // KURSMELDUNG
 // ════════════════════════════════════════════════════════════════════
 async function bkrfqgKursmeldung(el) {
-  el.innerHTML = bKopf('📨 Kursmeldung','§ 11 Abs. 4 BKrFQG – Meldung 5 Werktage vor Unterricht')
+  el.innerHTML = bKopf(BIC('brief',15)+' Kursmeldung','§ 11 Abs. 4 BKrFQG – Meldung 5 Werktage vor Unterricht')
     + '<div class="loading"><div class="spinner"></div>Lade Kurstage …</div>';
   try {
     const kurstage=await bkrfqgSB('bkrfqg_kurstage',{
@@ -2865,7 +2893,7 @@ async function bkrfqgKursmeldung(el) {
     const heute=new Date();
     const w5=(datum)=>{const d=new Date(datum+'T12:00');let wt=0;while(wt<5){d.setDate(d.getDate()-1);if(d.getDay()>0&&d.getDay()<6)wt++;}return d;};
 
-    el.innerHTML = bKopf('📨 Kursmeldung','§ 11 Abs. 4 BKrFQG – Meldung 5 Werktage vor Unterricht',
+    el.innerHTML = bKopf(BIC('brief',15)+' Kursmeldung','§ 11 Abs. 4 BKrFQG – Meldung 5 Werktage vor Unterricht',
       '<button class="btn btn-outline btn-sm" onclick="bkrfqgKursmeldung(document.getElementById(\'bkrfqg-content\'))">↻ Aktualisieren</button>')
       + `<div class="card" style="background:#fffbeb;border-color:#fde68a;padding:10px 14px;font-size:12px;margin-bottom:16px;color:#92400e">
           ⚠️ Jede Schulung muss der Behörde spätestens 5 Werktage vorher gemeldet werden. Ausfall bis 1 Werktag vorher.
@@ -2882,7 +2910,7 @@ async function bkrfqgKursmeldung(el) {
                    <td>${k.gegenstand}</td>
                    <td>${k.bkrfqg_standorte?.name||'–'}</td>
                    <td>${bAmpel(t)}</td>
-                   <td class="tbl-actions"><button class="btn btn-primary btn-sm" onclick="bkrfqgMelden('${k.id}')">📨 Melden</button></td>
+                   <td class="tbl-actions"><button class="btn btn-primary btn-sm" onclick="bkrfqgMelden('${k.id}')">${BIC('brief')} Melden</button></td>
                  </tr>`;
                }).join('')}</tbody></table>`}
         </div>
@@ -2890,7 +2918,7 @@ async function bkrfqgKursmeldung(el) {
           ${ohneStd.length} Kurstag${ohneStd.length===1?'':'e'} ohne Unterrichtsstunden (z. B. Selbststudium) &ndash; nicht meldepflichtig:
           ${ohneStd.map(k=>bfmtD(k.datum)+' '+(k.gegenstand||'')).join(' \u00b7 ')}
         </div>`}`;
-  } catch(e){ el.innerHTML=bKopf('📨 Kursmeldung')+`<div class="card" style="padding:20px;color:var(--rot)">Fehler: ${e.message}</div>`; }
+  } catch(e){ el.innerHTML=bKopf(BIC('brief',15)+' Kursmeldung')+`<div class="card" style="padding:20px;color:var(--rot)">Fehler: ${e.message}</div>`; }
 }
 async function bkrfqgMelden(id) {
   const k=window._bkrfqgKurstage?.find(x=>x.id===id); if(!k)return;
@@ -3078,7 +3106,7 @@ function bkrfqgNachweisUebersicht(){
 function bkrfqgAntrag(el) {
   bkrfqgChipStil();
   const vorausgewählt=bkrfqgState.antragStandortId||'';
-  el.innerHTML = bKopf('📋 Anerkennungsantrag','§ 9 BKrFQG i.V.m. § 5 BKrFQV')
+  el.innerHTML = bKopf(BIC('liste',15)+' Anerkennungsantrag','§ 9 BKrFQG i.V.m. § 5 BKrFQV')
     + `<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
         <div style="display:flex;flex-direction:column;gap:12px">
           <div class="card" style="padding:14px 16px">
@@ -3338,17 +3366,17 @@ const BKRFQG_DOK_KATEGORIEN = [
 ];
 
 async function bkrfqgDokumente(el) {
-  el.innerHTML = bKopf('📁 Dokumente & Scans','Bescheide, Verträge, Nachweise')
+  el.innerHTML = bKopf(BIC('ordner',15)+' Dokumente & Scans','Bescheide, Verträge, Nachweise')
     + '<div class="loading"><div class="spinner"></div>Lade Dokumente …</div>';
   try {
     const docs=await sb.from('bkrfqg_dokumente').select('*').order('hochgeladen_am',{ascending:false});
-    el.innerHTML = bKopf('📁 Dokumente & Scans','Bescheide, Verträge, Nachweise',
+    el.innerHTML = bKopf(BIC('ordner',15)+' Dokumente & Scans','Bescheide, Verträge, Nachweise',
       `<label class="btn btn-primary btn-sm" style="cursor:pointer;margin:0">📤 Hochladen<input type="file" style="display:none" accept=".pdf,.jpg,.jpeg,.png" onchange="bkrfqgDokUpload(this)"></label>`)
       + `<div class="card" style="background:#eff6ff;border-color:#bfdbfe;padding:10px 14px;font-size:12px;margin-bottom:16px;color:#1e40af">
           💡 Anerkennungsbescheide besser direkt beim Standort hochladen → KI liest automatisch aus.
         </div>`
       + (!docs.data?.length
-        ? bLeer('📁','Keine Dokumente','Noch keine Dokumente hochgeladen.')
+        ? bLeer(BIC('ordner',40),'Keine Dokumente','Noch keine Dokumente hochgeladen.')
         : `<div class="card" style="padding:12px">${docs.data.map(d=>`
             <div style="display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:8px;border:1px solid var(--border);margin-bottom:8px">
               <span style="font-size:22px">${d.mime_type?.includes('pdf')?'📄':'🖼️'}</span>
@@ -3358,7 +3386,7 @@ async function bkrfqgDokumente(el) {
               </div>
               <button class="btn btn-outline btn-sm" onclick="bkrfqgDokOeffnen('${d.storage_path}')">👁 Öffnen</button>
             </div>`).join('')}</div>`);
-  } catch(e){ el.innerHTML=bKopf('📁 Dokumente')+`<div class="card" style="padding:20px;color:var(--rot)">Fehler: ${e.message}</div>`; }
+  } catch(e){ el.innerHTML=bKopf(BIC('ordner',15)+' Dokumente')+`<div class="card" style="padding:20px;color:var(--rot)">Fehler: ${e.message}</div>`; }
 }
 async function bkrfqgDokUpload(input) {
   const file=input.files[0];
