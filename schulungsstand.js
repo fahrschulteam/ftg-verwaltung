@@ -8,6 +8,35 @@
 const SS_URL = 'https://ejuhpgcwskyqwheinlub.supabase.co';
 const SS_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVqdWhwZ2N3c2t5cXdoZWlubHViIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI1NTk1ODcsImV4cCI6MjA5ODEzNTU4N30.jeN17CztS9Ld5FtJGrL_BCwk2DObIIigwJZSJGbE7tA';
 
+// ── Strich-Icons ─────────────────────────────────
+// Die Farbe kommt ueber currentColor vom umgebenden Text.
+function SIC(n, groesse){
+  const g = groesse || 13;
+  const P = {
+    kalender:'<rect x="3" y="4" width="18" height="18" rx="2"/>'
+      +'<line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/>'
+      +'<line x1="3" y1="10" x2="21" y2="10"/>',
+    hut:'<path d="M22 10L12 5 2 10l10 5 10-5z"/>'
+      +'<path d="M6 12v5c0 1 2.7 2.5 6 2.5s6-1.5 6-2.5v-5"/>',
+    wiederholen:'<polyline points="17 1 21 5 17 9"/>'
+      +'<path d="M3 11V9a4 4 0 0 1 4-4h14"/>'
+      +'<polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/>',
+    pin:'<path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>'
+      +'<circle cx="12" cy="10" r="3"/>',
+    person:'<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>'
+      +'<circle cx="12" cy="7" r="4"/>',
+    personen:'<path d="M17 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>'
+      +'<circle cx="9.5" cy="7" r="4"/>'
+      +'<path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+    muell:'<polyline points="3 6 5 6 21 6"/>'
+      +'<path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>'
+  };
+  return '<svg viewBox="0 0 24 24" width="'+g+'" height="'+g+'" fill="none" '
+    +'stroke="currentColor" stroke-width="2" stroke-linecap="round" '
+    +'stroke-linejoin="round" style="vertical-align:-2px;flex:none">'
+    +(P[n]||'')+'</svg>';
+}
+
 function ssFmt(d) {
   if (!d) return '–';
   return new Date(d).toLocaleDateString('de-DE', { day:'2-digit', month:'2-digit', year:'numeric' });
@@ -205,18 +234,18 @@ window.renderSchulungsstand = async function() {
             <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px">
               ${tagBadge(g.typ)}
               ${istGeplant ? `<span style="font-size:10px;background:#FFF7ED;color:#92400e;border:1px solid #D97706;
-                padding:2px 8px;border-radius:5px;font-weight:700">📅 Geplant</span>` : ''}
+                padding:2px 8px;border-radius:5px;font-weight:700">${SIC('kalender',11)} Geplant</span>` : ''}
               ${istKurs ? `<span style="font-size:10px;background:#F0FDF4;color:#166534;border:1px solid #16a34a;
-                padding:2px 8px;border-radius:5px;font-weight:700">🎓 Lehrgang</span>` : ''}
+                padding:2px 8px;border-radius:5px;font-weight:700">${SIC('hut',11)} Lehrgang</span>` : ''}
               ${typ === 'uw' ? `<span style="font-size:10px;background:#EFF6FF;color:#1e4d8c;border:1px solid #2A6CAE;
-                padding:2px 8px;border-radius:5px;font-weight:700">🔄 Unterweisung</span>` : ''}
+                padding:2px 8px;border-radius:5px;font-weight:700">${SIC('wiederholen',11)} Unterweisung</span>` : ''}
             </div>
 
             <div style="display:flex;flex-wrap:wrap;gap:12px;font-size:12px;color:var(--grau)">
-              ${g.datum !== g.datumBis && g.datumBis ? `<span>📅 ${datumsSpanne(g.datum, g.datumBis)}</span>` : ''}
-              ${g.ort ? `<span>📍 ${g.ort}</span>` : ''}
-              ${g.dozent ? `<span>👤 ${dozName(g.dozent)}</span>` : ''}
-              ${istGeplant && g.capacity ? `<span>👥 Kapazität: ${(g.participants||[]).length}/${g.capacity}</span>` : ''}
+              ${g.datum !== g.datumBis && g.datumBis ? `<span>${SIC('kalender')} ${datumsSpanne(g.datum, g.datumBis)}</span>` : ''}
+              ${g.ort ? `<span>${SIC('pin')} ${g.ort}</span>` : ''}
+              ${g.dozent ? `<span>${SIC('person')} ${dozName(g.dozent)}</span>` : ''}
+              ${istGeplant && g.capacity ? `<span>${SIC('personen')} Kapazität: ${(g.participants||[]).length}/${g.capacity}</span>` : ''}
             </div>
 
             <div style="margin-top:6px">
@@ -264,9 +293,9 @@ window.renderSchulungsstand = async function() {
           </button>
         </div>` : ''}
 
-      ${geplanteEvents.length ? sectionTitel('📅 Geplante Lehrgänge', geplanteEvents.length) + geplanteEvents.map(g => eventKarte(g,'geplant')).join('') : ''}
-      ${kursEvents.length    ? sectionTitel('🎓 Eingetragene Lehrgänge', kursEvents.length) + kursEvents.map(g => eventKarte(g,'kurs')).join('') : ''}
-      ${uwEvents.length      ? sectionTitel('🔄 Eingetragene Unterweisungen', uwEvents.length) + uwEvents.map(g => eventKarte(g,'uw')).join('') : ''}
+      ${geplanteEvents.length ? sectionTitel(SIC('kalender')+' Geplante Lehrgänge', geplanteEvents.length) + geplanteEvents.map(g => eventKarte(g,'geplant')).join('') : ''}
+      ${kursEvents.length    ? sectionTitel(SIC('hut')+' Eingetragene Lehrgänge', kursEvents.length) + kursEvents.map(g => eventKarte(g,'kurs')).join('') : ''}
+      ${uwEvents.length      ? sectionTitel(SIC('wiederholen')+' Eingetragene Unterweisungen', uwEvents.length) + uwEvents.map(g => eventKarte(g,'uw')).join('') : ''}
 
       ${gesamt > 0 ? `
         <div style="padding:16px 0;text-align:center">

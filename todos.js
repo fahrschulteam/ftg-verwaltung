@@ -19,6 +19,35 @@ let todosState = {
 const PRIO_LABEL = { niedrig:'Niedrig', normal:'Normal', hoch:'Hoch' };
 const PRIO_FARBE = { niedrig:'#6B7280', normal:'#2A6CAE', hoch:'#C0001A' };
 
+// ── Strich-Icons ─────────────────────────────────
+// Die Farbe kommt ueber currentColor vom umgebenden Text.
+function TIC(n, groesse){
+  const g = groesse || 13;
+  const P = {
+    kalender:'<rect x="3" y="4" width="18" height="18" rx="2"/>'
+      +'<line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/>'
+      +'<line x1="3" y1="10" x2="21" y2="10"/>',
+    hut:'<path d="M22 10L12 5 2 10l10 5 10-5z"/>'
+      +'<path d="M6 12v5c0 1 2.7 2.5 6 2.5s6-1.5 6-2.5v-5"/>',
+    wiederholen:'<polyline points="17 1 21 5 17 9"/>'
+      +'<path d="M3 11V9a4 4 0 0 1 4-4h14"/>'
+      +'<polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/>',
+    pin:'<path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>'
+      +'<circle cx="12" cy="10" r="3"/>',
+    person:'<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>'
+      +'<circle cx="12" cy="7" r="4"/>',
+    personen:'<path d="M17 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>'
+      +'<circle cx="9.5" cy="7" r="4"/>'
+      +'<path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+    muell:'<polyline points="3 6 5 6 21 6"/>'
+      +'<path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>'
+  };
+  return '<svg viewBox="0 0 24 24" width="'+g+'" height="'+g+'" fill="none" '
+    +'stroke="currentColor" stroke-width="2" stroke-linecap="round" '
+    +'stroke-linejoin="round" style="vertical-align:-2px;flex:none">'
+    +(P[n]||'')+'</svg>';
+}
+
 function escTodo(s) {
   return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
@@ -175,11 +204,11 @@ function renderTodosContent() {
           </div>
           ${t.beschreibung ? `<div style="font-size:13px; color:var(--grau); margin-top:4px; white-space:pre-wrap;">${escTodo(t.beschreibung)}</div>` : ''}
           <div style="font-size:11px; color:var(--grau); margin-top:6px; display:flex; gap:14px; flex-wrap:wrap;">
-            ${faelligTxt ? `<span>📅 Fällig: ${faelligTxt}</span>` : ''}
+            ${faelligTxt ? `<span>${TIC('kalender')} Fällig: ${faelligTxt}</span>` : ''}
             ${vergebenAnsicht ? `<span>→ Zugewiesen an: ${escTodo(zuName)}</span>` : (t.ersteller_id !== meineId ? `<span>Von: ${escTodo(vonName)}</span>` : '')}
           </div>
         </div>
-        ${darfLoeschen ? `<button onclick="loescheTodo('${t.id}')" title="Löschen" style="flex-shrink:0; background:none; border:none; cursor:pointer; color:var(--grau); font-size:15px; padding:4px;">🗑</button>` : ''}
+        ${darfLoeschen ? `<button onclick="loescheTodo('${t.id}')" title="Löschen" style="flex-shrink:0; background:none; border:none; cursor:pointer; color:var(--grau); font-size:15px; padding:4px;">${TIC('muell',15)}</button>` : ''}
       </div>`;
   }
 }
