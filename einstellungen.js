@@ -12,19 +12,70 @@ const einstState = {
   loaded: false,
 };
 
+// ── Strich-Icons ─────────────────────────────────
+function EIC(n, groesse){
+  const g = groesse || 13;
+  const P = {
+    diagramm:'<line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/>'
+      +'<line x1="6" y1="20" x2="6" y2="14"/>',
+    liste:'<path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>'
+      +'<rect x="8" y="2" width="8" height="4" rx="1"/>'
+      +'<line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="15" y2="16"/>',
+    hut:'<path d="M22 10L12 5 2 10l10 5 10-5z"/>'
+      +'<path d="M6 12v5c0 1 2.7 2.5 6 2.5s6-1.5 6-2.5v-5"/>',
+    ordner:'<path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>',
+    personen:'<path d="M17 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>'
+      +'<circle cx="9.5" cy="7" r="4"/>'
+      +'<path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+    person:'<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>'
+      +'<circle cx="12" cy="7" r="4"/>',
+    uhr:'<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
+    auto:'<path d="M5 17h14M5 17a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm18 0a2 2 0 1 1-4 0 2 2 0 0 1 4 0z"/>'
+      +'<path d="M3 17v-5l2-5h11l3 5v5"/><line x1="7" y1="12" x2="19" y2="12"/>',
+    haken:'<polyline points="20 6 9 17 4 12"/>',
+    hakenkreis:'<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>'
+      +'<polyline points="22 4 12 14.01 9 11.01"/>',
+    lupe:'<circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.7" y2="16.7"/>',
+    firma:'<rect x="3" y="3" width="18" height="18" rx="2"/>'
+      +'<line x1="9" y1="3" x2="9" y2="21"/>'
+      +'<line x1="13" y1="8" x2="17" y2="8"/><line x1="13" y1="12" x2="17" y2="12"/>',
+    diskette:'<path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>'
+      +'<polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/>',
+    stift:'<path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/>',
+    doc:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>'
+      +'<polyline points="14 2 14 8 20 8"/>'
+      +'<line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/>',
+    paket:'<path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8'
+      +'a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>'
+      +'<polyline points="3.3 7 12 12 20.7 7"/><line x1="12" y1="22" x2="12" y2="12"/>',
+    zahnrad:'<circle cx="12" cy="12" r="3"/>'
+      +'<path d="M20 12a8 8 0 0 0-.2-1.8l2-1.5-2-3.4-2.3 1a8 8 0 0 0-3-1.8L14 2h-4l-.5 2.5'
+      +'a8 8 0 0 0-3 1.8l-2.3-1-2 3.4 2 1.5a8 8 0 0 0 0 3.6l-2 1.5 2 3.4 2.3-1'
+      +'a8 8 0 0 0 3 1.8L10 22h4l.5-2.5a8 8 0 0 0 3-1.8l2.3 1 2-3.4-2-1.5c.13-.58.2-1.18.2-1.8z"/>',
+    mail:'<rect x="2" y="4" width="20" height="16" rx="2"/>'
+      +'<polyline points="2 7 12 13 22 7"/>',
+    schloss:'<rect x="3" y="11" width="18" height="11" rx="2"/>'
+      +'<path d="M7 11V7a5 5 0 0 1 10 0v4"/>'
+  };
+  return '<svg viewBox="0 0 24 24" width="'+g+'" height="'+g+'" fill="none" '
+    +'stroke="currentColor" stroke-width="2" stroke-linecap="round" '
+    +'stroke-linejoin="round" style="vertical-align:-2px;flex:none">'
+    +(P[n]||'')+'</svg>';
+}
+
 // Alle Module mit Label (Single Source of Truth für Rechte-Auswahl)
 const MODULE_LISTE = [
-  ['dashboard',  '📊 Dashboard'],
-  ['kva',        '📋 KVA'],
-  ['schulung',   '🎓 Schulungen'],
-  ['teilnehmer', '📋 QM'],
-  ['dokumente',  '📁 Vorlagen'],
-  ['personal',   '👥 Personal'],
-  ['azk',        '⏱ Arbeitszeit & Urlaub'],
-  ['fuhrpark',   '🚗 Fuhrpark'],
-  ['todos',      '✓ To-Dos'],
-  ['wettbewerb', '🔎 Wettbewerb & Recht'],
-  ['bkrfqg',     '🎓 BKrFQG Anerkennungen'],
+  ['dashboard',  EIC('diagramm')+' Dashboard'],
+  ['kva',        EIC('liste')+' KVA'],
+  ['schulung',   EIC('hut')+' Schulungen'],
+  ['teilnehmer', EIC('liste')+' QM'],
+  ['dokumente',  EIC('ordner')+' Vorlagen'],
+  ['personal',   EIC('personen')+' Personal'],
+  ['azk',        EIC('uhr')+' Arbeitszeit & Urlaub'],
+  ['fuhrpark',   EIC('auto')+' Fuhrpark'],
+  ['todos',      EIC('haken')+' To-Dos'],
+  ['wettbewerb', EIC('lupe')+' Wettbewerb & Recht'],
+  ['bkrfqg',     EIC('hut')+' BKrFQG Anerkennungen'],
 ];
 
 const ROLLEN = [
@@ -58,7 +109,7 @@ window.renderEinstellungen = async function () {
 
   const istAdmin = currentProfile && currentProfile.rolle === 'admin';
   if (!istAdmin) {
-    view.innerHTML = `<div class="empty-state"><div style="font-size:40px">🔒</div>
+    view.innerHTML = `<div class="empty-state"><div style="font-size:40px">${EIC('schloss',40)}</div>
       <div>Die Einstellungen sind nur für Administratoren zugänglich.</div></div>`;
     return;
   }
@@ -69,13 +120,13 @@ window.renderEinstellungen = async function () {
   view.innerHTML = `
     <div class="toolbar"><h2>Einstellungen</h2></div>
     <div class="sub-tabs">
-      ${tabBtn('benutzer', '👤 Benutzer & Rechte')}
-      ${tabBtn('firma', '🏢 Firmendaten')}
-      ${tabBtn('schulung', '🎓 Schulungen')}
-      ${tabBtn('kva', '📋 KVA')}
-      ${tabBtn('qm', '✅ QM')}
-      ${tabBtn('backup', '💾 Backup')}
-      ${tabBtn('verlauf', '🕓 Verlauf')}
+      ${tabBtn('benutzer', EIC('person')+' Benutzer & Rechte')}
+      ${tabBtn('firma', EIC('firma')+' Firmendaten')}
+      ${tabBtn('schulung', EIC('hut')+' Schulungen')}
+      ${tabBtn('kva', EIC('liste')+' KVA')}
+      ${tabBtn('qm', EIC('hakenkreis')+' QM')}
+      ${tabBtn('backup', EIC('diskette')+' Backup')}
+      ${tabBtn('verlauf', EIC('uhr')+' Verlauf')}
     </div>
     <div id="einst-inhalt"></div>
   `;
@@ -341,7 +392,7 @@ function viewFirma() {
         ${feld('zert_praefix', 'Zertifikatsnummer-Präfix', f.zert_praefix)}
       </div>
       <div style="margin-top:16px;text-align:right">
-        <button class="btn btn-primary" onclick="firmaSpeichern()">💾 Firmendaten speichern</button>
+        <button class="btn btn-primary" onclick="firmaSpeichern()">${EIC('diskette')} Firmendaten speichern</button>
       </div>
     </div>
     <div class="card" style="margin-top:16px">
@@ -354,7 +405,7 @@ function viewFirma() {
           <div id="firma-sig-leer" style="font-size:13px;color:var(--grau)">Noch keine Unterschrift hinterlegt.</div>
         </div>
         <div style="display:flex;flex-direction:column;gap:8px">
-          <button class="btn btn-primary" onclick="oeffneUnterschriftPad()">✍️ Unterschreiben / Ändern</button>
+          <button class="btn btn-primary" onclick="oeffneUnterschriftPad()">${EIC('stift')} Unterschreiben / Ändern</button>
           <button class="btn btn-outline" onclick="unterschriftEntfernen()">Entfernen</button>
         </div>
       </div>
@@ -415,7 +466,7 @@ function oeffneUnterschriftPad() {
   modal.id = 'sig-modal';
   modal.innerHTML = `
     <div class="modal" style="width:min(560px,96vw)">
-      <div class="modal-header"><h3>✍️ Unterschrift Inhaber / Leiter</h3>
+      <div class="modal-header"><h3>${EIC('stift',15)} Unterschrift Inhaber / Leiter</h3>
         <button class="close-btn" onclick="document.getElementById('sig-modal').remove()">✕</button></div>
       <div class="modal-body">
         <p style="font-size:12px;color:var(--grau);margin-bottom:8px">Mit Finger (Touchscreen) oder Maus im weißen Feld unterschreiben.</p>
@@ -424,7 +475,7 @@ function oeffneUnterschriftPad() {
       <div class="modal-footer">
         <button class="btn btn-outline" style="margin-right:auto" onclick="sigLeeren()">Leeren</button>
         <button class="btn btn-outline" onclick="document.getElementById('sig-modal').remove()">Abbrechen</button>
-        <button class="btn btn-primary" onclick="sigSpeichern()">💾 Speichern</button>
+        <button class="btn btn-primary" onclick="sigSpeichern()">${EIC('diskette')} Speichern</button>
       </div>
     </div>`;
   document.body.appendChild(modal);
@@ -493,7 +544,7 @@ function viewKvaEinst() {
     </div>
 
     <div style="display:flex;align-items:center;gap:12px">
-      <button class="btn btn-primary" onclick="kvaEinstSpeichern()">✓ KVA-Einstellungen speichern</button>
+      <button class="btn btn-primary" onclick="kvaEinstSpeichern()">${EIC('haken')} KVA-Einstellungen speichern</button>
       <span id="einst-kva-saved" style="font-size:12px;color:#16a34a;display:none;font-weight:700">Gespeichert!</span>
     </div>`;
 }
@@ -570,8 +621,8 @@ function viewBackup() {
         Ort auf (z.&nbsp;B. OneDrive) – so hast du jederzeit einen unabhängigen Stand, zusätzlich
         zu den automatischen Backups von Supabase.</p>
       <div style="display:flex;gap:10px;flex-wrap:wrap">
-        <button class="btn btn-primary" id="backup-btn" onclick="backupErstellen(false)">📄 Nur Daten (schnell)</button>
-        <button class="btn btn-outline" id="backup-btn-full" onclick="backupErstellen(true)">📦 Komplett mit Dateien (ZIP)</button>
+        <button class="btn btn-primary" id="backup-btn" onclick="backupErstellen(false)">${EIC('doc')} Nur Daten (schnell)</button>
+        <button class="btn btn-outline" id="backup-btn-full" onclick="backupErstellen(true)">${EIC('paket')} Komplett mit Dateien (ZIP)</button>
       </div>
       <div id="backup-status" style="margin-top:14px;font-size:13px;color:var(--grau)"></div>
       <div class="einst-hinweis" style="margin-top:16px">
@@ -700,10 +751,10 @@ async function renderVerlauf(host) {
   } catch (e) { console.warn('Verlauf laden:', e); }
 
   const bereichLabel = {
-    benutzer: '👤 Benutzer', einladung: '✉️ Einladung', firma: '🏢 Firmendaten',
-    dokument: '📁 Vorlagen', system: '⚙ System',
-    personal: '👥 Personal', fuhrpark: '🚗 Fuhrpark', kva: '📋 KVA',
-    schulung: '🎓 Schulungen', teilnehmer: '📋 QM',
+    benutzer: EIC('person')+' Benutzer', einladung: EIC('mail')+' Einladung', firma: EIC('firma')+' Firmendaten',
+    dokument: EIC('ordner')+' Vorlagen', system: EIC('zahnrad')+' System',
+    personal: EIC('personen')+' Personal', fuhrpark: EIC('auto')+' Fuhrpark', kva: EIC('liste')+' KVA',
+    schulung: EIC('hut')+' Schulungen', teilnehmer: EIC('liste')+' QM',
   };
 
   const rows = eintraege.map(e => {
@@ -901,7 +952,7 @@ function viewSchulung() {
     </div>
 
     <div style="display:flex;justify-content:flex-end;margin-top:4px">
-      <button class="btn btn-primary" onclick="schulungSpeichern()">💾 Schulungseinstellungen speichern</button>
+      <button class="btn btn-primary" onclick="schulungSpeichern()">${EIC('diskette')} Schulungseinstellungen speichern</button>
     </div>`;
 }
 
