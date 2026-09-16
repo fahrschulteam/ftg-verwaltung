@@ -740,8 +740,8 @@ async function azkStartSpeichern() {
     const urlaubEl = document.querySelector(`.azk-start-urlaub[data-ma="${maId}"]`);
     records.push({
       mitarbeiter_id: maId, jahr: azkState.jahr,
-      stand_anfang: parseFloat(el.value)||0,
-      urlaub_anspruch: parseFloat(urlaubEl.value)||30,
+      stand_anfang: (function(){var n=parseFloat(el.value);return Number.isFinite(n)?n:0;})(),
+      urlaub_anspruch: (function(){var n=parseFloat(urlaubEl.value);return Number.isFinite(n)?n:30;})(),
     });
   });
   const { error } = await sb.from('azk_start').upsert(records, { onConflict: 'mitarbeiter_id,jahr' });
