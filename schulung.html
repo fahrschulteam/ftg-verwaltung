@@ -857,17 +857,19 @@ function _suFindTn(first,last,birth){
   return kandidaten.find(p=>!birth||!p.birth)||kandidaten[0];
 }
 // Teilnehmer-Zeilen einer Anmeldung (einzeln oder Gruppe) vereinheitlichen
+// ANREDE-PATCH v1: Anrede aus dem Anmeldeformular -> Geschlecht (m/w/d)
+function _suGeschlecht(a){return ({Herr:'m',Frau:'w',Divers:'d'})[String(a||'').trim()]||'';}
 function _suTeilnehmer(s){
   if(s.mode==='gruppe'){
     return (Array.isArray(s.teilnehmer)?s.teilnehmer:[]).map(t=>{
       const n=_suName(t.name);
-      return {first:n.first,last:n.last,birth:_suIso(t.geburtsdatum),birthplace:t.geburtsort||''};
+      return {first:n.first,last:n.last,birth:_suIso(t.geburtsdatum),birthplace:t.geburtsort||'',anrede:t.anrede||'',geschlecht:_suGeschlecht(t.anrede)};
     });
   }
   const p=s.person||{};
   const n=_suName(p.name||s.contact_name);
   const po=_suPlzOrt(p.plzOrt);
-  return [{first:n.first,last:n.last,birth:_suIso(p.geburtsdatum),birthplace:p.geburtsort||'',
+  return [{first:n.first,last:n.last,birth:_suIso(p.geburtsdatum),birthplace:p.geburtsort||'',anrede:p.anrede||'',geschlecht:_suGeschlecht(p.anrede),
     street:p.strasse||'',zip:po.zip,city:po.city,phone:p.mobil||p.telefon||'',email:p.email||''}];
 }
 // Mögliche Ziele: geplante Kurse (aus dem Kalender) + bestehende Lehrgangsgruppen
@@ -990,7 +992,7 @@ function openSignup(id){
       ?'<span class="tag green" title="Wird dem vorhandenen Teilnehmer zugeordnet">✓ vorhanden: '+_esc(pFullName(gef))+(gef.birth?' (*'+fmt(gef.birth)+')':'')+'</span>'
       :'<span class="tag steel">wird neu angelegt</span>';
     return '<div style="display:flex;gap:10px;align-items:center;justify-content:space-between;border:1px solid var(--border);border-radius:8px;padding:7px 10px;font-size:13px;margin-bottom:5px">'
-      +'<span><b>'+_esc(t.last)+(t.first?', '+_esc(t.first):'')+'</b>'+(t.birth?' · *'+fmt(t.birth):'')+(t.birthplace?' · '+_esc(t.birthplace):'')+'</span>'+tag+'</div>';
+      +'<span>'+(t.anrede?_esc(t.anrede)+' ':'')+'<b>'+_esc(t.last)+(t.first?', '+_esc(t.first):'')+'</b>'+(t.birth?' · *'+fmt(t.birth):'')+(t.birthplace?' · '+_esc(t.birthplace):'')+'</span>'+tag+'</div>';
   }).join('');
   let firmaHtml='';
   if(s.firma&&s.firma.firmenbezeichnung){
@@ -1058,7 +1060,7 @@ async function _signupKern(s, zielKeys){
         companyId:companyId,company:companyName,
         phone:t.phone||(s.mode==='gruppe'?'':s.mobil||s.telefon||''),
         email:t.email||(s.mode==='einzel'?s.contact_email||'':''),
-        extDates:{},createdAt:today(),lastReminder:''};
+        extDates:(t.geschlecht?{GESCHLECHT:t.geschlecht}:{}),createdAt:today(),lastReminder:''};
       state.participants.push(p);
       const erg=await speichereTeilnehmerHaupt(p,true);
       if(erg!==true) console.warn('Signup-TN nur lokal:',erg);
@@ -1066,6 +1068,7 @@ async function _signupKern(s, zielKeys){
       // Kontaktdaten ergänzen, wenn beim vorhandenen TN leer
       if(!p.email&&t.email) p.email=t.email;
       if(!p.phone&&t.phone) p.phone=t.phone;
+      if(t.geschlecht&&!(p.extDates||{}).GESCHLECHT) p.extDates=Object.assign({},p.extDates||{},{GESCHLECHT:t.geschlecht});
       if(!p.companyId&&companyId){p.companyId=companyId;p.company=companyName;}
       await speichereTeilnehmerHaupt(p,false);
     }
