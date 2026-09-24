@@ -220,6 +220,33 @@ function oeffneMaForm(id) {
             <div class="frow"><label>Fristablauf FES-Seminarerlaubnis §53 (2) FahrlG</label><input type="number" id="mf-frist-fes" value="${m?.frist_fes||''}" min="2018" max="2040" placeholder="z.B. 2027"></div>
           </div>
 
+          <div class="fsec">Fahrlehrerschein &amp; Überwachung (§ 51 FahrlG)</div>
+          <div style="font-size:11px;color:var(--grau);margin:-6px 0 10px">
+            Diese Angaben fragt der Sachverständige bei der Formalüberwachung ab.
+          </div>
+          <div class="fgrid">
+            <div class="frow"><label>Fahrlehrerschein-Nr. / Register-Nr.</label>
+              <input id="mf-fl-nr" value="${m?.fl_schein_nr||''}" placeholder="z.B. 09/09"></div>
+            <div class="frow"><label>Ausstellende Behörde</label>
+              <input id="mf-fl-behoerde" value="${m?.fl_schein_behoerde||''}" placeholder="z.B. Landkreis Emsland"></div>
+            <div class="frow"><label>Erteilungsdatum Fahrlehrerschein</label>
+              <input type="date" id="mf-fl-datum" value="${m?.fl_schein_datum||''}"></div>
+          </div>
+          <div class="fgrid">
+            <div class="frow"><label>Tätigkeit</label>
+              <select id="mf-taetigkeit">
+                <option value="hbl" ${(m?.taetigkeit||'hbl')==='hbl'?'selected':''}>hauptberuflich</option>
+                <option value="nbl" ${m?.taetigkeit==='nbl'?'selected':''}>nebenberuflich</option>
+              </select></div>
+            <div class="frow"><label>Hauptberuf (nur bei nebenberuflich)</label>
+              <input id="mf-nbl-beruf" value="${m?.nbl_hauptberuf||''}" placeholder="zugleich tätig bei …"></div>
+            <div class="frow"><label>Fahrerlaubnis gültig bis (C/CE/D/DE)</label>
+              <input type="date" id="mf-fe-ablauf" value="${m?.fe_ablauf||''}"></div>
+            <div class="frow"><label>Standort / Zweigstelle</label>
+              <input id="mf-standort" value="${m?.standort||''}" placeholder="z.B. Lingen-City"></div>
+          </div>
+          <label class="chip" style="margin-bottom:14px"><input type="checkbox" id="mf-fl-eingetragen" ${m?.fl_beschaeftigung_eingetragen?'checked':''}> Beschäftigungsverhältnis im Fahrlehrerschein eingetragen (§ 1 (4) FahrlG)</label>
+
           <div class="fsec">Nachweise BKrFQG-Anerkennung § 5 Abs. 1 BKrFQV</div>
           <div style="font-size:11px;color:var(--grau);margin:-6px 0 10px">
             Wird für den Anerkennungsantrag der Ausbildungsstätte benötigt. Die Qualifikationen oben zählen automatisch mit.
@@ -348,6 +375,14 @@ async function speichereMa() {
     staatsangehoerigkeit: v('mf-staat')||null,
     sv_status: v('mf-sv-status')||null,
     iban: v('mf-iban')||null,
+    fl_schein_nr: v('mf-fl-nr')||null,
+    fl_schein_behoerde: v('mf-fl-behoerde')||null,
+    fl_schein_datum: v('mf-fl-datum')||null,
+    taetigkeit: document.getElementById('mf-taetigkeit')?.value || null,
+    nbl_hauptberuf: v('mf-nbl-beruf')||null,
+    fe_ablauf: v('mf-fe-ablauf')||null,
+    standort: v('mf-standort')||null,
+    fl_beschaeftigung_eingetragen: !!document.getElementById('mf-fl-eingetragen')?.checked,
     klassen, custom_fields: customFields, notiz: v('mf-notiz')||null,
   };
   document.querySelectorAll('.mf-qual').forEach(c => { data[c.dataset.feld] = c.checked; });
@@ -499,6 +534,16 @@ function oeffneBerichte() {
           <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="druckeErfassungsbogen()">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
             Ausfüllbaren Erfassungsbogen herunterladen
+          </button>
+        </div>
+
+        <div class="card" style="padding:14px 16px">
+          <div style="font-size:11px;font-weight:700;color:var(--grau);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px">Überwachung § 51 FahrlG</div>
+          <button class="btn btn-outline" style="width:100%;margin-bottom:8px;justify-content:center" onclick="druckeUeberwachung()">
+            Überwachungsnachweis Personal drucken
+          </button>
+          <button class="btn btn-outline" style="width:100%;justify-content:center;font-size:12px" onclick="oeffneUeberwachungStammdaten()">
+            Stammdaten der Fahrschule pflegen
           </button>
         </div>
 
@@ -1085,3 +1130,218 @@ async function oeffneUrkunde(path) {
 
 window.ladeMitarbeiter = ladeMitarbeiter;
 window.personalState = personalState;
+
+// ════════════════════════════════════════════════════════════════════
+//  UEBERWACHUNG-PATCH v1
+//  ÜBERWACHUNGSNACHWEIS PERSONAL (§ 51 FahrlG)
+//  Ausdruck nach dem Muster "Protokoll über die Formalüberwachung"
+// ════════════════════════════════════════════════════════════════════
+
+// Stammdaten liegen in firma.grundlagen.ueberwachung – keine neue Tabelle nötig.
+async function ladeUebStamm() {
+  try {
+    const { data } = await sb.from('firma').select('*').eq('id', 1).single();
+    const g = data?.grundlagen || {};
+    return { firma: data || {}, ueb: g.ueberwachung || {} };
+  } catch (e) { return { firma: {}, ueb: {} }; }
+}
+
+async function speichereUebStamm(neu) {
+  const { data } = await sb.from('firma').select('grundlagen').eq('id', 1).single();
+  const g = data?.grundlagen || {};
+  g.ueberwachung = neu;
+  const { error } = await sb.from('firma').update({ grundlagen: g }).eq('id', 1);
+  if (error) { toast('Fehler beim Speichern: ' + error.message, 'err'); return false; }
+  toast('Stammdaten gespeichert', 'ok');
+  window.logAenderung?.('personal', 'Überwachungs-Stammdaten geändert', null);
+  return true;
+}
+
+const UEB_KLASSEN = ['BE', 'A', 'CE', 'DE'];
+
+async function oeffneUeberwachungStammdaten() {
+  const { ueb } = await ladeUebStamm();
+  const mas = (personalState.mitarbeiter || []).filter(m => m.status === 'aktiv')
+    .sort((a, b) => (a.nachname || '').localeCompare(b.nachname || ''));
+  const opts = ['<option value="">– bitte wählen –</option>']
+    .concat(mas.map(m => '<option value="' + m.id + '"' + (ueb.inhaber_id === m.id ? ' selected' : '') + '>' + (m.nachname || '') + ', ' + (m.vorname || '') + '</option>')).join('');
+  const zs = (ueb.zweigstellen || []).map(z => [z.anschrift || '', z.erreichbarkeit || '', z.behoerde || ''].join(' | ')).join('\n');
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay open';
+  modal.id = 'ueb-stamm-modal';
+  modal.innerHTML = `
+    <div class="modal" style="max-width:720px;width:100%;max-height:92vh">
+      <div class="modal-header"><h3>Stammdaten für die Überwachung</h3>
+        <button class="close-btn" onclick="document.getElementById('ueb-stamm-modal').remove()">✕</button></div>
+      <div class="modal-body">
+        <div class="fsec">Fahrschulerlaubnis</div>
+        <div class="fgrid">
+          <div class="frow"><label>Erlaubnisbehörde</label><input id="ub-behoerde" value="${ueb.behoerde || ''}" placeholder="z.B. Landkreis Emsland"></div>
+          <div class="frow"><label>Erteilt am</label><input type="date" id="ub-datum" value="${ueb.erlaubnis_datum || ''}"></div>
+        </div>
+        <div class="frow"><label>Erteilte Fahrschulerlaubnisklassen</label>
+          <div class="chip-grid">${UEB_KLASSEN.map(k => '<label class="chip"><input type="checkbox" class="ub-kl" value="' + k + '"' + ((ueb.klassen || []).includes(k) ? ' checked' : '') + '> ' + k + '</label>').join('')}</div>
+        </div>
+        <div class="fgrid">
+          <div class="frow"><label>Erlaubnisinhaber / verantwortliche Leitung</label><select id="ub-inhaber">${opts}</select></div>
+          <div class="frow"><label>Max. Raumkapazität (Auflage)</label><input type="number" id="ub-kapazitaet" value="${ueb.kapazitaet || ''}"></div>
+        </div>
+        <div class="fsec">Weitere Erlaubnisse</div>
+        <div class="chip-grid">
+          <label class="chip"><input type="checkbox" id="ub-ausb" ${ueb.ausbildungsfahrschule ? 'checked' : ''}> Ausbildungsfahrschule (§ 35)</label>
+          <label class="chip"><input type="checkbox" id="ub-asf" ${ueb.asf ? 'checked' : ''}> Seminarerlaubnis ASF (§ 45)</label>
+          <label class="chip"><input type="checkbox" id="ub-fes" ${ueb.fes ? 'checked' : ''}> Seminarerlaubnis FES (§ 46)</label>
+        </div>
+        <div class="fsec">Zweigstellen / Standorte</div>
+        <div style="font-size:11px;color:var(--grau);margin:-6px 0 8px">
+          Eine Zeile je Standort, Felder mit senkrechtem Strich trennen:<br>
+          <b>Anschrift | Erreichbarkeit | zuständige Behörde</b>
+        </div>
+        <textarea id="ub-zweig" rows="6" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:var(--radius);font-family:inherit;font-size:13px" placeholder="Bramscher Str. 24, 49811 Lingen | 0591 / 51403 | Landkreis Emsland">${zs}</textarea>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="document.getElementById('ueb-stamm-modal').remove()">Abbrechen</button>
+        <button class="btn btn-primary" onclick="speichereUebStammAusForm()">Speichern</button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+}
+
+async function speichereUebStammAusForm() {
+  const v = id => (document.getElementById(id)?.value || '').trim();
+  const neu = {
+    behoerde: v('ub-behoerde') || null,
+    erlaubnis_datum: v('ub-datum') || null,
+    klassen: [...document.querySelectorAll('.ub-kl:checked')].map(c => c.value),
+    inhaber_id: v('ub-inhaber') || null,
+    kapazitaet: v('ub-kapazitaet') || null,
+    ausbildungsfahrschule: !!document.getElementById('ub-ausb')?.checked,
+    asf: !!document.getElementById('ub-asf')?.checked,
+    fes: !!document.getElementById('ub-fes')?.checked,
+    zweigstellen: v('ub-zweig').split('\n').map(z => z.trim()).filter(Boolean).map(z => {
+      const t = z.split('|').map(s => s.trim());
+      return { anschrift: t[0] || '', erreichbarkeit: t[1] || '', behoerde: t[2] || '' };
+    }),
+  };
+  if (await speichereUebStamm(neu)) document.getElementById('ueb-stamm-modal')?.remove();
+}
+
+// Fahrlehrerlaubnisklassen im Protokoll-Schema (B→BE, C→CE, D→DE)
+function uebKlassen(m) {
+  const map = { A: 'A', B: 'BE', C: 'CE', D: 'DE' };
+  return (m.klassen || []).map(k => map[k] || k).join(', ') || '–';
+}
+function uebDat(d) { return d ? new Date(d).toLocaleDateString('de-DE') : '–'; }
+function uebJa(b) { return b ? 'ja' : 'nein'; }
+
+// Hinweise: was fehlt oder läuft ab – damit Lücken VOR der Überwachung auffallen
+function uebHinweise(m) {
+  const h = [];
+  if (!m.fl_schein_nr) h.push('Fahrlehrerschein-Nr. fehlt');
+  if (!m.fl_beschaeftigung_eingetragen) h.push('Beschäftigung nicht im FL-Schein eingetragen');
+  if (m.fe_ablauf) {
+    const tage = Math.ceil((new Date(m.fe_ablauf) - new Date()) / 86400000);
+    if (tage < 0) h.push('Fahrerlaubnis abgelaufen');
+    else if (tage < 180) h.push('Fahrerlaubnis läuft in ' + tage + ' Tagen ab');
+  }
+  if (typeof fortbildungsStatus === 'function') {
+    const st = fortbildungsStatus(m, typeof fortbildungenCache !== 'undefined' ? fortbildungenCache : []);
+    (st.ergebnisse || []).forEach(e => {
+      if (e.status === 'ueberschritten') h.push('Fortbildung überschritten: ' + e.pflicht.name);
+      if (e.status === 'unbekannt') h.push('Frist fehlt: ' + e.pflicht.name);
+    });
+  }
+  return h;
+}
+
+async function druckeUeberwachung() {
+  const { firma, ueb } = await ladeUebStamm();
+  const fl = (personalState.mitarbeiter || [])
+    .filter(m => m.bereich === 'fahrlehrer' && m.status === 'aktiv')
+    .sort((a, b) => (a.nachname || '').localeCompare(b.nachname || ''));
+  const inhaber = (personalState.mitarbeiter || []).find(m => m.id === ueb.inhaber_id);
+
+  const zeilen = fl.map((m, i) => {
+    const hin = uebHinweise(m);
+    return '<tr>'
+      + '<td>' + (i + 1) + '</td>'
+      + '<td><b>' + (m.nachname || '') + '</b>, ' + (m.vorname || '') + (m.geburtsdatum ? '<br><span class="klein">*' + uebDat(m.geburtsdatum) + '</span>' : '') + '</td>'
+      + '<td>' + uebKlassen(m) + '</td>'
+      + '<td>' + (m.fl_schein_nr || '–') + (m.fl_schein_behoerde ? '<br><span class="klein">' + m.fl_schein_behoerde + '</span>' : '') + (m.fl_schein_datum ? '<br><span class="klein">' + uebDat(m.fl_schein_datum) + '</span>' : '') + '</td>'
+      + '<td>' + (QUALIFIKATIONEN.filter(q => ['qual_ausb', 'qual_asf', 'qual_fes'].includes(q.feld) && m[q.feld]).map(q => q.kuerzel).join(', ') || '–') + '</td>'
+      + '<td>' + (m.taetigkeit === 'nbl' ? 'nbl' : 'hbl') + '</td>'
+      + '<td>' + uebDat(m.fe_ablauf) + '</td>'
+      + '<td>' + (m.frist_fahrlg ? '31.12.' + m.frist_fahrlg : '–') + '</td>'
+      + '<td>' + uebJa(m.fl_beschaeftigung_eingetragen) + '</td>'
+      + '<td class="hin">' + (hin.length ? hin.join('<br>') : '✓') + '</td>'
+      + '</tr>';
+  }).join('');
+
+  const nbl = fl.filter(m => m.taetigkeit === 'nbl');
+  const zweig = (ueb.zweigstellen || []);
+
+  printHTML('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Überwachungsnachweis Personal</title>'
+    + '<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet"><style>'
+    + '@page{size:A4 landscape;margin:12mm}'
+    + "body{font-family:'Poppins','Segoe UI',Arial,sans-serif;padding:0;color:#3F4B57;font-size:11px}"
+    + 'h1{color:#C0001A;font-size:19px;margin:0 0 2px 0}'
+    + 'h2{font-size:12px;margin:18px 0 6px;color:#3F4B57;border-bottom:1px solid #C0001A;padding-bottom:3px}'
+    + 'table{width:100%;border-collapse:collapse;margin-bottom:6px}'
+    + 'th{background:#f3f4f6;font-size:10px;text-align:left;padding:5px 6px;border:1px solid #d5d8dd}'
+    + 'td{padding:5px 6px;border:1px solid #d5d8dd;vertical-align:top}'
+    + '.kv td:first-child{color:#6B7280;width:210px}'
+    + '.klein{font-size:9px;color:#6B7280}'
+    + '.hin{font-size:9px;color:#991B1B}'
+    + '.head{color:#6B7280;font-size:10px;margin-bottom:10px}'
+    + DRUCK_CSS + '</style></head><body>'
+    + druckBriefkopf()
+    + '<h1>Überwachungsnachweis Personal</h1>'
+    + '<p class="head">Formalüberwachung gem. § 51 Fahrlehrergesetz · Stand: ' + new Date().toLocaleDateString('de-DE') + '</p>'
+
+    + '<h2>1. Allgemeine Angaben</h2><table class="kv">'
+    + '<tr><td>Fahrschule</td><td>' + (firma.name || '–') + '</td></tr>'
+    + '<tr><td>Betriebssitz</td><td>' + [firma.strasse, [firma.plz, firma.ort].filter(Boolean).join(' ')].filter(Boolean).join(', ') + '</td></tr>'
+    + '<tr><td>Fahrschulerlaubnis erteilt durch</td><td>' + (ueb.behoerde || '–') + (ueb.erlaubnis_datum ? ' · ' + uebDat(ueb.erlaubnis_datum) : '') + '</td></tr>'
+    + '<tr><td>Erlaubnisklassen</td><td>' + ((ueb.klassen || []).join(', ') || '–') + '</td></tr>'
+    + '<tr><td>Weitere Erlaubnisse</td><td>Ausbildungsfahrschule § 35: ' + uebJa(ueb.ausbildungsfahrschule)
+    + ' · ASF § 45: ' + uebJa(ueb.asf) + ' · FES § 46: ' + uebJa(ueb.fes)
+    + (ueb.kapazitaet ? ' · max. Teilnehmer: ' + ueb.kapazitaet : '') + '</td></tr>'
+    + '</table>'
+
+    + '<h2>1.4 Erlaubnisinhaber / verantwortliche Leitung</h2><table class="kv">'
+    + (inhaber
+      ? '<tr><td>Name, Vorname</td><td>' + (inhaber.nachname || '') + ', ' + (inhaber.vorname || '') + '</td></tr>'
+      + '<tr><td>Wohnanschrift</td><td>' + [inhaber.strasse, [inhaber.plz, inhaber.ort].filter(Boolean).join(' ')].filter(Boolean).join(', ') + '</td></tr>'
+      + '<tr><td>Fahrlehrerschein</td><td>' + (inhaber.fl_schein_nr || '–') + ' · ' + (inhaber.fl_schein_behoerde || '–') + ' · ' + uebDat(inhaber.fl_schein_datum) + '</td></tr>'
+      + '<tr><td>Fahrlehrerlaubnisklassen</td><td>' + uebKlassen(inhaber) + '</td></tr>'
+      : '<tr><td colspan="2">Noch nicht hinterlegt – über „Stammdaten der Fahrschule pflegen" auswählen.</td></tr>')
+    + '</table>'
+
+    + '<h2>1.5 Zweigstellen / Standorte</h2><table>'
+    + '<tr><th style="width:40px">Nr.</th><th>Anschrift</th><th>Erreichbarkeit</th><th>Zuständige Behörde</th></tr>'
+    + (zweig.length
+      ? zweig.map((z, i) => '<tr><td>' + (i + 1) + '</td><td>' + z.anschrift + '</td><td>' + (z.erreichbarkeit || '–') + '</td><td>' + (z.behoerde || '–') + '</td></tr>').join('')
+      : '<tr><td colspan="4">Keine Zweigstellen hinterlegt.</td></tr>')
+    + '</table>'
+
+    + '<h2>1.6 Bei der Fahrschule beschäftigte Fahrlehrer</h2><table>'
+    + '<tr><th style="width:26px">Nr.</th><th>Name, Vorname</th><th>FL-Erl.-Kl.</th><th>Fahrlehrerschein</th>'
+    + '<th>Berechtigung</th><th>Tätigkeit</th><th>Fahrerlaubnis bis</th><th>Fortbildung § 53 bis</th>'
+    + '<th>im FL-Schein<br>eingetragen</th><th>Hinweise</th></tr>'
+    + (zeilen || '<tr><td colspan="10">Keine aktiven Fahrlehrer erfasst.</td></tr>')
+    + '</table>'
+    + '<p class="klein">hbl = hauptberufliche Tätigkeit · nbl = nebenberufliche Tätigkeit · AFL = Ausbildungsfahrlehrer · ASF/FES = Seminarleiter</p>'
+
+    + '<h2>1.6.1 Hauptberufliche Tätigkeit der nebenberuflich Beschäftigten</h2><table>'
+    + '<tr><th>Name, Vorname</th><th>Hauptberuf / zugleich tätig bei</th></tr>'
+    + (nbl.length
+      ? nbl.map(m => '<tr><td>' + (m.nachname || '') + ', ' + (m.vorname || '') + '</td><td>' + (m.nbl_hauptberuf || '–') + '</td></tr>').join('')
+      : '<tr><td colspan="2">Keine nebenberuflich beschäftigten Fahrlehrer.</td></tr>')
+    + '</table>'
+    + druckFusszeile()
+    + '</body></html>');
+}
+
+window.druckeUeberwachung = druckeUeberwachung;
+window.oeffneUeberwachungStammdaten = oeffneUeberwachungStammdaten;
+window.speichereUebStammAusForm = speichereUebStammAusForm;
