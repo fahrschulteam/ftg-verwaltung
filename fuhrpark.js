@@ -179,9 +179,12 @@ function setFuhrparkFilter(f) { fuhrparkState.filter = f; renderFuhrpark(); }
 // Spaltenkopf mit Sortierpfeil
 function fzKopf(feld, label, extra) {
   const aktiv = fuhrparkState.sortFeld === feld;
-  const pfeil = aktiv ? (fuhrparkState.sortRichtung > 0 ? ' ▲' : ' ▼') : '';
-  return `<th onclick="setFuhrparkSort('${feld}')" title="Sortieren"
-    style="cursor:pointer;white-space:nowrap;${extra||''}">${label}${pfeil}</th>`;
+  // Aktive Spalte: roter Pfeil; alle anderen: dezenter Doppelpfeil als Hinweis "sortierbar"
+  const pfeil = aktiv
+    ? `<span style="color:var(--rot,#C51D2A);margin-left:4px">${fuhrparkState.sortRichtung > 0 ? '▲' : '▼'}</span>`
+    : '<span class="fz-sortpfeil" style="opacity:.35;margin-left:4px">⇅</span>';
+  return `<th onclick="setFuhrparkSort('${feld}')" title="Klicken zum Sortieren"
+    style="cursor:pointer;white-space:nowrap;user-select:none;${aktiv ? 'color:var(--dunkel,#20242B);' : ''}${extra||''}">${label}${pfeil}</th>`;
 }
 
 // Spalte sortieren - erneuter Klick dreht die Richtung um
