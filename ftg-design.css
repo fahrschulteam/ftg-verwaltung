@@ -256,3 +256,14 @@ span[style*="background:#6A1B9A" i] { background:#31363E !important; }
 .side-nav nav button, .mod-side-btn, .sb-btn { font-size:13px !important; font-weight:700 !important; }
 .side-nav nav button.active, .mod-side-btn.active, .sb-btn.active { font-weight:800 !important; }
 .sb-btn { overflow:hidden; text-overflow:ellipsis; }
+
+/* ---------- 20. Kompakte Tabellenzeilen ---------- */
+tbody td { padding-top:6px !important; padding-bottom:6px !important; }
+.ma-table td { padding:6px 12px !important; }
+/* Knoepfe in Tabellen klein und nebeneinander */
+td .btn, td .btn-sm, td .btn.sm { min-height:26px !important; height:26px; min-width:26px !important;
+  padding:0 7px !important; font-size:12px !important; border-radius:8px !important; box-shadow:none !important; }
+td.row-actions { display:table-cell !important; white-space:nowrap; }
+td:has(> .btn) { white-space:nowrap; }
+td.row-actions .btn, td > .btn { display:inline-flex !important; vertical-align:middle; }
+td.row-actions .btn + .btn, td > .btn + .btn { margin-left:4px; }
