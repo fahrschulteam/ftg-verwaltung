@@ -350,3 +350,14 @@ button[style*="#f3e8ff" i]:hover { background:#F6F7F9 !important; }
 .bks-dl dd { margin:0; color:#20242B; font-weight:600; min-width:0; overflow-wrap:anywhere; }
 .bks-dl a { color:#20242B; }
 .bks-dl a:hover { color:var(--ftg-primary); }
+
+/* ---------- 29. BKrFQG-Antrag: Feinschliff ---------- */
+/* Kurstypen: Kaestchen dicht am Text, Zeilen enger, normale Schriftstaerke */
+#bkrfqg-content .chip-grid { gap:2px !important; }
+#bkrfqg-content .chip { gap:10px !important; padding:4px 0 !important; margin:0 !important; font-weight:500 !important; color:#20242B !important; }
+#bkrfqg-content .chip input { margin:0 !important; }
+/* Aktionen nebeneinander statt uebereinander */
+#bkrfqg-content .card div:has(> .btn-sm[onclick^="bkrfqgAntrag"]) { flex-direction:row !important; flex-wrap:wrap; }
+#bkrfqg-content .card div:has(> .btn-sm[onclick^="bkrfqgAntrag"]) > .btn { flex:1 1 200px; }
+/* Anschreiben-Vorschau: ruhige Flaeche mit Rahmen */
+#ba-vorschau { background:#F6F7F9 !important; border:1px solid #E7EAEE; border-radius:12px !important; font-size:13px !important; line-height:1.5; color:#3F4650; }
