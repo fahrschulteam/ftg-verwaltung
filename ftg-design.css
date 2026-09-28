@@ -297,3 +297,18 @@ td.row-actions .btn + .btn, td > .btn + .btn { margin-left:4px; }
 /* "Bezahlt" als ruhiger Knopf mit gruener Schrift statt vollflaechig gruen */
 button[style*="background:var(--ok)"] { background:#fff !important; color:#197341 !important; border:1px solid #B7DFC4 !important; }
 button[style*="background:var(--ok)"]:hover { background:#E4F4EA !important; }
+
+/* ---------- 24. QM-Teilnehmeruebersicht: kompakte Karten ---------- */
+#uebersicht-area > .card { padding:12px 16px !important; margin-bottom:8px !important; background:#fff !important;
+  border-left:1px solid var(--ftg-border) !important; }
+#uebersicht-area > .card > div:first-child { margin-bottom:8px !important; }
+#uebersicht-area .tn-avatar { width:34px !important; height:34px !important; font-size:12px !important; }
+/* Status, Zaehler und "erledigt" nebeneinander statt uebereinander */
+#uebersicht-area > .card > div:first-child > div:last-child { flex-direction:row !important; align-items:center !important; gap:8px !important; }
+#uebersicht-area > .card > div:first-child > div:last-child > span:nth-child(2) { font-size:15px !important; }
+/* Fortschrittsbalken schmaler */
+#uebersicht-area > .card > div:nth-child(2), #uebersicht-area > .card > div:nth-child(2) > div { height:3px !important; }
+#uebersicht-area > .card > div:nth-child(2) { margin-bottom:8px !important; }
+/* Massnahmen nebeneinander in Spalten, flache Zeilen */
+#uebersicht-area > .card > div:nth-child(3) { display:grid !important; grid-template-columns:repeat(auto-fill,minmax(400px,1fr)); gap:6px !important; }
+#uebersicht-area > .card label { padding:6px 10px !important; background:#F6F7F9 !important; border:1px solid #E7EAEE !important; border-radius:10px !important; }
