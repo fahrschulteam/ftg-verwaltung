@@ -196,14 +196,16 @@
 
   // ── Darstellung ───────────────────────────────────────────────────
   let root = null;
+  let OPT = {};         // { firma:true } = Firmenportal (ohne E-Mail-Karte), fahrer = vorbelegter Name
 
-  function render(el) {
+  function render(el, opt) {
     root = el;
+    if (opt) OPT = Object.assign({}, OPT, opt);
     el.innerHTML = `
       <div class="toolbar" style="margin-bottom:14px;justify-content:space-between">
         <div style="display:flex;flex-direction:column;gap:2px">
-          <div style="font-size:16px;font-weight:700;color:var(--dunkel)">BKF-Modul-Rechner</div>
-          <div style="font-size:12px;color:var(--grau)">Vorhandene Schulungen eintragen – rechts steht sofort, welche Module noch fehlen.</div>
+          ${OPT.firma ? '' : '<div style="font-size:16px;font-weight:700;color:var(--dunkel)">BKF-Modul-Rechner</div>'}
+          <div style="font-size:12px;color:var(--grau)">${OPT.fahrer ? `Vorbelegt mit den Daten von <b style="color:var(--dunkel)">${esc(OPT.fahrer)}</b> – weitere Schulungen (z. B. extern, ADR) einfach ergänzen.` : 'Vorhandene Schulungen eintragen – rechts steht sofort, welche Module noch fehlen.'}</div>
         </div>
         <div style="display:flex;gap:8px">
           <button class="btn btn-outline btn-sm" id="bkr-kopieren">Ergebnis kopieren</button>
@@ -251,6 +253,7 @@
         .bkr-note{font-size:12px;color:#8A5A00;background:#FFF7E6;border:1px solid #F5DDA6;border-radius:10px;padding:7px 10px;margin-top:6px}
       </style>`;
     el.querySelector('#bkr-reset').onclick = () => {
+      if (OPT.fahrer) { OPT.fahrer = ''; render(el); }
       S.art = 'C'; S.ablauf = ''; S.eigene = {}; S.adr = { an: false, datum: '' }; S.tier = { an: false, datum: '' }; S.extern = []; M.name = ''; M.email = '';
       renderEingabe(); renderErgebnis();
     };
@@ -374,7 +377,7 @@
       </div>` : ''}
 
       ${termineKarte(r)}
-      ${mailKarte(r)}
+      ${OPT.firma ? '' : mailKarte(r)}
 
       <div class="card bkr-sec">
         <div class="bkr-h">Pflichtvorgaben nach Buchung</div>
@@ -654,7 +657,30 @@
     document.body.appendChild(a); a.click(); a.remove();
   }
 
+  // Vorbelegen mit vorhandenen Daten (z. B. aus dem Firmenportal):
+  // d = { name, ablauf, eigene:[{t:'BKF Modul 2G', d:'JJJJ-MM-TT'}], ext:[{d, a, kb:[]}], altUe, stand }
+  function vorbelegen(d) {
+    d = d || {};
+    S.ablauf = d.ablauf || '';
+    S.eigene = {}; S.adr = { an: false, datum: '' }; S.tier = { an: false, datum: '' }; S.extern = [];
+    let g = false, p = false;
+    (d.eigene || []).forEach(k => {
+      const i = modulInfo(k.t); if (!i) return;
+      if (i.v === 'G') g = true; if (i.v === 'P') p = true;
+      const alt = S.eigene[i.nr];
+      // bei mehrfachem Besuch zählt der jüngste Termin
+      if (!alt || String(k.d || '') > String(alt.datum || '')) S.eigene[i.nr] = { an: true, datum: k.d || '' };
+    });
+    S.art = g && p ? 'CD' : (p ? 'D' : 'C');
+    (d.ext || []).forEach(x => S.extern.push({ titel: x.a || 'externer Anbieter', datum: x.d || '', ue: '7', kb: Array.isArray(x.kb) ? x.kb.slice() : [] }));
+    const altUe = Math.max(0, Math.min(35, parseInt(d.altUe, 10) || 0));
+    if (altUe) S.extern.push({ titel: 'Frühere Nachweise (Übernahme)', datum: d.stand || '', ue: String(altUe), kb: [] });
+    OPT.fahrer = d.name || '';
+    if (root) render(root);
+  }
+
   // Für Tests/Nutzung von außen
+  window.bkfRechnerVorbelegen = vorbelegen;
   window.bkfRechnerRender = render;
   window.bkfRechnerAuswerten = auswerten;
   window.bkfRechnerState = S;

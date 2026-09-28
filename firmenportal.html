@@ -54,6 +54,27 @@
   .fliste{margin:8px 0 0;padding:0;list-style:none;font-size:13px}
   .fliste li{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:4px 0}
   @media(max-width:640px){table{font-size:12.5px} td,th{padding:6px 6px}}
+  /* BKF-Modul-Rechner im Portal (bkf-rechner.js) */
+  #bkfCard{--rot:#C51D2A;--rot-dark:#9F1722;--dunkel:#1c2126;--grau:#5b6570;--hell:#F3F5F7;--border:#DFE3E8}
+  #bkfRechner .card{margin-bottom:12px;box-shadow:none}
+  #bkfRechner .toolbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+  #bkfRechner label{font-weight:400;margin:0}
+  #bkfRechner .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:32px;padding:0 12px;
+    border:1px solid var(--border);border-radius:9px;background:#fff;color:#3F4650;font-size:12.5px;font-weight:700;white-space:nowrap;text-decoration:none}
+  #bkfRechner .btn:hover{background:#F6F7F9}
+  #bkfRechner .btn-primary{background:var(--rot);border-color:var(--rot);color:#fff}
+  #bkfRechner .btn-danger{color:var(--rot);border-color:var(--rot)}
+  #bkfRechner input{width:auto}
+  #bkfRechner input[type=text]{width:auto}
+  #bkfRechner input[type=checkbox]{-webkit-appearance:none;appearance:none;width:20px;height:20px;min-width:20px;padding:0;border:2px solid #C9CFD6;border-radius:5px;background:#fff;cursor:pointer;display:inline-grid;place-content:center}
+  #bkfRechner input[type=checkbox]:checked{background:var(--rot);border-color:var(--rot)}
+  #bkfRechner input[type=checkbox]:checked::after{content:"";width:11px;height:6px;border-left:2.5px solid #fff;border-bottom:2.5px solid #fff;transform:rotate(-45deg) translate(1px,-1px)}
+  #bkfRechner input[disabled]{opacity:.5}
+  #bkfRechner .bkr-grid{grid-template-columns:1fr}
+  @media(min-width:900px){#bkfRechner .bkr-grid{grid-template-columns:minmax(0,1.15fr) minmax(300px,1fr)}}
+  .bkfBtn{margin-top:5px;display:block;background:none;border:0;padding:0;color:var(--red);font-size:12px;font-weight:700;cursor:pointer;text-decoration:underline}
+  #toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:#1c2126;color:#fff;padding:10px 16px;border-radius:10px;font-size:13px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:99}
+  #toast.show{opacity:1}
 </style>
 </head>
 <body>
@@ -99,6 +120,14 @@
       </div>
       <p class="muted" style="margin:10px 0 0">BKF: 5 Tagesmodule (35 Std.) müssen bis zum Stichtag absolviert sein (§ 5 BKrFQG).
         Adresse, Telefon und E-Mail Ihrer Fahrer können Sie über ✎ selbst aktualisieren.</p>
+    </div>
+
+    <div class="card" id="bkfCard">
+      <h2>BKF-Modul-Rechner</h2>
+      <p class="muted" style="margin:0 0 12px">Welche Module braucht ein Fahrer noch? Klicken Sie in der Fahrerliste auf
+        <b>&bdquo;Module pr&uuml;fen&ldquo;</b> &ndash; die bei uns besuchten Module werden automatisch &uuml;bernommen.
+        Schulungen anderer Anbieter, ADR oder Tiertransport k&ouml;nnen Sie erg&auml;nzen. Passende freie Termine stehen direkt dabei.</p>
+      <div id="bkfRechner"></div>
     </div>
 
     <div class="card intern" id="internCard" style="display:none">
@@ -187,6 +216,8 @@
   </div>
 </div>
 
+<div id="toast"></div>
+<script src="bkf-rechner.js?v=20260928f"></script>
 <script>
 (function(){
   var API="/.netlify/functions/firmenportal";
@@ -216,7 +247,7 @@
       el("loginCard").style.display="none";
       el("app").style.display="";
       el("firmaName").textContent=d.firma.name;
-      renderFahrer(); renderTermine(); renderIntern();
+      renderFahrer(); renderTermine(); renderIntern(); rechnerStart();
     }catch(e){ err.textContent="Der Dienst ist gerade nicht erreichbar."; }
     finally{ el("loginBtn").disabled=false; }
   };
@@ -242,6 +273,7 @@
         var cls=f.module>=5?"t-ok":(t!==null&&t<365&&f.module<5?"t-crit":"t-warn");
         bkf='<span class="tag '+cls+'">'+f.module+' / 5 Module · Stichtag '+de(f.sz95)+'</span>';
       }
+      bkf+='<button class="bkfBtn" onclick="modulePruefen(\''+f.id+'\')">Module pr&uuml;fen</button>';
       var fe="—";
       if(f.fe){ var tf=tageBis(f.fe); var fcls=tf===null?"t-mut":(tf<0?"t-crit":(tf<180?"t-warn":"t-ok"));
         fe='<span class="tag '+fcls+'">'+(tf!==null&&tf<0?"abgelaufen ":"gültig bis ")+de(f.fe)+'</span>'; }
@@ -371,6 +403,22 @@
     }catch(e){ err.textContent="Der Dienst ist gerade nicht erreichbar."; }
     finally{ btn.disabled=false; }
   };
+
+  // ── BKF-Modul-Rechner ────────────────────────────────────────────────
+  function rechnerStart(){
+    var box=el("bkfRechner");
+    if(typeof window.bkfRechnerRender!=="function"){ el("bkfCard").style.display="none"; return; }
+    if(!box.firstChild) window.bkfRechnerRender(box,{firma:true});
+  }
+  window.modulePruefen=function(id){
+    var f=(daten.fahrer||[]).find(function(x){return x.id===id;}); if(!f) return;
+    if(typeof window.bkfRechnerVorbelegen!=="function") return;
+    rechnerStart();
+    var b=f.bkf||{};
+    window.bkfRechnerVorbelegen({ name:f.name, ablauf:f.sz95||"", eigene:b.eigene||[], ext:b.ext||[], altUe:b.altUe||0, stand:b.stand||"" });
+    el("bkfCard").scrollIntoView({behavior:"smooth",block:"start"});
+  };
+  window.toast=function(t){ var e=el("toast"); if(!e) return; e.textContent=t; e.classList.add("show"); setTimeout(function(){e.classList.remove("show");},1800); };
 
   // Daten neu holen, ohne den Anmeldebildschirm zu zeigen.
   async function neuLaden(){

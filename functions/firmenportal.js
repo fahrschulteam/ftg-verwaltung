@@ -84,6 +84,20 @@ function bkfStatus(p, kurse) {
   return { sz95, module, fehlen: Math.max(0, 5 - module) };
 }
 
+// Einzelnachweise für den BKF-Modul-Rechner im Portal (nur eigene Fahrer dieser Firma)
+function bkfDetails(p, kurse) {
+  const ext = p.ext_dates || {};
+  return {
+    eigene: kurse
+      .filter((k) => k.passed && String(k.type || '').indexOf('BKF Modul') === 0)
+      .filter((k) => (k.participant_id && k.participant_id === p.id) || (k.participant_legacy && k.participant_legacy === (p.legacy_id || p.id)))
+      .map((k) => ({ t: k.type, d: k.date_from || '' })),
+    ext: (Array.isArray(ext.BKF_EXT) ? ext.BKF_EXT : []).map((e) => ({ d: e.d || '', a: e.a || '', kb: Array.isArray(e.kb) ? e.kb : [] })),
+    altUe: +ext.BKF_UE || 0,
+    stand: ext.BKF_STAND || '',
+  };
+}
+
 // Alle Kurszeilen dieser Firma ab heute – Grundlage für Anzeige und Prüfung.
 async function interneZeilen(firmaId, abDatum) {
   return supa(
@@ -311,6 +325,7 @@ exports.handler = async (event) => {
           phone: p.phone || '', email: p.email || '',
           fe: (p.ext_dates || {}).FE || '',
           sz95: s.sz95, module: s.module, fehlen: s.fehlen,
+          bkf: bkfDetails(p, kurse),
         };
       }),
       termine: (termine || []).filter((t) => (t.date || '') >= heute).slice(0, 12),
