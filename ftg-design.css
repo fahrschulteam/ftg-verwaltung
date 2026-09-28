@@ -77,7 +77,7 @@ button, input, select, textarea { font-family:var(--ftg-font); }
 .frow input:focus, .frow select:focus, .frow textarea:focus, .login-card input:focus,
 .app-shell input:focus, .app-shell select:focus, .app-shell textarea:focus {
   outline:none !important; border-color:var(--ftg-primary) !important; box-shadow:var(--ftg-ring); }
-.fsec, .ber-sec, .card-titel, .dok-gruppe-titel { color:var(--ftg-primary) !important; letter-spacing:.06em; }
+.fsec, .ber-sec, .card-titel, .dok-gruppe-titel { color:#697586 !important; letter-spacing:.06em; font-weight:800 !important; }
 
 /* ---------- 6. Tabellen, Chips, Tabs ---------- */
 th, .ma-table thead th { background:var(--ftg-soft) !important; color:#697586 !important; }
@@ -318,9 +318,17 @@ button[style*="background:var(--ok)"]:hover { background:#E4F4EA !important; }
   border-left:1px solid var(--ftg-border) !important; margin-bottom:8px !important; }
 #bkrfqg-content .card[style*="border-left:4px"]:hover { border-color:#C9CFD6 !important; }
 /* "Kurstage" in jeder Zeile als ruhiger Knopf - rot bleibt nur "+ Kursplan" oben */
-#bkrfqg-content .card .btn-primary.btn-sm { background:#fff !important; color:#3F4650 !important;
+#bkrfqg-content .card[style*="border-left:4px"] .btn-primary.btn-sm { background:#fff !important; color:#3F4650 !important;
   border:1px solid var(--ftg-border) !important; box-shadow:none !important; }
-#bkrfqg-content .card .btn-primary.btn-sm svg { color:#68717D !important; }
-#bkrfqg-content .card .btn-primary.btn-sm:hover { background:#F6F7F9 !important; }
+#bkrfqg-content .card[style*="border-left:4px"] .btn-primary.btn-sm svg { color:#68717D !important; }
+#bkrfqg-content .card[style*="border-left:4px"] .btn-primary.btn-sm:hover { background:#F6F7F9 !important; }
 /* Status "Geplant" als neutrales Abzeichen */
 span[style*="background:#eff6ff"][style*="color:#2A6CAE"] { background:#EEF1F4 !important; color:#3F4650 !important; font-weight:700 !important; }
+
+/* ---------- 26. BKrFQG-Antrag: ruhige Formularkarten ---------- */
+#bkrfqg-content .frow > label { font-size:12.5px !important; font-weight:700 !important; color:#3F4650 !important; margin-bottom:4px !important; }
+#bkrfqg-content .frow select, #bkrfqg-content .frow input:not([type=checkbox]):not([type=radio]) { min-height:38px; font-size:13.5px !important; }
+#bkrfqg-content .chip-grid { flex-direction:column; gap:8px !important; }
+#bkrfqg-content .chip { font-weight:600 !important; font-size:13px !important; }
+/* Aktions-Knoepfe gleich gross, Hauptaktion (Senden) rot */
+#bkrfqg-content .card .btn-sm[onclick^="bkrfqgAntrag"] { min-height:36px; font-size:13px !important; }
