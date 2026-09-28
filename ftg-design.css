@@ -280,3 +280,21 @@ td.row-actions .btn + .btn, td > .btn + .btn { margin-left:4px; }
 .side-nav nav button[data-archiv="1"]::before { content:""; position:absolute; left:4px; right:4px; top:-9px;
   height:1px; background:var(--ftg-border); }
 .side-nav nav button[data-archiv="1"]:not(.active) { color:#8A929C !important; }
+
+/* ---------- 23. Rechnungen uebersichtlich ---------- */
+/* Kennzahlen: Beschriftung oben, Wert darunter (Werte sind hier Text/Betraege) */
+#invKacheln { grid-template-columns:repeat(auto-fill,minmax(220px,1fr)) !important; }
+#invKacheln .stat { flex-direction:column; align-items:flex-start !important; justify-content:center; gap:4px; }
+#invKacheln .stat .lbl { order:1; }
+#invKacheln .stat .num { order:2; margin-left:0; text-align:left; font-size:22px !important; white-space:nowrap; }
+/* Werkzeugleiste: Suche breit, Hauptaktion rot */
+#invoices .search-bar { align-items:center; }
+#invoices .search-bar > .btn:last-child { background:var(--ftg-primary) !important; border-color:var(--ftg-primary) !important;
+  color:#fff !important; font-weight:800; box-shadow:var(--ftg-shadow-action); }
+/* Abschnitts-Ueberschriften einheitlich dunkel */
+#invoices > .card > div:first-child > span:first-child { color:#252B32 !important; font-weight:900 !important; }
+/* Rechnungsnummer und Betrag nicht umbrechen */
+#invoices td:has(> strong) { white-space:nowrap; }
+/* "Bezahlt" als ruhiger Knopf mit gruener Schrift statt vollflaechig gruen */
+button[style*="background:var(--ok)"] { background:#fff !important; color:#197341 !important; border:1px solid #B7DFC4 !important; }
+button[style*="background:var(--ok)"]:hover { background:#E4F4EA !important; }

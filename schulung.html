@@ -2739,7 +2739,7 @@ function adrExpiry(pid){
 
 
 function today(){return new Date().toISOString().slice(0,10)}
-function fmt(d){if(!d)return'–';const p=String(d).split('-');if(p.length!==3)return d;const[y,m,dd]=p;return`${dd}.${m}.${y}`}
+function fmt(d){if(!d)return'–';const p=String(d).slice(0,10).split('-');if(p.length!==3)return d;const[y,m,dd]=p;return`${dd}.${m}.${y}`}
 // Datum + Uhrzeit aus einem ISO-Zeitstempel, z. B. "22.08.2026, 14:32 Uhr".
 // fmt() liefert nur das Datum - fuer "wann genau ist das passiert" zu wenig.
 function _zeitpunkt(iso){
