@@ -237,3 +237,22 @@ a:not([class]):not([style*="color"]):hover { color:var(--ftg-primary); }
 .card-title { color:#697586 !important; letter-spacing:.06em !important; }
 /* Lila Namens-Kuerzel (Dozenten) wie die uebrigen Avatare: dunkelgrau */
 span[style*="background:#6A1B9A" i] { background:#31363E !important; }
+
+/* ---------- 19. Einheitliche Groessen: Knoepfe, Auswahlfelder, Abzeichen, Untermenues ---------- */
+/* Alle Knoepfe gleich hoch, einzeilig, Inhalt mittig */
+.btn { min-height:36px; padding-top:0 !important; padding-bottom:0 !important; line-height:1.2;
+  white-space:nowrap; justify-content:center; font-size:13px !important; }
+.btn-sm, .btn.sm { min-height:32px; font-size:12.5px !important; padding-left:12px !important; padding-right:12px !important; }
+/* Knoepfe mindestens so breit wie hoch */
+.btn { min-width:36px; } .btn-sm, .btn.sm { min-width:32px; }
+.btn svg { flex:none; }
+/* Kopfzeile: Knoepfe gleich hoch */
+#app .header-user .btn { min-height:36px; }
+/* Auswahlfelder neben Knoepfen gleich hoch */
+.azk-select, .toolbar select, .modul-head select { min-height:32px; padding-top:0 !important; padding-bottom:0 !important; }
+/* Abzeichen (z. B. BKF 0/5 · Datum): einzeilig und dezent */
+.tag { white-space:nowrap; font-size:11px !important; font-weight:700 !important; padding:2px 8px !important; gap:4px !important; line-height:1.5; }
+/* Untermenues in allen Modulen gleich gross */
+.side-nav nav button, .mod-side-btn, .sb-btn { font-size:13px !important; font-weight:700 !important; }
+.side-nav nav button.active, .mod-side-btn.active, .sb-btn.active { font-weight:800 !important; }
+.sb-btn { overflow:hidden; text-overflow:ellipsis; }
