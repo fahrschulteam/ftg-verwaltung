@@ -377,3 +377,9 @@ span[style*="color:#fff"][style*="border-radius:10px"][style*="font-size:10px"] 
 /* ---------- 31. Tabellen: Inhalte mittig zur Zeile (Text und Knoepfe auf einer Linie) ---------- */
 tbody td { vertical-align:middle !important; }
 span[style*="color:#fff"][style*="background:#8B5CF6" i][style*="border-radius:10px"] { background:#F1ECFE !important; color:#5B3BB5 !important; }
+
+/* 32. Dialoge (Schulungen): Laufleiste im Fenster statt am Bildschirmrand,
+       Buttons (Abbrechen/Speichern) bleiben unten sichtbar */
+.modal-bg{align-items:center!important;overflow:hidden!important;padding:16px!important}
+.modal-bg>.modal{max-height:calc(100vh - 32px);max-height:calc(100dvh - 32px);overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable}
+.modal-bg>.modal .modal-actions{position:sticky;bottom:-24px;background:#fff;margin-bottom:-24px;padding-bottom:16px;z-index:2}
