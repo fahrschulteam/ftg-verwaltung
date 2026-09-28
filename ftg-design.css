@@ -1,0 +1,181 @@
+/* =====================================================================
+   ftg-design.css  -  Neues FTG-Design (Vorlage: ftg-projektpruefung)
+   Wird ZULETZT geladen und ueberschreibt nur das Aussehen.
+   Rueckgaengig: die <link ... ftg-design.css> Zeile entfernen.
+   Gilt fuer die Shell (index.html) UND die Module im iframe (schulung.html).
+   ===================================================================== */
+
+/* ---------- 1. Farben, Schrift, Radien (Design-Token) ---------- */
+:root {
+  --ftg-primary:#C51D2A; --ftg-primary-dark:#9F1722; --ftg-accent:#F8E9EB;
+  --ftg-bg:#F3F5F7; --ftg-card:#FFFFFF; --ftg-ink:#20242B; --ftg-ink-2:#3F4650;
+  --ftg-muted:#68717D; --ftg-nav:#535C67; --ftg-border:#DFE3E8; --ftg-input:#D5DAE0;
+  --ftg-soft:#F6F7F9; --ftg-secondary:#E9EDF1;
+  --ftg-font:Arial,"Helvetica Neue",Helvetica,sans-serif;
+  --ftg-r-sm:10px; --ftg-r-md:12px; --ftg-r-lg:14px;
+  --ftg-shadow-card:0 2px 8px rgba(28,33,40,.05);
+  --ftg-shadow-action:0 4px 12px rgba(102,15,22,.14);
+  --ftg-ring:0 0 0 3px rgba(197,29,42,.18);
+  --ftg-top:72px; --ftg-side:248px;
+
+  /* Shell (index.html) */
+  --rot:#C51D2A !important; --rot-dark:#9F1722 !important;
+  --blau:#C51D2A !important; --blau-dark:#9F1722 !important;
+  --dunkel:#20242B !important; --grau:#68717D !important;
+  --hell:#F3F5F7 !important; --border:#DFE3E8 !important;
+  --radius:10px !important; --shadow:0 2px 8px rgba(28,33,40,.05) !important;
+
+  /* Module (schulung.html) */
+  --red:#C51D2A !important; --red-light:#F8E9EB !important; --red-border:#F1CDD1 !important;
+  --ink:#20242B !important; --ink-2:#3F4650 !important; --ink-3:#68717D !important;
+  --ink-4:#9AA1A9 !important; --muted:#68717D !important; --border-light:#E7EAEE !important;
+  --surface-2:#F6F7F9 !important; --surface-3:#F3F5F7 !important;
+  --brand:#C51D2A !important; --brand-mid:#9F1722 !important; --brand-light:#F8E9EB !important;
+  --brand-accent:#C51D2A !important; --brand-accent-dark:#9F1722 !important;
+  --accent:#C51D2A !important; --accent-dark:#9F1722 !important;
+  --crit:#C51D2A !important; --crit-bg:#F8E9EB !important;
+  --steel:#20242B !important; --steel-light:#3F4650 !important;
+  --shadow-sm:0 2px 8px rgba(28,33,40,.05) !important;
+  --shadow-md:0 4px 14px rgba(28,33,40,.08) !important;
+  --btn-radius:10px !important; --btn-pad:9px 14px !important; --btn-pad-sm:6px 11px !important;
+}
+
+/* ---------- 2. Grundlagen ---------- */
+html, body { font-family:var(--ftg-font) !important; }
+body { background:var(--ftg-bg) !important; color:var(--ftg-ink); -webkit-font-smoothing:antialiased; }
+[style*="Poppins"], [style*="Segoe UI"] { font-family:var(--ftg-font) !important; }
+button, input, select, textarea { font-family:var(--ftg-font); }
+
+/* ---------- 3. Buttons ---------- */
+.btn { border-radius:var(--ftg-r-sm) !important; font-weight:700; border-color:var(--ftg-border);
+  color:var(--ftg-ink-2); transition:background .15s,border-color .15s,box-shadow .15s,transform .15s; }
+.btn:hover { background:var(--ftg-soft); border-color:#C9CFD6; }
+.btn-primary, .btn.primary, .btn.blau {
+  background:var(--ftg-primary) !important; border-color:var(--ftg-primary) !important;
+  color:#fff !important; font-weight:800; box-shadow:var(--ftg-shadow-action); }
+.btn-primary:hover, .btn.primary:hover, .btn.blau:hover {
+  background:var(--ftg-primary-dark) !important; border-color:var(--ftg-primary-dark) !important; }
+.btn-danger { background:#fff !important; color:var(--ftg-primary) !important; border-color:var(--ftg-primary) !important; }
+.btn-danger:hover { background:var(--ftg-accent) !important; }
+.btn.steel { background:#31363E !important; border-color:#31363E !important; }
+.btn:focus-visible, .hnav:focus-visible { outline:none; box-shadow:var(--ftg-ring); }
+
+/* ---------- 4. Karten ---------- */
+.card { background:var(--ftg-card); border:1px solid var(--ftg-border) !important;
+  border-radius:var(--ftg-r-lg) !important; box-shadow:var(--ftg-shadow-card) !important; }
+.dash-kpi { border-radius:16px !important; }
+.dash-kpi:hover { border-color:var(--ftg-primary) !important; box-shadow:0 5px 16px rgba(28,33,40,.10) !important; }
+.dash-card-head { font-weight:900; color:#252B32; }
+.modal { border-radius:16px !important; }
+.fz-card, .dok-card { border-radius:var(--ftg-r-md) !important; }
+.fz-card:hover, .dok-card:hover { border-color:var(--ftg-primary) !important; }
+
+/* ---------- 5. Formulare ---------- */
+.frow input, .frow select, .frow textarea, .login-card input, .azk-select,
+.app-shell input:not([type=checkbox]):not([type=radio]), .app-shell select, .app-shell textarea {
+  border:1px solid var(--ftg-input) !important; border-radius:var(--ftg-r-sm) !important; background:#fff !important; }
+.frow input:focus, .frow select:focus, .frow textarea:focus, .login-card input:focus,
+.app-shell input:focus, .app-shell select:focus, .app-shell textarea:focus {
+  outline:none !important; border-color:var(--ftg-primary) !important; box-shadow:var(--ftg-ring); }
+.fsec, .ber-sec, .card-titel, .dok-gruppe-titel { color:var(--ftg-primary) !important; letter-spacing:.06em; }
+
+/* ---------- 6. Tabellen, Chips, Tabs ---------- */
+th, .ma-table thead th { background:var(--ftg-soft) !important; color:#697586 !important; }
+.ma-table tbody tr:hover, .azk-table tbody tr:hover { background:#F8F9FB; }
+.dok-chip, .qchip { border-radius:999px; }
+.dok-chip.active { background:var(--ftg-primary) !important; border-color:var(--ftg-primary) !important; color:#fff !important; }
+.sub-tab.active { color:var(--ftg-primary) !important; }
+.tab-btn { border-radius:999px !important; border-width:1px !important; background:#fff !important; }
+.tab-btn.active { background:var(--ftg-primary) !important; border-color:var(--ftg-primary) !important; color:#fff !important; }
+.tag { border-radius:999px; font-weight:800; }
+.user-avatar, .ma-avatar { background:#31363E !important; border-radius:11px !important; }
+
+/* ---------- 7. Login ---------- */
+#login-screen { background:var(--ftg-bg) !important; }
+.login-card { border:1px solid var(--ftg-border); border-radius:16px !important; box-shadow:0 10px 30px rgba(28,33,40,.08) !important; }
+
+/* ---------- 8. Shell: Kopfzeile ---------- */
+#app > header { background:rgba(255,255,255,.96) !important; border-bottom:1px solid var(--ftg-border) !important; }
+
+/* ---------- 9. Shell: Hauptmenue als linke Seitenleiste (ab 1024px Breite) ---------- */
+@media (min-width:1024px) {
+  #app > header { left:var(--ftg-side) !important; height:var(--ftg-top); display:flex; align-items:center; }
+  #app .header-inner { width:100%; padding:0 clamp(16px,3vw,35px) !important; }
+  /* Logo sitzt oben in der Seitenleiste */
+  #app .header-logo { position:fixed; top:0; left:0; width:var(--ftg-side); height:var(--ftg-top);
+    display:flex; align-items:center; padding:0 20px; background:#fff; z-index:201;
+    border-right:1px solid var(--ftg-border); border-bottom:1px solid #E7EAEE; }
+  #app .header-logo img { height:46px; max-width:190px; object-fit:contain; object-position:left center; }
+
+  nav.haupt-nav { top:var(--ftg-top) !important; left:0 !important; right:auto !important; bottom:0;
+    width:var(--ftg-side); border-bottom:none !important; border-right:1px solid var(--ftg-border);
+    box-shadow:none !important; overflow-x:hidden !important; overflow-y:auto !important; padding:14px 13px; }
+  .haupt-nav-inner { flex-direction:column !important; width:100% !important; min-width:0 !important;
+    padding:0 !important; gap:5px; }
+  .hnav { width:100%; justify-content:flex-start; padding:11px 12px !important; border-radius:13px;
+    border-bottom:none !important; font-size:13.5px !important; font-weight:800 !important;
+    color:var(--ftg-nav) !important; gap:10px !important; }
+  .hnav:hover { background:var(--ftg-bg) !important; color:#252A31 !important; }
+  .hnav.active { background:var(--ftg-primary) !important; color:#fff !important;
+    box-shadow:0 7px 18px rgba(197,29,42,.18); }
+  .hnav .todo-badge { margin-left:auto; }
+  .hnav.active .todo-badge { background:#fff; color:var(--ftg-primary); }
+  .nav-spacer { margin:12px 0 0 !important; padding:12px 0 0 !important; border-top:1px solid #E7EAEE; }
+
+  #app { padding-top:var(--ftg-top) !important; padding-left:var(--ftg-side) !important; }
+  .view.active { min-height:calc(100vh - var(--ftg-top)) !important; padding:22px clamp(16px,3vw,35px) !important; }
+  #view-kva.active, #view-schulung.active, #view-teilnehmer.active, #view-kalender.active { padding:0 !important; }
+  #view-schulung, #view-teilnehmer, #view-kalender { height:calc(100vh - var(--ftg-top)) !important; }
+  .mod-shell { min-height:calc(100vh - var(--ftg-top)) !important; }
+  .mod-side { top:var(--ftg-top) !important; left:var(--ftg-side) !important; height:calc(100vh - var(--ftg-top)) !important; }
+}
+
+/* ---------- 10. Module (iframe): innere Seitenleiste ---------- */
+.side-nav { background:#fff !important; border-right:1px solid var(--ftg-border) !important; }
+.side-nav nav button { border-radius:12px !important; font-weight:800 !important; color:var(--ftg-nav) !important; }
+.side-nav nav button:hover { background:var(--ftg-bg) !important; color:#252A31 !important; }
+.side-nav nav button.active, .side-nav nav button.active:hover {
+  background:var(--ftg-accent) !important; color:var(--ftg-primary-dark) !important; box-shadow:none !important; }
+.mod-side-btn { border-radius:12px !important; font-weight:800 !important; }
+.mod-side-btn.active { background:var(--ftg-accent) !important; color:var(--ftg-primary-dark) !important; box-shadow:none !important; }
+.stat .num { font-family:var(--ftg-font) !important; font-weight:900; }
+
+/* ---------- 11. Seitentitel in der Kopfzeile (wie Vorlage) ---------- */
+#app .header-title { flex:1; text-align:left !important; min-width:0; }
+#app .header-title::before { content:"Fahrschulteam Lingen"; display:block; color:var(--ftg-primary);
+  font-size:11.5px; font-weight:900; letter-spacing:.065em; text-transform:uppercase; }
+#app .header-title::after { display:block; margin-top:2px; font-size:26px; font-weight:900;
+  letter-spacing:-.025em; color:var(--ftg-ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+#app:has(#view-dashboard.active) .header-title::after { content:"Dashboard"; }
+#app:has(#view-kva.active) .header-title::after { content:"KVA"; }
+#app:has(#view-schulung.active) .header-title::after { content:"Schulungen"; }
+#app:has(#view-teilnehmer.active) .header-title::after { content:"QM"; }
+#app:has(#view-dokumente.active) .header-title::after { content:"Vorlagen"; }
+#app:has(#view-personal.active) .header-title::after { content:"Personal"; }
+#app:has(#view-schulungsstand.active) .header-title::after { content:"Schulungsstand"; }
+#app:has(#view-azk.active) .header-title::after { content:"AZK"; }
+#app:has(#view-fuhrpark.active) .header-title::after { content:"Fuhrpark"; }
+#app:has(#view-kalender.active) .header-title::after { content:"Kalender"; }
+#app:has(#view-wettbewerb.active) .header-title::after { content:"Wettbewerb"; }
+#app:has(#view-bkrfqg.active) .header-title::after { content:"BKrFQG"; }
+#app:has(#view-todos.active) .header-title::after { content:"To-Dos"; }
+#app:has(#view-einstellungen.active) .header-title::after { content:"Einstellungen"; }
+@media (max-width:1023px) { #app .header-title::before, #app .header-title::after { display:none !important; } }
+
+/* ---------- 12. Fest eingebautes Blau (Inline-Stile) auf FTG-Farben ---------- */
+[style*="background:#2A6CAE;color:#fff" i] { background:var(--ftg-primary) !important; }
+[style*="#2A6CAE,#1e5a96" i] { background:#31363E !important; }
+[style*="#3F4B57,#2A6CAE" i] { background:linear-gradient(135deg,#20242B,#3F4650) !important; }
+[style*="color:#2A6CAE" i]:not([style*="-color:#2A6CAE" i]),
+[style*="color: #2A6CAE" i]:not([style*="-color: #2A6CAE" i]) { color:var(--ftg-primary) !important; }
+[style*="solid #2A6CAE" i] { border-color:var(--ftg-primary) !important; }
+[style*="background:#EFF6FF" i], [style*="background: #EFF6FF" i],
+[style*="background:#F0F7FF" i], [style*="background:#E0F2FE" i], [style*="background:#DBEAFE" i] { background:var(--ftg-soft) !important; }
+[style*="solid #BFDBFE" i], [style*="solid #DBEAFE" i], [style*="border-color:#BFDBFE" i] { border-color:var(--ftg-border) !important; }
+[style*="color:#1E40AF" i]:not([style*="-color:#1E40AF" i]), [style*="color:#1d4ed8" i]:not([style*="-color:#1d4ed8" i]) { color:var(--ftg-ink-2) !important; }
+
+/* ---------- 13. Platz-Korrekturen ---------- */
+/* Breite Tabellen in Karten: seitlich scrollbar statt abgeschnitten */
+.card:has(> table), .card:has(> .ma-table) { overflow-x:auto !important; }
+/* Module mit eigener Seitenleiste behalten ihren urspruenglichen Innenabstand */
+@media (min-width:1024px) { .view.active:has(> .mod-shell) { padding:24px 28px !important; } }
