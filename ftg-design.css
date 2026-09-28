@@ -208,3 +208,23 @@ a[style*="background:#2A6CAE;color:#fff" i]:not([style*="width:24px"]) {
 a[style*="background:#2A6CAE;color:#fff" i]:not([style*="width:24px"]) svg { color:#3F4650 !important; }
 a[style*="background:#2A6CAE;color:#fff" i]:not([style*="width:24px"]):hover { background:#F6F7F9 !important; }
 #view-dashboard > div[style*="max-width:1120px"] { max-width:none !important; }
+
+/* ---------- 17. Schulungen-Uebersicht: Kennzahl-Karten wie Vorlage ---------- */
+.stat-grid { gap:12px !important; grid-template-columns:repeat(auto-fill,minmax(190px,1fr)) !important; }
+.stat { border:1px solid var(--ftg-border) !important; border-left:1px solid var(--ftg-border) !important;
+  border-radius:14px !important; padding:12px 14px !important; box-shadow:var(--ftg-shadow-card) !important;
+  transition:border-color .18s, box-shadow .18s, transform .18s; }
+.stat[onclick]:hover { border-color:var(--ftg-primary) !important; transform:translateY(-1px);
+  box-shadow:0 5px 16px rgba(28,33,40,.10) !important; }
+.stat .num { font-size:24px !important; font-weight:900 !important; letter-spacing:-.02em !important; }
+.stat .lbl { display:flex; align-items:flex-start; gap:7px; font-size:12.5px !important; font-weight:700 !important;
+  color:#6D7580 !important; margin-top:6px !important; line-height:1.35; }
+/* Status als kleiner Punkt statt farbigem Rand */
+.stat .lbl::before { content:""; flex:0 0 8px; width:8px; height:8px; margin-top:4px; border-radius:50%; background:#C9CFD6; }
+.stat.crit .lbl::before { background:#C51D2A; }
+.stat.warn .lbl::before { background:#D08A0B; }
+.stat.ok .lbl::before { background:#197341; }
+.stat[style*="var(--warn)"] .lbl::before { background:#D08A0B; }
+.stat[style*="var(--ok)"] .lbl::before, .stat[style*="var(--green)"] .lbl::before { background:#197341; }
+.stat[style*="var(--red)"] .lbl::before, .stat[style*="var(--crit)"] .lbl::before { background:#C51D2A; }
+.stat[style*="#3b82f6" i] .lbl::before { background:#2A6CAE; }
