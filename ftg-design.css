@@ -179,11 +179,14 @@ img[src*="icons/"] { filter:grayscale(1) contrast(1.05); }
 .tab-btn.active img[src*="icons/"] { filter:grayscale(1) brightness(0) invert(1); }
 
 /* ---------- 15. Icon-Kacheln wie Vorlage (heller Farbgrund + farbiges Icon) ---------- */
-/* Dashboard-Kennzahlen */
-.dash-kpi { background:#fff !important; }
-.dash-kpi > div[style*="font-size:22px"] { width:44px; height:44px; border-radius:12px; display:flex;
-  align-items:center; justify-content:center; background:#EEF1F4; margin-bottom:12px !important; }
-.dash-kpi > div[style*="font-size:22px"] svg { color:#3F4650 !important; width:22px; height:22px; }
+/* Dashboard-Kennzahlen: kompakt, Icon links neben dem Text */
+.dash-kpi { background:#fff !important; display:grid !important; grid-template-columns:40px 1fr;
+  column-gap:12px; align-items:center; padding:12px 14px !important; }
+.dash-kpi > * { grid-column:2; margin-top:0 !important; min-width:0; }
+.dash-kpi > div[style*="font-size:22px"] { grid-column:1; grid-row:1 / span 3; align-self:center;
+  width:40px; height:40px; border-radius:11px; display:flex; align-items:center; justify-content:center;
+  background:#EEF1F4; margin:0 !important; }
+.dash-kpi > div[style*="font-size:22px"] svg { color:#3F4650 !important; width:20px; height:20px; }
 .dash-kpi[style*="#FFF0F1" i] > div[style*="font-size:22px"] { background:#FBEAEC; }
 .dash-kpi[style*="#FFF0F1" i] > div[style*="font-size:22px"] svg { color:#C51D2A !important; }
 /* Kleine Aktions-Icons (WhatsApp / E-Mail) als helle Kacheln */
@@ -192,3 +195,16 @@ a[style*="width:24px"][style*="background:#25D366" i] svg { color:#197341 !impor
 a[style*="width:24px"][style*="background:#2A6CAE" i] { background:#E8F1FB !important; width:30px !important; height:30px !important; border-radius:9px !important; }
 a[style*="width:24px"][style*="background:#2A6CAE" i] svg { color:#2A6CAE !important; }
 a[style*="width:24px"][style*="background:#25D366" i]:hover, a[style*="width:24px"][style*="background:#2A6CAE" i]:hover { filter:brightness(.96); }
+/* Dashboard: doppelten Abstand oben entfernen */
+#view-dashboard > div[style*="padding:24px 0 60px"] { padding-top:0 !important; }
+
+/* ---------- 16. Dashboard: einheitliche Karten-Koepfe, ein Hauptbutton, volle Breite ---------- */
+.dash-card-head { background:#fff !important; }
+.dash-card-head > span:first-child { color:#252B32 !important; font-weight:900 !important; }
+/* Zweiter Button neben dem roten Hauptbutton: weiss mit Rahmen (Vorlage: secondary-button) */
+a[style*="background:#2A6CAE;color:#fff" i]:not([style*="width:24px"]) {
+  background:#fff !important; color:#3F4650 !important; border:1px solid #DFE3E8 !important;
+  border-radius:10px !important; font-weight:800 !important; }
+a[style*="background:#2A6CAE;color:#fff" i]:not([style*="width:24px"]) svg { color:#3F4650 !important; }
+a[style*="background:#2A6CAE;color:#fff" i]:not([style*="width:24px"]):hover { background:#F6F7F9 !important; }
+#view-dashboard > div[style*="max-width:1120px"] { max-width:none !important; }
