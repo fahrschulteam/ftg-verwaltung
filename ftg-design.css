@@ -369,7 +369,11 @@ button[style*="#f3e8ff" i]:hover { background:#F6F7F9 !important; }
 #view-todos .card div[style*="white-space:pre-wrap"]:hover { -webkit-line-clamp:unset; display:block; }
 #view-todos .card { padding:12px 16px !important; margin-bottom:8px !important; }
 /* Abzeichen dezent statt vollfarbig */
-#view-todos span[style*="color:#fff"][style*="background:#2A6CAE" i] { background:#EEF1F4 !important; color:#3F4650 !important; }
-#view-todos span[style*="color:#fff"][style*="background:#C0001A" i] { background:#FBEAEC !important; color:#9F1722 !important; }
-#view-todos span[style*="color:#fff"][style*="background:#D97706" i] { background:#FFF4D8 !important; color:#9A6100 !important; }
-#view-todos span[style*="color:#fff"][style*="border-radius:10px"] { font-size:11px !important; padding:2px 8px !important; border-radius:999px !important; }
+span[style*="color:#fff"][style*="background:#2A6CAE" i][style*="border-radius:10px"] { background:#EEF1F4 !important; color:#3F4650 !important; }
+span[style*="color:#fff"][style*="background:#C0001A" i][style*="border-radius:10px"] { background:#FBEAEC !important; color:#9F1722 !important; }
+span[style*="color:#fff"][style*="background:#D97706" i][style*="border-radius:10px"] { background:#FFF4D8 !important; color:#9A6100 !important; }
+span[style*="color:#fff"][style*="border-radius:10px"][style*="font-size:10px"] { font-size:11px !important; padding:2px 8px !important; border-radius:999px !important; }
+
+/* ---------- 31. Tabellen: Inhalte mittig zur Zeile (Text und Knoepfe auf einer Linie) ---------- */
+tbody td { vertical-align:middle !important; }
+span[style*="color:#fff"][style*="background:#8B5CF6" i][style*="border-radius:10px"] { background:#F1ECFE !important; color:#5B3BB5 !important; }
