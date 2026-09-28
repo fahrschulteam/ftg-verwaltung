@@ -282,12 +282,10 @@ td.row-actions .btn + .btn, td > .btn + .btn { margin-left:4px; }
 .side-nav nav button[data-archiv="1"]:not(.active) { color:#8A929C !important; }
 
 /* ---------- 23. Rechnungen uebersichtlich ---------- */
-/* Kennzahlen: Beschriftung oben, Wert darunter (Werte sind hier Text/Betraege) */
-#invKacheln { grid-template-columns:repeat(auto-fill,minmax(220px,1fr)) !important; }
-#invKacheln .stat { flex-direction:column; align-items:flex-start !important; justify-content:center; gap:4px; }
-#invKacheln .stat .lbl { order:1; }
-#invKacheln .stat { align-items:stretch !important; }
-#invKacheln .stat .num { order:2; margin-left:0; align-self:flex-end; text-align:right; font-size:22px !important; white-space:nowrap; font-variant-numeric:tabular-nums; }
+/* Kennzahlen: wie die Uebersicht - Beschriftung links, Wert rechts, eine Zeile, volle Breite */
+#invKacheln { grid-template-columns:repeat(auto-fit,minmax(240px,1fr)) !important; }
+#invKacheln .stat .num { font-size:20px !important; font-weight:800 !important; white-space:nowrap; font-variant-numeric:tabular-nums; }
+#invKacheln .stat { flex-direction:row !important; align-items:center !important; }
 /* Werkzeugleiste: Suche breit, Hauptaktion rot */
 #invoices .search-bar { align-items:center; }
 #invoices .search-bar > .btn:last-child { background:var(--ftg-primary) !important; border-color:var(--ftg-primary) !important;
