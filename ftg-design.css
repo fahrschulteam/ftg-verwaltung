@@ -140,32 +140,15 @@ th, .ma-table thead th { background:var(--ftg-soft) !important; color:#697586 !i
 .mod-side-btn.active { background:var(--ftg-accent) !important; color:var(--ftg-primary-dark) !important; box-shadow:none !important; }
 .stat .num { font-family:var(--ftg-font) !important; font-weight:900; }
 
-/* ---------- 11. Seitentitel in der Kopfzeile (wie Vorlage) ---------- */
-#app .header-title { flex:1; text-align:left !important; min-width:0; }
-#app .header-title::before { content:"Fahrschulteam Lingen"; display:block; color:var(--ftg-primary);
-  font-size:11.5px; font-weight:900; letter-spacing:.065em; text-transform:uppercase; }
-#app .header-title::after { display:block; margin-top:2px; font-size:26px; font-weight:900;
-  letter-spacing:-.025em; color:var(--ftg-ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-#app:has(#view-dashboard.active) .header-title::after { content:"Dashboard"; }
-#app:has(#view-kva.active) .header-title::after { content:"KVA"; }
-#app:has(#view-schulung.active) .header-title::after { content:"Schulungen"; }
-#app:has(#view-teilnehmer.active) .header-title::after { content:"QM"; }
-#app:has(#view-dokumente.active) .header-title::after { content:"Vorlagen"; }
-#app:has(#view-personal.active) .header-title::after { content:"Personal"; }
-#app:has(#view-schulungsstand.active) .header-title::after { content:"Schulungsstand"; }
-#app:has(#view-azk.active) .header-title::after { content:"AZK"; }
-#app:has(#view-fuhrpark.active) .header-title::after { content:"Fuhrpark"; }
-#app:has(#view-kalender.active) .header-title::after { content:"Kalender"; }
-#app:has(#view-wettbewerb.active) .header-title::after { content:"Wettbewerb"; }
-#app:has(#view-bkrfqg.active) .header-title::after { content:"BKrFQG"; }
-#app:has(#view-todos.active) .header-title::after { content:"To-Dos"; }
-#app:has(#view-einstellungen.active) .header-title::after { content:"Einstellungen"; }
-@media (max-width:1023px) { #app .header-title::before, #app .header-title::after { display:none !important; } }
+/* ---------- 11. Kopfzeile: keine Seitentitel (aktiver Bereich ist in der Seitenleiste markiert) ---------- */
+#app .header-title::before, #app .header-title::after { content:none !important; display:none !important; }
+#gs-input { border-radius:var(--ftg-r-sm) !important; border-color:var(--ftg-input) !important; background:#fff !important; height:40px; }
+#gs-input:focus { border-color:var(--ftg-primary) !important; box-shadow:var(--ftg-ring); }
 
 /* ---------- 12. Fest eingebautes Blau (Inline-Stile) auf FTG-Farben ---------- */
 [style*="background:#2A6CAE;color:#fff" i] { background:var(--ftg-primary) !important; }
 [style*="#2A6CAE,#1e5a96" i] { background:#31363E !important; }
-[style*="#3F4B57,#2A6CAE" i] { background:linear-gradient(135deg,#20242B,#3F4650) !important; }
+[style*="#3F4B57,#2A6CAE" i], [style*="rgb(63, 75, 87), rgb(42, 108, 174)"] { background:linear-gradient(135deg,#20242B,#3F4650) !important; }
 [style*="color:#2A6CAE" i]:not([style*="-color:#2A6CAE" i]),
 [style*="color: #2A6CAE" i]:not([style*="-color: #2A6CAE" i]) { color:var(--ftg-primary) !important; }
 [style*="solid #2A6CAE" i] { border-color:var(--ftg-primary) !important; }
