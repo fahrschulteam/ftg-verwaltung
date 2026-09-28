@@ -267,3 +267,16 @@ td.row-actions { display:table-cell !important; white-space:nowrap; }
 td:has(> .btn) { white-space:nowrap; }
 td.row-actions .btn, td > .btn { display:inline-flex !important; vertical-align:middle; }
 td.row-actions .btn + .btn, td > .btn + .btn { margin-left:4px; }
+
+/* ---------- 21. Kennzahl-Karten: Beschriftung links, Zahl rechtsbuendig in einer Zeile ---------- */
+.stat { display:flex !important; align-items:center; gap:12px; min-height:58px; }
+.stat .lbl { order:1; flex:1 1 auto; min-width:0; margin-top:0 !important; }
+.stat .num { order:2; flex:0 0 auto; margin-left:auto; text-align:right; font-variant-numeric:tabular-nums; }
+
+/* ---------- 22. Schulungen: "Aeltere Eintraege" abgesetzt unten in der Seitenleiste ---------- */
+.side-nav { display:flex !important; flex-direction:column; }
+.side-nav nav { flex:1 1 auto; min-height:0; }
+.side-nav nav button[data-archiv="1"] { order:99; margin-top:auto !important; position:relative; }
+.side-nav nav button[data-archiv="1"]::before { content:""; position:absolute; left:4px; right:4px; top:-9px;
+  height:1px; background:var(--ftg-border); }
+.side-nav nav button[data-archiv="1"]:not(.active) { color:#8A929C !important; }
