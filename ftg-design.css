@@ -228,3 +228,33 @@ a[style*="background:#2A6CAE;color:#fff" i]:not([style*="width:24px"]):hover { b
 .stat[style*="var(--ok)"] .lbl::before, .stat[style*="var(--green)"] .lbl::before { background:#197341; }
 .stat[style*="var(--red)"] .lbl::before, .stat[style*="var(--crit)"] .lbl::before { background:#C51D2A; }
 .stat[style*="#3b82f6" i] .lbl::before { background:#2A6CAE; }
+
+/* ---------- 18. Feinschliff fuer alle Reiter und Unterreiter ---------- */
+/* Eine Schrift ueberall (auch KVA, QM, Kennzeichen/Nummern) */
+body, body *:not(svg):not(svg *) { font-family:var(--ftg-font) !important; }
+/* Einheitliche Rundungen fuer Knoepfe und Eingabefelder */
+button[style*="border-radius:4px"], button[style*="border-radius:5px"], button[style*="border-radius:6px"],
+a[style*="border-radius:4px"], a[style*="border-radius:5px"], a[style*="border-radius:6px"] { border-radius:8px !important; }
+input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]), select, textarea { border-radius:10px !important; }
+input:not([type=checkbox]):not([type=radio]):focus, select:focus, textarea:focus { outline:none; border-color:var(--ftg-primary) !important; box-shadow:var(--ftg-ring); }
+/* Lila Sonderknoepfe (BQR-Meldung, KI-Pruefung) als ruhige Neben-Knoepfe */
+.bqr-btn, button[style*="#6A1B9A" i], button[style*="#7c3aed" i], a[style*="#6A1B9A" i], a[style*="#7c3aed" i] {
+  background:#fff !important; color:#3F4650 !important; border:1px solid #DFE3E8 !important; }
+.bqr-btn:hover, button[style*="#6A1B9A" i]:hover, button[style*="#7c3aed" i]:hover { background:#F6F7F9 !important; }
+/* Karten ohne Farbverlauf (Status steht im Abzeichen) */
+.card[style*="gradient"] { background:#fff !important; border-color:var(--ftg-border) !important; }
+/* Normale Links nicht mehr browserblau */
+a:not([class]):not([style*="color"]) { color:var(--ftg-ink-2); text-decoration-color:#C9CFD6; }
+a:not([class]):not([style*="color"]):hover { color:var(--ftg-primary); }
+/* QM-Modul: Seitenleiste und Knoepfe wie die anderen Module */
+.sidebar { background:#fff !important; border-right:1px solid var(--ftg-border) !important; }
+.sb-btn { border-radius:12px !important; font-weight:800 !important; color:var(--ftg-nav) !important; }
+.sb-btn:hover { background:var(--ftg-bg) !important; color:#252A31 !important; }
+.sb-btn.active { background:var(--ftg-accent) !important; color:var(--ftg-primary-dark) !important; box-shadow:none !important; }
+.btn.red { background:var(--ftg-primary) !important; border-color:var(--ftg-primary) !important; color:#fff !important;
+  font-weight:800 !important; box-shadow:var(--ftg-shadow-action); }
+.btn.red:hover { background:var(--ftg-primary-dark) !important; opacity:1 !important; }
+.btn.red svg { color:#fff !important; }
+.card-title { color:#697586 !important; letter-spacing:.06em !important; }
+/* Lila Namens-Kuerzel (Dozenten) wie die uebrigen Avatare: dunkelgrau */
+span[style*="background:#6A1B9A" i] { background:#31363E !important; }
