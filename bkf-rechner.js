@@ -217,7 +217,7 @@
       <style>
         .bkr-grid{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(300px,1fr);gap:16px;align-items:start}
         @media(max-width:1100px){.bkr-grid{grid-template-columns:1fr}}
-        .bkr-ergebnis{position:sticky;top:130px}
+        .bkr-ergebnis{position:static}
         .bkr-sec{padding:14px 16px;margin-bottom:12px}
         .bkr-h{font-size:12px;font-weight:800;color:#697586;text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px}
         .bkr-row{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid #EEF1F4}
@@ -355,7 +355,7 @@
           <div style="text-align:right"><div class="bkr-t">${r.ueIst} / 35 UE</div><div class="bkr-s">angerechnet</div></div>
         </div>
         <div class="bkr-bar"><div style="width:${pct}%"></div></div>
-        <div class="bkr-s">Zeitraum: ${fmtD(r.f.von)} – ${fmtD(r.f.bis)} · ${esc(r.f.quelle)}</div>
+        <div class="bkr-s">Zeitraum: ${S.ablauf ? fmtD(r.f.von) + ' – ' + fmtD(r.f.bis) : 'Schulungen ab ' + fmtD(r.f.von)} · ${esc(r.f.quelle)}</div>
       </div>
 
       ${r.empfehlung.length ? `

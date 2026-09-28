@@ -340,3 +340,13 @@ span[style*="background:#eff6ff"][style*="color:#2A6CAE"] { background:#EEF1F4 !
 /* "Bescheid" (hell-lila) als normaler Neben-Knopf */
 button[style*="#f3e8ff" i] { background:#fff !important; color:#3F4650 !important; border:1px solid var(--ftg-border) !important; }
 button[style*="#f3e8ff" i]:hover { background:#F6F7F9 !important; }
+
+/* ---------- 28. BKrFQG-Standorte: Beschriftung je Angabe (zu patch_standorte_beschriftung.js) ---------- */
+.bks-grid { display:grid; grid-template-columns:1fr 1fr; gap:20px; font-size:13px; }
+@media (max-width:800px) { .bks-grid { grid-template-columns:1fr; } }
+.bks-h { font-size:11px; font-weight:800; color:#697586; text-transform:uppercase; letter-spacing:.06em; margin-bottom:8px; }
+.bks-dl { display:grid; grid-template-columns:130px 1fr; gap:5px 12px; margin:0; }
+.bks-dl dt { color:#68717D; font-size:12.5px; }
+.bks-dl dd { margin:0; color:#20242B; font-weight:600; min-width:0; overflow-wrap:anywhere; }
+.bks-dl a { color:#20242B; }
+.bks-dl a:hover { color:var(--ftg-primary); }

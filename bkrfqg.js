@@ -677,7 +677,7 @@ function bkrfqgRenderStandortListe() {
       <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid var(--border)">
         <div>
           <div style="font-weight:700;font-size:16px;color:var(--dunkel);display:flex;align-items:center;gap:8px">${s.name} ${bBadge(s.status)}</div>
-          <div style="font-size:12px;color:var(--grau);margin-top:3px">${s.strasse||''}, ${s.plz||''} ${s.ort||''}</div>
+          ${[s.strasse, [s.plz, s.ort].filter(Boolean).join(' ')].filter(Boolean).length ? `<div style="font-size:12px;color:var(--grau);margin-top:3px">${[s.strasse, [s.plz, s.ort].filter(Boolean).join(' ')].filter(Boolean).join(', ')}</div>` : ''}
           ${s.aktenzeichen?`<div style="font-size:11px;color:var(--grau);font-family:monospace;margin-top:2px">AZ: ${s.aktenzeichen}</div>`:''}
         </div>
         <div class="tbl-actions">
@@ -685,19 +685,23 @@ function bkrfqgRenderStandortListe() {
           <button class="btn btn-sm" style="background:#f3e8ff;color:#6A1B9A;border-color:#e9d5ff" onclick="bkrfqgStandortEdit('${s.id}')">✨ Bescheid</button>
         </div>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;font-size:13px">
+      <div class="bks-grid">
         <div>
-          <div style="font-size:10px;font-weight:700;color:var(--blau);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Zuständige Behörde</div>
-          <div style="color:var(--dunkel)">${s.behoerde_name||'<span style="color:var(--grau)">nicht eingetragen</span>'}</div>
-          ${s.behoerde_abteilung?`<div style="color:var(--grau)">${s.behoerde_abteilung}</div>`:''}
-          ${s.behoerde_email?`<div><a href="mailto:${s.behoerde_email}">${s.behoerde_email}</a></div>`:''}
-          ${s.behoerde_tel?`<div style="color:var(--grau)">📞 ${s.behoerde_tel}</div>`:''}
+          <div class="bks-h">Zust&auml;ndige Beh&ouml;rde</div>
+          <dl class="bks-dl">
+            <dt>Beh&ouml;rde</dt><dd>${s.behoerde_name||'<span style="color:var(--grau)">nicht eingetragen</span>'}</dd>
+            ${s.behoerde_abteilung?`<dt>Abteilung</dt><dd>${s.behoerde_abteilung}</dd>`:''}
+            ${s.behoerde_email?`<dt>E-Mail</dt><dd><a href="mailto:${s.behoerde_email}">${s.behoerde_email}</a></dd>`:''}
+            ${s.behoerde_tel?`<dt>Telefon</dt><dd><a href="tel:${String(s.behoerde_tel).replace(/[^+0-9]/g,'')}">${s.behoerde_tel}</a></dd>`:''}
+          </dl>
         </div>
         <div>
-          <div style="font-size:10px;font-weight:700;color:var(--rot);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Anerkennung</div>
-          <div style="color:var(--dunkel)">Umfang: ${(s.anerkennungsumfang||[]).join(', ')||'–'}</div>
-          <div style="color:var(--dunkel)">Anerkannt: ${bfmtD(s.anerkennungsdatum)}</div>
-          <div style="color:var(--dunkel)">Nächste Prüfung: ${s.naechste_ueberpruefung?bAmpel(bTageVon(s.naechste_ueberpruefung)):'–'}</div>
+          <div class="bks-h">Anerkennung</div>
+          <dl class="bks-dl">
+            <dt>Umfang</dt><dd>${(s.anerkennungsumfang||[]).join(', ')||'&ndash;'}</dd>
+            <dt>Anerkannt am</dt><dd>${bfmtD(s.anerkennungsdatum)}</dd>
+            <dt>N&auml;chste Pr&uuml;fung</dt><dd>${s.naechste_ueberpruefung?bAmpel(bTageVon(s.naechste_ueberpruefung)):'&ndash;'}</dd>
+          </dl>
         </div>
       </div>
     </div>`).join('');

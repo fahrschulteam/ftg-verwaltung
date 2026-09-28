@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BKF-Modul-Rechner – Fahrschulteam Lingen</title>
+<meta name="robots" content="noindex">
+<style>
+  /* Eigenständige Seite: dieselben Farben/Formen wie die Verwaltung (FTG-Design) */
+  :root{
+    --rot:#C51D2A; --rot-dark:#9F1722; --dunkel:#20242B; --grau:#68717D;
+    --hell:#F3F5F7; --border:#DFE3E8;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{font-family:Arial,"Helvetica Neue",Helvetica,sans-serif;background:var(--hell);color:var(--dunkel);font-size:14px;-webkit-font-smoothing:antialiased}
+  body{padding:16px}
+  .wrap{max-width:1200px;margin:0 auto}
+  .card{background:#fff;border:1px solid var(--border);border-radius:14px;box-shadow:0 2px 8px rgba(28,33,40,.05)}
+  .toolbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:32px;padding:0 12px;
+    border:1px solid var(--border);border-radius:10px;background:#fff;color:#3F4650;font:inherit;font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap}
+  .btn:hover{background:#F6F7F9}
+  .btn-danger{color:var(--rot);border-color:var(--rot)}
+  input[type=checkbox]{-webkit-appearance:none;appearance:none;width:20px;height:20px;min-width:20px;border:2px solid #C9CFD6;border-radius:5px;background:#fff;cursor:pointer;display:inline-grid;place-content:center}
+  input[type=checkbox]:checked{background:var(--rot);border-color:var(--rot)}
+  input[type=checkbox]:checked::after{content:"";width:11px;height:6px;border-left:2.5px solid #fff;border-bottom:2.5px solid #fff;transform:rotate(-45deg) translate(1px,-1px)}
+  input:focus{outline:none;border-color:var(--rot) !important;box-shadow:0 0 0 3px rgba(197,29,42,.18)}
+  input[disabled]{opacity:.5}
+  #toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:var(--dunkel);color:#fff;padding:10px 16px;border-radius:10px;font-size:13px;opacity:0;transition:opacity .2s;pointer-events:none}
+  #toast.show{opacity:1}
+  @media(max-width:600px){ body{padding:10px} .bkr-row{flex-wrap:wrap} .bkr-row input[type=date]{width:100% !important} }
+</style>
+</head>
+<body>
+  <div class="wrap"><div id="rechner"></div></div>
+  <div id="toast"></div>
+  <script>
+    // Kleine Rückmeldung für "Ergebnis kopieren"
+    function toast(t){ var e=document.getElementById('toast'); e.textContent=t; e.classList.add('show'); setTimeout(function(){e.classList.remove('show')},1800); }
+  </script>
+  <script src="bkf-rechner.js?v=20260928d"></script>
+  <script>
+    bkfRechnerRender(document.getElementById('rechner'));
+  </script>
+</body>
+</html>
