@@ -332,3 +332,11 @@ span[style*="background:#eff6ff"][style*="color:#2A6CAE"] { background:#EEF1F4 !
 #bkrfqg-content .chip { font-weight:600 !important; font-size:13px !important; }
 /* Aktions-Knoepfe gleich gross, Hauptaktion (Senden) rot */
 #bkrfqg-content .card .btn-sm[onclick^="bkrfqgAntrag"] { min-height:36px; font-size:13px !important; }
+
+/* ---------- 27. BKrFQG-Standorte & Uebersicht: ruhige Karten ---------- */
+#bkrfqg-content .card[style*="border-left:3px"] { border-left:1px solid var(--ftg-border) !important; padding:14px 18px !important; margin-bottom:10px !important; }
+/* Kleine Abschnitts-Beschriftungen (Zustaendige Behoerde / Anerkennung) grau statt rot/blau */
+#bkrfqg-content [style*="font-size:10px"][style*="text-transform:uppercase"] { color:#697586 !important; font-weight:800 !important; letter-spacing:.06em !important; }
+/* "Bescheid" (hell-lila) als normaler Neben-Knopf */
+button[style*="#f3e8ff" i] { background:#fff !important; color:#3F4650 !important; border:1px solid var(--ftg-border) !important; }
+button[style*="#f3e8ff" i]:hover { background:#F6F7F9 !important; }
