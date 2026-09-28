@@ -244,10 +244,14 @@
         .bkr-chip.neu{background:#FBEAEC;color:#9F1722}
         .bkr-p{display:flex;align-items:center;gap:8px;font-size:12.5px;padding:3px 0}
         .bkr-dot{width:8px;height:8px;border-radius:50%;flex:0 0 8px}
+        .bkr-termin{display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid #EEF1F4}
+        .bkr-termin:last-child{border-bottom:none}
+        .bkr-datum{flex:0 0 52px;text-align:center;background:#FBEAEC;color:#9F1722;border-radius:10px;padding:6px 0;line-height:1.15}
+        .bkr-datum b{display:block;font-size:11px}.bkr-datum span{display:block;font-size:14px;font-weight:900}
         .bkr-note{font-size:12px;color:#8A5A00;background:#FFF7E6;border:1px solid #F5DDA6;border-radius:10px;padding:7px 10px;margin-top:6px}
       </style>`;
     el.querySelector('#bkr-reset').onclick = () => {
-      S.art = 'C'; S.ablauf = ''; S.eigene = {}; S.adr = { an: false, datum: '' }; S.tier = { an: false, datum: '' }; S.extern = [];
+      S.art = 'C'; S.ablauf = ''; S.eigene = {}; S.adr = { an: false, datum: '' }; S.tier = { an: false, datum: '' }; S.extern = []; M.name = ''; M.email = '';
       renderEingabe(); renderErgebnis();
     };
     el.querySelector('#bkr-kopieren').onclick = kopieren;
@@ -369,6 +373,9 @@
           </div>`).join('')}
       </div>` : ''}
 
+      ${termineKarte(r)}
+      ${mailKarte(r)}
+
       <div class="card bkr-sec">
         <div class="bkr-h">Pflichtvorgaben nach Buchung</div>
         ${r.pflicht.map(p => `<div class="bkr-p"><span class="bkr-dot" style="background:${p.ok ? '#197341' : '#C51D2A'}"></span>${esc(p.txt)}<span style="margin-left:auto;font-weight:700;color:${p.ok ? '#197341' : '#C51D2A'}">${p.ok ? 'erfüllt' : 'offen'}</span></div>`).join('')}
@@ -384,6 +391,7 @@
 
       ${r.hinweise.map(h => `<div class="bkr-note">${esc(h)}</div>`).join('')}
       <div class="bkr-s" style="margin-top:10px">Grundlage: § 5 BKrFQG, § 4 BKrFQV, Anlage 1 BKrFQV; Module nach DEGENER Runde 3. Unverbindliche Vorabauskunft – maßgeblich sind die Teilnahmebescheinigungen.</div>`;
+    mailEreignisse();
   }
 
   function kopieren() {
@@ -400,6 +408,250 @@
     const ok = () => { if (typeof toast === 'function') toast('Ergebnis kopiert'); };
     if (navigator.clipboard) navigator.clipboard.writeText(txt).then(ok, () => window.prompt('Text kopieren:', txt));
     else window.prompt('Text kopieren:', txt);
+  }
+
+  // ── Termine aus dem öffentlichen Kurskalender (FTG Campus AI) ──────
+  // Liefert nur öffentliche Termine (keine firmeninternen) inkl. freier Plätze.
+  const KURS_API = 'https://newslettertool.netlify.app/.netlify/functions/courses-public';
+  const ANMELD_BASIS = 'https://newslettertool.netlify.app/anmeldung.html';
+  const KALENDER_URL = 'https://newslettertool.netlify.app/kurskalender.html';
+  const FIRMA = { name: 'Fahrschulteam Lingen', str: 'Rheiner Str. 158', ort: '49809 Lingen (Ems)', tel: '0591 / 51403', mail: 'lingen@fahrschulteam.info', web: 'www.fahrschulteam.info' };
+  const T = { status: 'leer', kurse: [], fehler: '' };
+  const M = { name: '', email: '' };
+
+  function termineLaden() {
+    if (T.status === 'laedt' || T.status === 'ok') return;
+    T.status = 'laedt';
+    fetch(KURS_API, { cache: 'no-store' }).then(r => r.json()).then(j => {
+      T.kurse = ((j && j.courses) || []).filter(c => /^BKF Modul \d/i.test(c.course || ''));
+      T.status = 'ok';
+      if (root) renderErgebnis();
+    }).catch(e => {
+      T.status = 'fehler'; T.fehler = String((e && e.message) || e);
+      if (root) renderErgebnis();
+    });
+  }
+  function modulInfo(course) {
+    const m = /^BKF Modul (\d)\s*([GP])?/i.exec(course || '');
+    return m ? { nr: +m[1], v: (m[2] || '').toUpperCase() } : null;
+  }
+  function passtZurArt(v) {
+    if (!v || S.art === 'CD') return true;
+    return (S.art === 'C' && v === 'G') || (S.art === 'D' && v === 'P');
+  }
+  const deD = iso => { const p = String(iso || '').slice(0, 10).split('-'); return p.length === 3 ? p[2] + '.' + p[1] + '.' + p[0] : (iso || ''); };
+  const wtag = iso => ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'][new Date(String(iso).slice(0, 10) + 'T12:00:00').getDay()];
+  const ortKurz = o => { const t = String(o || '').split(',')[0].trim(); return /Fahrschulteam Thorsten Gels/i.test(t) ? 'Lingen, Rheiner Str. 158' : t; };
+  function terminText(c) {
+    let t = c.termine ? c.termine : (c.bis && c.bis !== c.datum ? deD(c.datum) + ' – ' + deD(c.bis) : deD(c.datum));
+    if (c.uhrzeit) t += ', ' + (/uhr/i.test(c.uhrzeit) ? c.uhrzeit : c.uhrzeit + ' Uhr');
+    return t;
+  }
+  function anmeldeLink(c) {
+    let q = 'modul=' + encodeURIComponent(c.modul || '') + '&termin=' + encodeURIComponent(terminText(c));
+    if (c.ort) q += '&ort=' + encodeURIComponent(c.ort);
+    if (c.id) q += '&kursid=' + encodeURIComponent(c.id);
+    return ANMELD_BASIS + '?' + q;
+  }
+  function termineFuer(nr) {
+    const h = heute();
+    return T.kurse.filter(c => {
+      const i = modulInfo(c.course);
+      return i && i.nr === nr && passtZurArt(i.v) && String(c.datum) >= h && !c.full;
+    }).sort((a, b) => String(a.datum).localeCompare(String(b.datum)));
+  }
+  // Je empfohlenem Modul den frühesten freien Termin, jeweils an einem anderen
+  // Tag; bevorzugt vor Ablauf der Schlüsselzahl 95.
+  function terminVorschlag(empf) {
+    const belegt = new Set();
+    const out = empf.map(e => {
+      const liste = termineFuer(e.m.nr).filter(c => !belegt.has(c.datum));
+      const vorAblauf = S.ablauf ? liste.filter(c => c.datum <= S.ablauf) : liste;
+      const c = vorAblauf[0] || liste[0] || null;
+      if (c) belegt.add(c.datum);
+      return { m: e.m, c, nachAblauf: !!(c && S.ablauf && c.datum > S.ablauf), weitere: liste.filter(x => x !== c).slice(0, 3) };
+    });
+    return out.sort((a, b) => (a.c ? a.c.datum : '9999').localeCompare(b.c ? b.c.datum : '9999'));
+  }
+  const freiText = c => (c.capacity > 0 && typeof c.free === 'number') ? (c.free + (c.free === 1 ? ' freier Platz' : ' freie Plätze')) : 'Plätze frei';
+
+  function termineKarte(r) {
+    if (!r.empfehlung.length) return '';
+    termineLaden();
+    let inhalt;
+    if (T.status === 'laedt' || T.status === 'leer') inhalt = '<div class="bkr-s">Termine werden aus dem Kurskalender geladen …</div>';
+    else if (T.status === 'fehler') inhalt = `<div class="bkr-note">Der Kurskalender konnte nicht geladen werden. <a href="${KALENDER_URL}" target="_blank" rel="noopener">Kurskalender öffnen</a></div>`;
+    else {
+      const v = terminVorschlag(r.empfehlung);
+      inhalt = v.map(x => x.c ? `
+        <div class="bkr-termin">
+          <div class="bkr-datum"><b>${wtag(x.c.datum)}</b><span>${deD(x.c.datum).slice(0, 6)}</span></div>
+          <div style="flex:1;min-width:0">
+            <div class="bkr-t">Modul ${x.m.nr} – ${esc(x.m.titel)}</div>
+            <div class="bkr-s">${esc(terminText(x.c))} · ${esc(ortKurz(x.c.ort))} · ${esc(freiText(x.c))}${x.nachAblauf ? ' · <b style="color:#C51D2A">nach Ablauf SZ 95!</b>' : ''}</div>
+            ${x.weitere.length ? `<div class="bkr-s">weitere: ${x.weitere.map(w => deD(w.datum).slice(0, 6)).join(', ')}</div>` : ''}
+          </div>
+          <a class="btn btn-outline btn-sm" href="${anmeldeLink(x.c)}" target="_blank" rel="noopener">Anmelden</a>
+        </div>` : `
+        <div class="bkr-termin">
+          <div class="bkr-datum"><b>–</b><span></span></div>
+          <div style="flex:1"><div class="bkr-t">Modul ${x.m.nr} – ${esc(x.m.titel)}</div>
+          <div class="bkr-s">Zurzeit kein freier Termin im Kurskalender – bitte Termin vereinbaren.</div></div>
+        </div>`).join('');
+    }
+    return `
+      <div class="card bkr-sec">
+        <div class="bkr-h" style="display:flex;justify-content:space-between"><span>Terminvorschlag</span><a href="${KALENDER_URL}" target="_blank" rel="noopener" style="text-transform:none;letter-spacing:0;font-weight:700">Kurskalender ↗</a></div>
+        ${inhalt}
+      </div>`;
+  }
+
+  function mailKarte(r) {
+    return `
+      <div class="card bkr-sec">
+        <div class="bkr-h">Ergebnis per E-Mail</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <input type="text" id="bkr-mail-name" placeholder="Anrede & Name, z. B. Herr Müller" value="${esc(M.name)}" style="flex:1 1 180px;padding:7px 10px;border:1px solid #D5DAE0;border-radius:10px;font-size:13px">
+          <input type="email" id="bkr-mail-to" placeholder="E-Mail-Adresse" value="${esc(M.email)}" style="flex:1 1 180px;padding:7px 10px;border:1px solid #D5DAE0;border-radius:10px;font-size:13px">
+        </div>
+        <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+          <button class="btn btn-outline btn-sm" id="bkr-mail-vorschau">Vorschau</button>
+          <button class="btn btn-primary btn-sm" id="bkr-mail-los">E-Mail erstellen</button>
+        </div>
+        <div class="bkr-s" style="margin-top:6px">„E-Mail erstellen“ kopiert die gestaltete Nachricht und öffnet dein E-Mail-Programm – dort nur noch <b>Strg + V</b> und senden.</div>
+      </div>`;
+  }
+
+  function mailEreignisse() {
+    const n = root.querySelector('#bkr-mail-name'), t = root.querySelector('#bkr-mail-to');
+    if (!n) return;
+    n.oninput = () => { M.name = n.value; };
+    t.oninput = () => { M.email = t.value; };
+    root.querySelector('#bkr-mail-vorschau').onclick = () => vorschauZeigen(false);
+    root.querySelector('#bkr-mail-los').onclick = () => mailErstellen();
+  }
+
+  // Gestaltete HTML-Mail (Tabellen + Inline-Styles, damit Outlook & Co. sie korrekt zeigen)
+  function mailHtml() {
+    const r = auswerten();
+    const v = (T.status === 'ok') ? terminVorschlag(r.empfehlung) : [];
+    const rot = '#C51D2A', ink = '#20242B', grau = '#68717D', linie = '#E7EAEE';
+    const pct = Math.min(100, Math.round(r.ueIst / UE_GESAMT * 100));
+    const td = 'font-family:Arial,Helvetica,sans-serif;';
+    const zeile = (a, b) => `<tr><td style="${td}padding:7px 0;border-bottom:1px solid ${linie};font-size:14px;color:${ink}">${a}</td><td style="${td}padding:7px 0;border-bottom:1px solid ${linie};font-size:14px;color:${ink};text-align:right;white-space:nowrap"><b>${b}</b></td></tr>`;
+    const gruss = M.name ? 'Guten Tag ' + esc(M.name) + ',' : 'Guten Tag,';
+    const termineHtml = v.length ? v.map(x => x.c ? `
+      <tr><td style="padding:0 0 10px 0">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px solid ${linie};border-radius:10px;border-collapse:separate">
+          <tr>
+            <td width="74" align="center" valign="middle" style="${td}background:#FBEAEC;border-radius:10px 0 0 10px;padding:12px 6px;color:${rot}">
+              <div style="font-size:12px;font-weight:bold">${wtag(x.c.datum)}</div>
+              <div style="font-size:18px;font-weight:bold">${deD(x.c.datum).slice(0, 6)}</div>
+            </td>
+            <td valign="middle" style="${td}padding:12px 14px">
+              <div style="font-size:15px;font-weight:bold;color:${ink}">Modul ${x.m.nr} – ${esc(x.m.titel)}</div>
+              <div style="font-size:13px;color:${grau};margin-top:3px">${esc(terminText(x.c))} · ${esc(ortKurz(x.c.ort))} · ${esc(freiText(x.c))}</div>
+            </td>
+            <td width="130" align="right" valign="middle" style="${td}padding:12px 14px 12px 0;white-space:nowrap">
+              <a href="${anmeldeLink(x.c)}" style="${td}display:inline-block;background:${rot};color:#ffffff;text-decoration:none;font-size:13px;font-weight:bold;padding:9px 14px;border-radius:8px;white-space:nowrap">Anmelden &rsaquo;</a>
+            </td>
+          </tr>
+        </table>
+      </td></tr>` : `
+      <tr><td style="${td}padding:0 0 10px 0;font-size:14px;color:${ink}"><b>Modul ${x.m.nr} – ${esc(x.m.titel)}</b>: Termin nach Absprache – wir melden uns bei Ihnen.</td></tr>`).join('')
+      : r.empfehlung.map(e => `<tr><td style="${td}padding:6px 0;font-size:14px;color:${ink}"><b>Modul ${e.m.nr} – ${esc(e.m.titel)}</b></td></tr>`).join('');
+    return `<!doctype html><html><head><meta charset="utf-8"></head><body style="margin:0;padding:0;background:#F3F5F7">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#F3F5F7"><tr><td align="center" style="padding:24px 12px">
+<table role="presentation" width="600" cellpadding="0" cellspacing="0" style="width:600px;max-width:100%;background:#ffffff;border-radius:14px;border:1px solid ${linie}">
+  <tr><td style="${td}background:${rot};border-radius:14px 14px 0 0;padding:22px 28px">
+    <div style="font-size:22px;font-weight:bold;color:#ffffff">${FIRMA.name}</div>
+    <div style="font-size:14px;color:#ffffff;opacity:.9;margin-top:4px">BKF-Weiterbildung · Ihre persönliche Auswertung</div>
+  </td></tr>
+  <tr><td style="${td}padding:26px 28px 6px 28px;font-size:15px;color:${ink};line-height:1.55">
+    <p style="margin:0 0 12px 0">${gruss}</p>
+    <p style="margin:0">vielen Dank für Ihre Anfrage. Wir haben Ihre bisherigen Schulungen ausgewertet – hier ist Ihr Überblick zur BKF-Weiterbildung (Schlüsselzahl 95):</p>
+  </td></tr>
+  <tr><td style="padding:16px 28px">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#F6F7F9;border-radius:12px">
+      <tr><td style="${td}padding:18px 20px">
+        <div style="font-size:26px;font-weight:bold;color:${ink}">${r.anzahl === 0 ? 'Sie sind fertig!' : 'Noch ' + r.anzahl + (r.anzahl === 1 ? ' Modul' : ' Module')}</div>
+        <div style="font-size:13px;color:${grau};margin-top:4px">${r.ueIst} von 35 Unterrichtseinheiten angerechnet${S.ablauf ? ' · Ablauf Schlüsselzahl 95: ' + fmtD(S.ablauf) : ''}</div>
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:12px"><tr>
+          ${pct > 0 ? `<td width="${pct}%" style="background:#197341;height:8px;border-radius:${pct >= 100 ? '4px' : '4px 0 0 4px'};font-size:0;line-height:0">&nbsp;</td>` : ''}
+          ${pct < 100 ? `<td width="${100 - pct}%" style="background:#E3E7EC;height:8px;border-radius:${pct > 0 ? '0 4px 4px 0' : '4px'};font-size:0;line-height:0">&nbsp;</td>` : ''}
+        </tr></table>
+      </td></tr>
+    </table>
+  </td></tr>
+  ${r.posten.length ? `<tr><td style="${td}padding:6px 28px 4px 28px">
+    <div style="font-size:12px;font-weight:bold;color:${grau};text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Bereits angerechnet</div>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0">${r.posten.map(p => zeile(esc(p.was.replace(' (Anrechnung § 4 Abs. 4 BKrFQV)', '')), p.ue + ' UE')).join('')}</table>
+  </td></tr>` : ''}
+  ${r.empfehlung.length ? `<tr><td style="${td}padding:18px 28px 4px 28px">
+    <div style="font-size:12px;font-weight:bold;color:${grau};text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">Unser Terminvorschlag für Sie</div>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0">${termineHtml}</table>
+    <div style="${td}font-size:13px;color:${grau};margin-top:4px">Alle Termine und freien Plätze: <a href="${KALENDER_URL}" style="color:${rot};font-weight:bold">Kurskalender öffnen</a></div>
+  </td></tr>` : ''}
+  <tr><td style="${td}padding:20px 28px 8px 28px;font-size:15px;color:${ink};line-height:1.55">
+    <p style="margin:0">Haben Sie Fragen oder passt ein Termin nicht? Rufen Sie uns gern an unter <b>${FIRMA.tel}</b> oder antworten Sie einfach auf diese E-Mail.</p>
+    <p style="margin:14px 0 0 0">Freundliche Grüße<br>Ihr ${FIRMA.name}</p>
+  </td></tr>
+  <tr><td style="${td}padding:18px 28px 22px 28px;border-top:1px solid ${linie};font-size:12px;color:${grau};line-height:1.5">
+    ${FIRMA.name} · ${FIRMA.str} · ${FIRMA.ort}<br>Tel. ${FIRMA.tel} · <a href="mailto:${FIRMA.mail}" style="color:${grau}">${FIRMA.mail}</a> · ${FIRMA.web}<br>
+    <span style="font-size:11px">Unverbindliche Vorabauskunft auf Grundlage Ihrer Angaben (§ 5 BKrFQG, § 4 BKrFQV). Maßgeblich sind die Teilnahmebescheinigungen.</span>
+  </td></tr>
+</table>
+</td></tr></table></body></html>`;
+  }
+
+  function mailText() {
+    const r = auswerten();
+    const v = (T.status === 'ok') ? terminVorschlag(r.empfehlung) : [];
+    const z = [(M.name ? 'Guten Tag ' + M.name + ',' : 'Guten Tag,'), '', 'hier ist Ihre Auswertung zur BKF-Weiterbildung:', '',
+      r.anzahl ? 'Noch ' + r.anzahl + ' Modul(e) – ' + r.ueIst + ' von 35 UE angerechnet.' : 'Sie haben alle 35 UE erreicht.', ''];
+    v.forEach(x => z.push(x.c ? '• ' + wtag(x.c.datum) + ' ' + deD(x.c.datum) + ': Modul ' + x.m.nr + ' – ' + x.m.titel + ' – Anmeldung: ' + anmeldeLink(x.c) : '• Modul ' + x.m.nr + ' – ' + x.m.titel + ': Termin nach Absprache'));
+    z.push('', 'Alle Termine: ' + KALENDER_URL, '', 'Freundliche Grüße', FIRMA.name, 'Tel. ' + FIRMA.tel);
+    return z.join('\n');
+  }
+
+  function vorschauZeigen() {
+    const alt = document.getElementById('bkr-vorschau'); if (alt) alt.remove();
+    const o = document.createElement('div');
+    o.id = 'bkr-vorschau';
+    o.style.cssText = 'position:fixed;inset:0;background:rgba(20,24,31,.55);z-index:3000;display:flex;align-items:center;justify-content:center;padding:16px';
+    o.innerHTML = `<div style="background:#fff;border-radius:16px;width:680px;max-width:100%;max-height:92vh;display:flex;flex-direction:column;overflow:hidden">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid #E7EAEE">
+          <b>E-Mail-Vorschau</b>
+          <div style="display:flex;gap:8px"><button class="btn btn-primary btn-sm" id="bkr-v-los">E-Mail erstellen</button><button class="btn btn-outline btn-sm" id="bkr-v-zu">Schließen</button></div>
+        </div>
+        <iframe id="bkr-v-frame" style="border:0;width:100%;height:70vh;background:#F3F5F7"></iframe>
+      </div>`;
+    document.body.appendChild(o);
+    o.querySelector('#bkr-v-frame').srcdoc = mailHtml();
+    o.querySelector('#bkr-v-zu').onclick = () => o.remove();
+    o.onclick = e => { if (e.target === o) o.remove(); };
+    o.querySelector('#bkr-v-los').onclick = () => mailErstellen();
+  }
+
+  async function mailErstellen() {
+    const html = mailHtml(), txt = mailText();
+    let kopiert = false;
+    try {
+      if (window.ClipboardItem && navigator.clipboard && navigator.clipboard.write) {
+        await navigator.clipboard.write([new ClipboardItem({
+          'text/html': new Blob([html], { type: 'text/html' }),
+          'text/plain': new Blob([txt], { type: 'text/plain' }),
+        })]);
+        kopiert = true;
+      }
+    } catch (e) { kopiert = false; }
+    if (!kopiert) { vorschauZeigen(); alert('Automatisches Kopieren ist hier nicht möglich. Bitte in der Vorschau alles markieren (Strg + A), kopieren (Strg + C) und in die E-Mail einfügen.'); return; }
+    if (typeof toast === 'function') toast('Gestaltete E-Mail kopiert – im E-Mail-Programm Strg + V drücken');
+    const betreff = 'Ihre BKF-Weiterbildung – Auswertung und Terminvorschlag';
+    const a = document.createElement('a');
+    a.href = 'mailto:' + encodeURIComponent(M.email || '') + '?subject=' + encodeURIComponent(betreff);
+    a.target = '_top';
+    document.body.appendChild(a); a.click(); a.remove();
   }
 
   // Für Tests/Nutzung von außen
