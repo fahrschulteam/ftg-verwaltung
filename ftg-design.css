@@ -162,3 +162,33 @@ th, .ma-table thead th { background:var(--ftg-soft) !important; color:#697586 !i
 .card:has(> table), .card:has(> .ma-table) { overflow-x:auto !important; }
 /* Module mit eigener Seitenleiste behalten ihren urspruenglichen Innenabstand */
 @media (min-width:1024px) { .view.active:has(> .mod-shell) { padding:24px 28px !important; } }
+
+/* ---------- 14. Icons einfarbig (grau; auf roten/dunklen Flaechen weiss) ---------- */
+svg[viewBox="0 0 24 24"], svg[viewBox="0 0 32 32"] { color:#68717D !important; }
+svg[viewBox="0 0 24 24"] [stroke]:not([stroke="none"]):not([stroke="currentColor"]),
+svg[viewBox="0 0 32 32"] [stroke]:not([stroke="none"]):not([stroke="currentColor"]) { stroke:currentColor !important; }
+svg[viewBox="0 0 24 24"] [fill]:not([fill="none"]):not([fill="currentColor"]),
+svg[viewBox="0 0 32 32"] [fill]:not([fill="none"]):not([fill="currentColor"]) { fill:currentColor !important; }
+.btn-primary svg, .btn.primary svg, .btn.blau svg, .btn.steel svg,
+.tab-btn.active svg, .dok-chip.active svg, .toast svg,
+[style*=";color:#fff" i] svg, [style*="; color:#fff" i] svg, [style^="color:#fff" i] svg,
+[style*=";color:white" i] svg, [style*="; color: rgb(255, 255, 255)"] svg { color:#fff !important; }
+/* Bild-Icons (z. B. Kursarten) in Graustufen */
+@media (min-width:1024px) { .hnav.active svg { color:#fff !important; } }
+img[src*="icons/"] { filter:grayscale(1) contrast(1.05); }
+.tab-btn.active img[src*="icons/"] { filter:grayscale(1) brightness(0) invert(1); }
+
+/* ---------- 15. Icon-Kacheln wie Vorlage (heller Farbgrund + farbiges Icon) ---------- */
+/* Dashboard-Kennzahlen */
+.dash-kpi { background:#fff !important; }
+.dash-kpi > div[style*="font-size:22px"] { width:44px; height:44px; border-radius:12px; display:flex;
+  align-items:center; justify-content:center; background:#EEF1F4; margin-bottom:12px !important; }
+.dash-kpi > div[style*="font-size:22px"] svg { color:#3F4650 !important; width:22px; height:22px; }
+.dash-kpi[style*="#FFF0F1" i] > div[style*="font-size:22px"] { background:#FBEAEC; }
+.dash-kpi[style*="#FFF0F1" i] > div[style*="font-size:22px"] svg { color:#C51D2A !important; }
+/* Kleine Aktions-Icons (WhatsApp / E-Mail) als helle Kacheln */
+a[style*="width:24px"][style*="background:#25D366" i] { background:#E4F4EA !important; width:30px !important; height:30px !important; border-radius:9px !important; }
+a[style*="width:24px"][style*="background:#25D366" i] svg { color:#197341 !important; }
+a[style*="width:24px"][style*="background:#2A6CAE" i] { background:#E8F1FB !important; width:30px !important; height:30px !important; border-radius:9px !important; }
+a[style*="width:24px"][style*="background:#2A6CAE" i] svg { color:#2A6CAE !important; }
+a[style*="width:24px"][style*="background:#25D366" i]:hover, a[style*="width:24px"][style*="background:#2A6CAE" i]:hover { filter:brightness(.96); }
