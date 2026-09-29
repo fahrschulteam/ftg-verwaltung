@@ -16,12 +16,8 @@ const dokState = {
 // Dateityp aus Name/Link erkennen → Icon
 function dokIcon(name = '', url = '') {
   const s = (name + ' ' + url).toLowerCase();
-  if (/\.docx?\b|word|document/.test(s))      return '📄';
-  if (/\.xlsx?\b|excel|spreadsheet/.test(s))  return '📊';
-  if (/\.pptx?\b|powerpoint|presentation/.test(s)) return '📑';
-  if (/\.pdf\b/.test(s))                       return '📕';
-  if (/\.(jpg|jpeg|png|gif|webp)\b/.test(s))   return '🖼️';
-  return '📎';
+  if (/\.(jpg|jpeg|png|gif|webp)\b/.test(s)) return dokIconFuerTyp('bild');
+  return dokIconFuerTyp(dokTypRaten(name, url));
 }
 
 // Nur als Vorbelegung im Formular: bester Tipp aus Name/Link, bevor der
@@ -35,9 +31,15 @@ function dokTypRaten(name = '', url = '') {
   return 'sonstige';
 }
 
+// Dateityp als kleines Kürzel-Kästchen (statt Emoji) – Farbe je Typ
 function dokIconFuerTyp(typ) {
-  return { word:'📄', excel:'📊', powerpoint:'📑', pdf:'📕', sonstige:'📎' }[typ] || '📎';
+  const t = { word:['W','word'], excel:['X','excel'], powerpoint:['P','ppt'], pdf:['PDF','pdf'], bild:['IMG','bild'] }[typ] || ['DOC','sonst'];
+  return `<span class="dok-typ dok-typ-${t[1]}">${t[0]}</span>`;
 }
+const DOK_SVG = {
+  stift: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>',
+  muell: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>',
+};
 
 async function ladeDokumente() {
   try {
@@ -75,7 +77,7 @@ window.renderDokumente = async function () {
   let inhalt = '';
   if (liste.length === 0) {
     inhalt = `<div class="empty-state">
-      <div style="font-size:40px;margin-bottom:10px">📁</div>
+      <div style="margin-bottom:10px;color:#9AA3AE"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></div>
       <div>Noch keine Dokumente hinterlegt.</div>
       ${darfVerwalten ? '<div style="font-size:13px;color:var(--grau);margin-top:6px">Über „+ Dokument" einen OneDrive-Link hinzufügen.</div>' : ''}
     </div>`;
@@ -89,11 +91,11 @@ window.renderDokumente = async function () {
               <div class="dok-name">${esc(d.name)}</div>
               ${d.beschreibung ? `<div class="dok-desc">${esc(d.beschreibung)}</div>` : ''}
             </div>
-            <div class="dok-open">Öffnen ↗</div>
+            <div class="dok-open">Öffnen</div>
           </div>
           ${darfVerwalten ? `<div class="dok-actions">
-            <button class="dok-act" onclick="oeffneDokModal('${d.id}')" title="Bearbeiten">✏️</button>
-            <button class="dok-act" onclick="loescheDok('${d.id}','${esc(d.name).replace(/'/g, "\\'")}')" title="Entfernen">🗑️</button>
+            <button class="dok-act" onclick="oeffneDokModal('${d.id}')" title="Bearbeiten">${DOK_SVG.stift}</button>
+            <button class="dok-act" onclick="loescheDok('${d.id}','${esc(d.name).replace(/'/g, "\\'")}')" title="Entfernen">${DOK_SVG.muell}</button>
           </div>` : ''}
         </div>`).join('');
       return `<div class="dok-gruppe">

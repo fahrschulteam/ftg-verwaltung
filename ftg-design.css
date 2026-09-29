@@ -400,3 +400,21 @@ input[type=file]::file-selector-button:hover{background:#F6F7F9}
 .fz-upload{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px}
 .fz-upload .btn{flex:none}
 .fz-hinweisbox{background:#F6F7F9;border:1px solid #E3E7EC;border-left:3px solid #68717D;border-radius:10px;padding:10px 12px;margin-top:8px;font-size:12px;color:#3F4650}
+
+/* 35. Vorlagen & Dokumente: Dateityp-Kürzel statt Emojis, kompakte Zeilen, graue Aktions-Symbole */
+.dok-typ{display:inline-flex;align-items:center;justify-content:center;min-width:30px;height:30px;padding:0 4px;border-radius:8px;font:800 11px Arial,sans-serif;letter-spacing:.02em}
+.dok-typ-word{background:#E6EEF8;color:#2B579A}
+.dok-typ-excel{background:#E4F4EA;color:#197341}
+.dok-typ-ppt{background:#FCEDE6;color:#C43E1C}
+.dok-typ-pdf{background:#FBEAEC;color:#9F1722}
+.dok-typ-bild,.dok-typ-sonst{background:#EEF1F4;color:#535C67}
+.dok-icon{font-size:0!important;line-height:0!important;display:flex}
+.dok-main{padding:9px 14px!important;gap:12px!important}
+.dok-name{font-size:14px!important;font-weight:700!important}
+.dok-open{color:var(--ftg-primary,#C51D2A)!important;font-weight:700!important}
+.dok-act{display:flex!important;align-items:center;justify-content:center;padding:0 14px!important;color:#68717D}
+.dok-act svg{color:#68717D!important}
+.dok-act:hover{background:#F6F7F9!important}
+.dok-act[title="Entfernen"]:hover svg{color:#C51D2A!important}
+.dok-count{background:#EEF1F4!important;color:#68717D!important;font-weight:700}
+.dok-chip:not(.active):hover{border-color:#C9CFD6!important;color:#20242B!important;background:#fff!important}
