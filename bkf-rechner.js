@@ -205,7 +205,7 @@
       <div class="toolbar" style="margin-bottom:14px;justify-content:space-between">
         <div style="display:flex;flex-direction:column;gap:2px">
           ${OPT.firma ? '' : '<div style="font-size:16px;font-weight:700;color:var(--dunkel)">BKF-Modul-Rechner</div>'}
-          <div style="font-size:12px;color:var(--grau)">${OPT.fahrer ? `Vorbelegt mit den Daten von <b style="color:var(--dunkel)">${esc(OPT.fahrer)}</b> – weitere Schulungen (z. B. extern, ADR) einfach ergänzen.` : 'Vorhandene Schulungen eintragen – rechts steht sofort, welche Module noch fehlen.'}</div>
+          <div style="font-size:12px;color:var(--grau)">${OPT.fahrer ? `Vorbelegt mit den Daten von <b style="color:var(--dunkel)">${esc(OPT.fahrer)}</b> – weitere Schulungen (z. B. extern, ADR) einfach ergänzen.` : 'Vorhandene Schulungen eintragen – darunter steht sofort, welche Module noch fehlen.'}</div>
         </div>
         <div style="display:flex;gap:8px">
           <button class="btn btn-outline btn-sm" id="bkr-kopieren">Ergebnis kopieren</button>
@@ -217,8 +217,7 @@
         <div class="bkr-ergebnis"></div>
       </div>
       <style>
-        .bkr-grid{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(300px,1fr);gap:16px;align-items:start}
-        @media(max-width:1100px){.bkr-grid{grid-template-columns:1fr}}
+        .bkr-grid{display:grid;grid-template-columns:1fr;gap:4px;max-width:860px}
         .bkr-ergebnis{position:static}
         .bkr-sec{padding:14px 16px;margin-bottom:12px}
         .bkr-h{font-size:12px;font-weight:800;color:#697586;text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px}
