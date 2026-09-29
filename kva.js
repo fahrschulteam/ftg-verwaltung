@@ -1211,12 +1211,12 @@ function buildKVAhtml(items,dc){
   r+="<div class='kva-betreff' style='margin-bottom:4mm;'>";
   r+="<div style='display:flex;justify-content:space-between;align-items:baseline;'>";
   r+="<div>";
-  r+="<div style='font-size:7pt;color:#C0001A;font-weight:800;letter-spacing:2pt;text-transform:uppercase;'>Kostenvoranschlag</div>";
+  r+="<div style='font-size:7pt;color:#C51D2A;font-weight:800;letter-spacing:2pt;text-transform:uppercase;'>Kostenvoranschlag</div>";
   r+="<div style='font-size:15pt;font-weight:900;color:#000;letter-spacing:-0.5pt;'>"+esc(S.kva)+"</div>";
   r+="</div>";
   r+="<div style='font-size:9pt;color:#000;text-align:right;'>Lingen, den "+td+"</div>";
   r+="</div>";
-  r+="<div style='height:2pt;background:#C0001A;margin-top:3mm;margin-bottom:5mm;'></div>";
+  r+="<div style='height:2pt;background:#C51D2A;margin-top:3mm;margin-bottom:5mm;'></div>";
   r+="<div style='font-size:9.5pt;color:#000;margin-bottom:5mm;line-height:1.6;'>vielen Dank f\u00fcr Ihr Interesse. Nachfolgend unser unverbindlicher Kostenvoranschlag:</div>";
   r+="</div>"; // kva-betreff
 
@@ -1224,8 +1224,8 @@ function buildKVAhtml(items,dc){
   r+="<table style='width:100%;border-collapse:collapse;font-size:9pt;'>";
   r+="<thead>"
     +"<tr>"
-    +"<th style='padding:5pt 7pt;background:#3F4B57;color:#fff;font-weight:700;text-align:left;width:67%;border:0.5pt solid #3F4B57;'>Position</th>"
-    +"<th style='padding:5pt 7pt;background:#3F4B57;color:#fff;font-weight:700;text-align:right;border:0.5pt solid #3F4B57;'>Betrag (inkl. MwSt.)</th>"
+    +"<th style='padding:5pt 7pt;background:#20242B;color:#fff;font-weight:700;text-align:left;width:67%;border:0.5pt solid #20242B;'>Position</th>"
+    +"<th style='padding:5pt 7pt;background:#20242B;color:#fff;font-weight:700;text-align:right;border:0.5pt solid #20242B;'>Betrag (inkl. MwSt.)</th>"
     +"</tr>"
     +"</thead><tbody>";
 
@@ -1235,21 +1235,21 @@ function buildKVAhtml(items,dc){
     var isCls=clsCats.indexOf(cat)>=0;
     var cTot=rows.reduce(function(s,rw){return s+rw.p;},0);
 
-    r+="<tr class='kva-cat-hdr' style='background:"+(isCls?"#3F4B57":"#3F4B57")+";'>"
+    r+="<tr class='kva-cat-hdr' style='background:#EEF1F4;'>"
       +"<td colspan='2' style='font-size:8pt;font-weight:700;text-transform:uppercase;letter-spacing:.8px;"
-      +"padding:4pt 7pt;color:#fff;border:0.5pt solid #3F4B57;'>"
+      +"padding:4pt 7pt;color:#20242B;border-left:2.5pt solid #C51D2A;border-bottom:0.5pt solid #DFE3E8;'>"
       +(isCls?"Klasse "+esc(cat):esc(cat))+"</td></tr>";
 
     rows.forEach(function(row,i){
       var isAdv=row.erw>0.01;
-      var bg=row.gratis?"#e8f5e9":isAdv?"#e8f5e9":i%2===0?"#f5f5f5":"#fff";
-      var col=row.gratis?"#1b5e20":isAdv?"#1b5e20":"#000";
+      var bg=row.gratis?"#E4F4EA":isAdv?"#E4F4EA":i%2===0?"#FAFBFC":"#fff";
+      var col=row.gratis?"#197341":isAdv?"#197341":"#20242B";
       var fw=row.gratis?"italic":"normal";
       r+="<tr style='background:"+bg+";'>";
-      r+="<td style='padding:4pt 7pt;color:"+col+";font-style:"+fw+";border-bottom:0.3pt solid #ddd;'>"+esc(row.l);
-      if(row.note) r+="<br><span style='font-size:7.5pt;color:#2e7d32;'>"+esc(row.note)+"</span>";
+      r+="<td style='padding:4pt 7pt;color:"+col+";font-style:"+fw+";border-bottom:0.3pt solid #E3E7EC;'>"+esc(row.l);
+      if(row.note) r+="<br><span style='font-size:7.5pt;color:#197341;'>"+esc(row.note)+"</span>";
       r+="</td>";
-      r+="<td style='padding:4pt 7pt;text-align:right;white-space:nowrap;color:"+col+";font-style:"+fw+";border-bottom:0.3pt solid #ddd;font-weight:600;'>"
+      r+="<td style='padding:4pt 7pt;text-align:right;white-space:nowrap;color:"+col+";font-style:"+fw+";border-bottom:0.3pt solid #E3E7EC;font-weight:600;'>"
         +(row.gratis?"inklusive":fmt(row.p))+"</td></tr>";
     });
 
@@ -1259,28 +1259,28 @@ function buildKVAhtml(items,dc){
   // ── SUMMENBLOCK ──
   r+="<div class='kva-totals'>";
   r+="<table style='width:100%;border-collapse:collapse;font-size:9pt;'><tbody>";
-  r+="<tr style='background:#f5f5f5;'>"
-    +"<td style='padding:4pt 7pt;color:#000;border-top:1pt solid #999;'>Zwischensumme</td>"
-    +"<td style='text-align:right;padding:4pt 7pt;color:#000;font-weight:600;border-top:1pt solid #999;'>"+fmt(dc.sub)+"</td></tr>";
+  r+="<tr style='background:#fff;'>"
+    +"<td style='padding:5pt 7pt;color:#20242B;border-top:0.8pt solid #20242B;'>Zwischensumme</td>"
+    +"<td style='text-align:right;padding:5pt 7pt;color:#20242B;font-weight:700;border-top:0.8pt solid #20242B;'>"+fmt(dc.sub)+"</td></tr>";
   if(dc.tSav>0.01){
     // Jeder gewährte Nachlass als eigene Position. Nicht gewährte werden nicht erwähnt.
     var savRow=function(label,val){
-      return "<tr style='background:#c8e6c9;'>"
-        +"<td style='padding:3pt 7pt;color:#1b5e20;font-weight:600;border-top:0.3pt solid #a5d6a7;'>"+esc(label)+"</td>"
-        +"<td style='text-align:right;padding:3pt 7pt;color:#1b5e20;font-weight:700;border-top:0.3pt solid #a5d6a7;white-space:nowrap;'>-"+fmt(val)+"</td></tr>";
+      return "<tr style='background:#E4F4EA;'>"
+        +"<td style='padding:4pt 7pt;color:#197341;font-weight:600;border-top:0.3pt solid #C5E6D0;'>"+esc(label)+"</td>"
+        +"<td style='text-align:right;padding:4pt 7pt;color:#197341;font-weight:700;border-top:0.3pt solid #C5E6D0;white-space:nowrap;'>-"+fmt(val)+"</td></tr>";
     };
     if(dc.tErw>0.01) r+=savRow("Mehrklassenvorteil",dc.tErw);
     if(dc.mEur>0)    r+=savRow("Mofa-Rabatt",dc.mEur);
     if(dc.aV>0)      r+=savRow(dc.aL||"Rabatt",dc.aV);
   }
-  r+="<tr style='background:#3F4B57;'>"
-    +"<td style='padding:8pt 7pt;font-size:11pt;font-weight:800;color:#fff;border-top:2pt solid #000;'>Gesamtbetrag (inkl. MwSt.)</td>"
-    +"<td style='text-align:right;padding:8pt 7pt;font-size:13pt;font-weight:900;color:#fff;border-top:2pt solid #000;'>"+fmt(dc.total)+"</td></tr>";
+  r+="<tr style='background:#20242B;'>"
+    +"<td style='padding:8pt 9pt;font-size:11pt;font-weight:800;color:#fff;border-left:3pt solid #C51D2A;'>Gesamtbetrag (inkl. MwSt.)</td>"
+    +"<td style='text-align:right;padding:8pt 9pt;font-size:13pt;font-weight:900;color:#fff;'>"+fmt(dc.total)+"</td></tr>";
   r+="</tbody></table></div>";
 
   // ── ANMERKUNGEN ──
   if(S.notes){
-    r+="<div class='kva-notes' style='background:#fffde7;border:1pt solid #f9a825;border-radius:3pt;"
+    r+="<div class='kva-notes' style='background:#FFF7E6;border:0.5pt solid #F5DDA6;border-left:2.5pt solid #D97706;border-radius:3pt;"
       +"padding:6pt 8pt;font-size:9pt;color:#000;margin-top:5mm;line-height:1.5;'>"
       +"<strong>Anmerkungen:</strong> "+esc(S.notes)+"</div>";
   }
@@ -1289,25 +1289,25 @@ function buildKVAhtml(items,dc){
   r+="<div class='kva-hints' style='margin-top:5mm;'>";
 
   // Hinweis: Übungsfahrten & Ausbildungsform
-  r+="<div class='kva-hint-block' style='page-break-inside:avoid;break-inside:avoid;background:#fffde7;border:0.5pt solid #f9a825;border-radius:3pt;padding:7pt 10pt;font-size:8.5pt;color:#000;line-height:1.7;margin-bottom:3mm;'>"
+  r+="<div class='kva-hint-block' style='page-break-inside:avoid;break-inside:avoid;background:#F6F7F9;border:0.5pt solid #E3E7EC;border-left:2.5pt solid #68717D;border-radius:3pt;padding:7pt 10pt;font-size:8.5pt;color:#20242B;line-height:1.7;margin-bottom:3mm;'>"
     +"Die Anzahl der erforderlichen \u00dcbungsfahrten richtet sich nach den individuellen Vorkenntnissen, F\u00e4higkeiten und dem pers\u00f6nlichen Lernfortschritt des Fahrsch\u00fclers. Daher kann die tats\u00e4chliche Anzahl der Fahrstunden von der im Kostenvoranschlag kalkulierten Anzahl abweichen."
-    +"<div style='border-top:0.5pt solid #f9a825;margin:5pt 0;'></div>"
+    +"<div style='border-top:0.5pt solid #DFE3E8;margin:5pt 0;'></div>"
     +"Der Erwerb der Fahrerlaubnis ist sowohl im klassischen Ausbildungsmodell mit Theorieunterricht im Abendkurs und Fahrstunden nach individueller Terminvereinbarung als auch im Rahmen einer Vollzeitausbildung m\u00f6glich. Gerne beraten wir Sie zur f\u00fcr Sie passenden Ausbildungsform."
     +"</div>";
 
   // Hinweis: Gesamtkosten / externe Kosten
-  r+="<div class='kva-hint-block' style='page-break-inside:avoid;break-inside:avoid;background:#e8f4fd;border:0.5pt solid #2A6CAE;border-radius:3pt;padding:7pt 10pt;font-size:8.5pt;color:#000;line-height:1.7;margin-bottom:3mm;'>"
-    +"<strong>Hinweis zu den Gesamtkosten des F\u00fchrerscheinerwerbs:</strong><br>"
+  r+="<div class='kva-hint-block' style='page-break-inside:avoid;break-inside:avoid;background:#FDF5F6;border:0.5pt solid #F1CDD1;border-left:2.5pt solid #C51D2A;border-radius:3pt;padding:7pt 10pt;font-size:8.5pt;color:#20242B;line-height:1.7;margin-bottom:3mm;'>"
+    +"<strong style='color:#9F1722'>Hinweis zu den Gesamtkosten des F\u00fchrerscheinerwerbs:</strong><br>"
     +"Dieser Kostenvoranschlag umfasst ausschlie\u00dflich die <strong>Fahrschulkosten</strong>. Zus\u00e4tzlich fallen externe Kosten an, die nicht in diesem Angebot enthalten sind, u.\u202fa.:"
     +"<div style='margin-top:3pt;padding-left:10pt;'>"
-    +"&#8227;&nbsp;Sehtest (Augenoptiker oder Augenarzt)<br>"
-    +"&#8227;&nbsp;Erste-Hilfe-Kurs<br>"
-    +"&#8227;&nbsp;Passfoto<br>"
-    +"&#8227;&nbsp;Pr\u00fcfungsgeb\u00fchren (T\u00dcV/DEKRA/GT\u00dc)"
+    +"<span style='color:#C51D2A'>&bull;</span>&nbsp;Sehtest (Augenoptiker oder Augenarzt)<br>"
+    +"<span style='color:#C51D2A'>&bull;</span>&nbsp;Erste-Hilfe-Kurs<br>"
+    +"<span style='color:#C51D2A'>&bull;</span>&nbsp;Passfoto<br>"
+    +"<span style='color:#C51D2A'>&bull;</span>&nbsp;Pr\u00fcfungsgeb\u00fchren (T\u00dcV/DEKRA/GT\u00dc)"
     +"</div>"
     +"</div>";
 
-  r+="<div class='kva-hint-block' style='page-break-inside:avoid;break-inside:avoid;background:#f5f5f5;border:0.5pt solid #bbb;border-radius:3pt;padding:7pt 10pt;font-size:8.5pt;color:#000;line-height:1.9;'>"
+  r+="<div class='kva-hint-block' style='page-break-inside:avoid;break-inside:avoid;background:#F6F7F9;border:0.5pt solid #E3E7EC;border-left:2.5pt solid #68717D;border-radius:3pt;padding:7pt 10pt;font-size:8.5pt;color:#20242B;line-height:1.9;'>"
     +"<strong>Haben Sie noch Fragen?</strong><br>"
     +"Sie k\u00f6nnen uns telefonisch w\u00e4hrend unserer \u00d6ffnungszeiten erreichen:<br>"
     +"Mo &amp; Mi: 08:30\u202f\u2013\u202f13:00 Uhr &nbsp;&nbsp; Di &amp; Do: 08:30\u202f\u2013\u202f16:30 Uhr<br>"

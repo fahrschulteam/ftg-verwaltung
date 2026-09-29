@@ -232,3 +232,5 @@ input:focus,textarea:focus{outline:2px solid var(--blau);border-color:transparen
 .kva-neu svg{width:16px;height:16px;color:#68717D}
 .kva-act.prim svg,.kva-act.prim svg *{color:#fff!important;stroke:#fff!important}
 .kva-opt.on .kva-opt-ic svg,.kva-opt.on .kva-opt-ic svg *{color:#C51D2A!important;stroke:#C51D2A!important}
+/* KVA-Dokument: Tabellenkopf nicht vom globalen Tabellen-Design überschreiben lassen */
+.kd-inner table thead th{background:#20242B!important;color:#fff!important;border:0.5pt solid #20242B!important;text-transform:none!important;letter-spacing:0!important;font-size:9pt!important;font-weight:700!important}
