@@ -101,7 +101,7 @@ window.renderFuhrpark = async function() {
   const sortiert = liste.slice().sort((a, b) => {
     let x = a[sf], y = b[sf];
     if (sf === 'rate') { x = Number(x) || 0; y = Number(y) || 0; return (x - y) * sr; }
-    if (sf === 'hu_faellig' || sf === 'sp_faellig') {
+    if (sf === 'hu_faellig' || sf === 'sp_faellig' || sf === 'bestand_bis') {
       x = x || '9999-12-31'; y = y || '9999-12-31';
       return String(x).localeCompare(String(y)) * sr;
     }
@@ -124,6 +124,7 @@ window.renderFuhrpark = async function() {
       <td>${v.fahrzeugklasse?`<span class="fz-klasse">${v.fahrzeugklasse}</span>`:'–'}</td>
       <td><span class="fz-tag fz-tag-${v.haltung}">${haltungLabel(v.haltung)}</span></td>
       <td style="text-align:right;white-space:nowrap">${rate}</td>
+      <td style="white-space:nowrap">${fzEndeZelle(v)}</td>
       <td style="white-space:nowrap"><span class="fz-dot" style="background:${hu.farbe}"></span>${hu.label}</td>
       <td style="white-space:nowrap">${v.sp_faellig?`<span class="fz-dot" style="background:${sp.farbe}"></span>${sp.label}`:'–'}</td>
     </tr>`;
@@ -171,6 +172,7 @@ window.renderFuhrpark = async function() {
               ${fzKopf('fahrzeugklasse','Klasse')}
               ${fzKopf('haltung','Haltung')}
               ${fzKopf('rate','Rate','text-align:right')}
+              ${fzKopf('bestand_bis','Ende')}
               ${fzKopf('hu_faellig','HU')}
               ${fzKopf('sp_faellig','SP')}
             </tr></thead>
@@ -178,6 +180,20 @@ window.renderFuhrpark = async function() {
           </table>
         </div>`}`;
 };
+
+// Ende der Nutzung (Leasing-/Finanzierungsende): rot = abgelaufen,
+// orange = in den nächsten 3 Monaten, sonst normal. Bei Eigentum ohne Datum: –
+function fzEndeZelle(v) {
+  if (!v.bestand_bis) return '<span style="color:var(--grau)">–</span>';
+  const d = new Date(String(v.bestand_bis).slice(0, 10) + 'T12:00:00');
+  const tage = Math.round((d - new Date()) / 86400000);
+  const txt = d.toLocaleDateString('de-DE', { day:'2-digit', month:'2-digit', year:'numeric' });
+  let farbe = 'var(--dunkel)', hinweis = '';
+  if (tage < 0) { farbe = '#C51D2A'; hinweis = 'abgelaufen'; }
+  else if (tage <= 90) { farbe = '#B45309'; hinweis = 'noch ' + tage + ' Tage'; }
+  return `<span style="color:${farbe};font-weight:${hinweis ? 700 : 400}" title="${hinweis || 'Ende Leasing/Finanzierung'}">${txt}</span>`
+    + (hinweis ? `<div style="font-size:11px;color:${farbe}">${hinweis}</div>` : '');
+}
 
 function setFuhrparkFilter(f) { fuhrparkState.filter = f; renderFuhrpark(); }
 
