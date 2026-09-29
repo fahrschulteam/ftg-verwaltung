@@ -223,6 +223,15 @@
         .bkr-sec{padding:14px 16px;margin-bottom:12px}
         .bkr-h{font-size:12px;font-weight:800;color:#697586;text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px}
         .bkr-row{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid #EEF1F4}
+        .bkr-1z{padding:5px 0;min-height:40px}
+        .bkr-1z label{white-space:nowrap;overflow:hidden}
+        .bkr-el{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+        .bkr-kbk{margin-left:auto;padding-left:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;flex-shrink:1}
+        .bkr-nrk{flex:0 0 22px;height:22px;border-radius:6px;background:#EEF1F4;color:#535C67;font-size:12px;font-weight:800;display:inline-flex;align-items:center;justify-content:center}
+        .bkr-1z.an .bkr-nrk{background:var(--rot);color:#fff}
+        .bkr-lbl{font-size:12.5px;font-weight:700;color:var(--dunkel);white-space:nowrap}
+        .bkr-1z input[type=date]{width:140px!important;flex:0 0 140px}
+        @media(max-width:560px){.bkr-kbk{display:none}}
         .bkr-row:last-child{border-bottom:none}
         .bkr-row label{display:flex;align-items:center;gap:10px;flex:1;min-width:0;cursor:pointer}
         .bkr-t{font-size:13.5px;font-weight:700;color:var(--dunkel)}
@@ -268,12 +277,10 @@
     box.innerHTML = `
       <div class="card bkr-sec">
         <div class="bkr-h">Teilnehmer</div>
-        <div class="bkr-row">
-          <div style="flex:1"><div class="bkr-t">Fahrerlaubnis / Verkehrsart</div><div class="bkr-s">steuert, welche Kenntnisbereiche relevant sind</div></div>
-          <div class="bkr-seg">${seg('C', 'Güter (C)')}${seg('D', 'Personen (D)')}${seg('CD', 'Beides')}</div>
-        </div>
-        <div class="bkr-row">
-          <div style="flex:1"><div class="bkr-t">Ablauf Schlüsselzahl 95</div><div class="bkr-s">optional – legt den 5-Jahres-Zeitraum fest</div></div>
+        <div class="bkr-row bkr-1z" style="flex-wrap:wrap;row-gap:8px">
+          <div class="bkr-seg" title="Steuert, welche Kenntnisbereiche relevant sind">${seg('C', 'Güter (C)')}${seg('D', 'Personen (D)')}${seg('CD', 'Beides')}</div>
+          <span style="flex:1"></span>
+          <span class="bkr-lbl" title="Optional – legt den 5-Jahres-Zeitraum fest">Ablauf SZ 95</span>
           <input type="date" id="bkr-ablauf" value="${esc(S.ablauf)}">
         </div>
       </div>
@@ -282,21 +289,21 @@
         <div class="bkr-h">Bei uns besucht (DEGENER Runde 3)</div>
         ${MODULE.map(m => {
           const e = S.eigene[m.nr] || {};
-          return `<div class="bkr-row">
-            <label><input type="checkbox" data-mod="${m.nr}" ${e.an ? 'checked' : ''}>
-              <span><span class="bkr-t">Modul ${m.nr} – ${esc(m.titel)}</span><br>
-              <span class="bkr-s">KB ${kbVon(m).join(', ')} · ${esc(m.info)}</span></span></label>
+          return `<div class="bkr-row bkr-1z${e.an ? ' an' : ''}">
+            <label title="KB ${kbVon(m).join(', ')} · ${esc(m.info)}"><input type="checkbox" data-mod="${m.nr}" ${e.an ? 'checked' : ''}>
+              <span class="bkr-nrk">${m.nr}</span><span class="bkr-t bkr-el">${esc(m.titel)}</span>
+              <span class="bkr-s bkr-kbk">KB ${kbVon(m).join(', ')}</span></label>
             <input type="date" data-moddatum="${m.nr}" value="${esc(e.datum || '')}" ${e.an ? '' : 'disabled'}>
           </div>`;
         }).join('')}
       </div>
 
       <div class="card bkr-sec">
-        <div class="bkr-h">Anrechenbare Sonderschulungen (je 7 UE, max. 5 Jahre alt)</div>
-        ${[['adr', 'ADR-Schulung (Gefahrgut)', 'Basis-, Aufbau- oder Auffrischungskurs'], ['tier', 'Tiertransport-Schulung', 'Befähigungsnachweis Tiertransport']].map(([k, t, s]) => `
-          <div class="bkr-row">
-            <label><input type="checkbox" data-sonder="${k}" ${S[k].an ? 'checked' : ''}>
-              <span><span class="bkr-t">${t}</span><br><span class="bkr-s">${s}</span></span></label>
+        <div class="bkr-h">Sonderschulungen <span style="text-transform:none;letter-spacing:0;font-weight:600">· je 7 UE, max. 5 Jahre alt</span></div>
+        ${[['adr', 'ADR-Schulung', 'Gefahrgut: Basis-, Aufbau- oder Auffrischungskurs'], ['tier', 'Tiertransport', 'Befähigungsnachweis Tiertransport']].map(([k, t, s]) => `
+          <div class="bkr-row bkr-1z${S[k].an ? ' an' : ''}">
+            <label title="${s}"><input type="checkbox" data-sonder="${k}" ${S[k].an ? 'checked' : ''}>
+              <span class="bkr-t bkr-el">${t}</span><span class="bkr-s bkr-kbk">${s}</span></label>
             <input type="date" data-sonderdatum="${k}" value="${esc(S[k].datum)}" ${S[k].an ? '' : 'disabled'}>
           </div>`).join('')}
       </div>
@@ -306,7 +313,7 @@
           <span>Externe Weiterbildungen</span>
           <button class="btn btn-outline btn-sm" id="bkr-ext-neu">+ Externe Schulung</button>
         </div>
-        ${S.extern.length ? '' : '<div class="bkr-s">Keine. Bei externen Anbietern die Kenntnisbereiche von der Teilnahmebescheinigung ankreuzen.</div>'}
+        ${S.extern.length ? '' : '<div class="bkr-s">Keine – Kenntnisbereiche von der Teilnahmebescheinigung ankreuzen.</div>'}
         ${S.extern.map((x, i) => `
           <div class="bkr-ext">
             <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
@@ -326,11 +333,11 @@
     box.querySelector('#bkr-ablauf').onchange = e => { S.ablauf = e.target.value; renderErgebnis(); };
     box.querySelectorAll('[data-mod]').forEach(c => c.onchange = () => {
       const nr = c.dataset.mod; S.eigene[nr] = S.eigene[nr] || { datum: '' }; S.eigene[nr].an = c.checked;
-      const d = box.querySelector(`[data-moddatum="${nr}"]`); d.disabled = !c.checked; renderErgebnis();
+      const d = box.querySelector(`[data-moddatum="${nr}"]`); d.disabled = !c.checked; c.closest('.bkr-row').classList.toggle('an', c.checked); renderErgebnis();
     });
     box.querySelectorAll('[data-moddatum]').forEach(d => d.onchange = () => { const nr = d.dataset.moddatum; S.eigene[nr] = S.eigene[nr] || { an: true }; S.eigene[nr].datum = d.value; renderErgebnis(); });
     box.querySelectorAll('[data-sonder]').forEach(c => c.onchange = () => {
-      const k = c.dataset.sonder; S[k].an = c.checked; box.querySelector(`[data-sonderdatum="${k}"]`).disabled = !c.checked; renderErgebnis();
+      const k = c.dataset.sonder; S[k].an = c.checked; box.querySelector(`[data-sonderdatum="${k}"]`).disabled = !c.checked; c.closest('.bkr-row').classList.toggle('an', c.checked); renderErgebnis();
     });
     box.querySelectorAll('[data-sonderdatum]').forEach(d => d.onchange = () => { S[d.dataset.sonderdatum].datum = d.value; renderErgebnis(); });
     box.querySelector('#bkr-ext-neu').onclick = () => { S.extern.push({ titel: '', datum: '', ue: 7, kb: [] }); renderEingabe(); renderErgebnis(); };
