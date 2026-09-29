@@ -1303,15 +1303,14 @@ function bkrfqgKursplaene(el) {
                 ${bKursTypLabel(k.kurstyp)} ${bBadge(k.status)}
               </div>
               <div style="font-size:12px;color:var(--grau);margin-top:3px">
-                ${k.bkrfqg_standorte?.name||'–'} · ${bfmtD(k.startdatum)} – ${bfmtD(k.enddatum)}
-                ${k.titel&&k.titel!==k.kurstyp+' '+k.startdatum?'· '+k.titel:''}
+                ${bkrfqgKPUntertitel(k)}
               </div>
             </div>
             <div style="display:flex;gap:6px;flex-shrink:0">
               <button class="btn btn-outline btn-sm" onclick="bkrfqgKPEdit('${k.id}')" title="Kursplan bearbeiten">${BIC('stift')}</button>
               <button class="btn btn-outline btn-sm" onclick="bkrfqgSetTab('kursmeldung')" title="Kursmeldung">${BIC('brief')}</button>
-              <button class="btn btn-primary btn-sm" onclick="bkrfqgKPOeffnen('${k.id}')">${BIC('liste')} Kurstage</button>
-              <button class="btn btn-outline btn-sm" style="color:var(--rot);border-color:var(--rot)" onclick="event.stopPropagation();bkrfqgKPLoeschen('${k.id}','${(k.titel||'').replace(/'/g,'')}')">🗑</button>
+              <button class="btn btn-outline btn-sm" onclick="bkrfqgKPOeffnen('${k.id}')">${BIC('liste')} Kurstage</button>
+              <button class="btn btn-outline btn-sm bkp-del" title="Kursplan löschen" onclick="event.stopPropagation();bkrfqgKPLoeschen('${k.id}','${(k.titel||'').replace(/'/g,'')}')">${BIC('muell')}</button>
             </div>
           </div>
         </div>`).join(''))
@@ -1319,6 +1318,19 @@ function bkrfqgKursplaene(el) {
   // Nächsten Montag vorausfüllen (für bkp-ki-aktiv relevant)
   const d=new Date(); while(d.getDay()!==1)d.setDate(d.getDate()+1); d.setDate(d.getDate()+7);
   window._bkrfqgNaechsterMontag=d.toISOString().split('T')[0];
+}
+// Untertitel einer Kursplan-Zeile: Standort · Zeitraum · (eigener Titel)
+// - ohne Enddatum: "ab 31.08.2026" statt "31.8.2026 – –"
+// - automatisch erzeugte Titel ("<Typ> ab <Datum>") werden nicht wiederholt
+function bkrfqgKPUntertitel(k) {
+  const teile = [];
+  teile.push(k.bkrfqg_standorte?.name || 'kein Standort');
+  if (k.startdatum && k.enddatum) teile.push(bfmtD(k.startdatum) + ' – ' + bfmtD(k.enddatum));
+  else if (k.startdatum) teile.push('ab ' + bfmtD(k.startdatum));
+  const t = String(k.titel || '').trim();
+  const auto = /\sab\s\d{1,2}\.\d{1,2}\.\d{4}$/.test(t) || t === (k.kurstyp + ' ' + k.startdatum);
+  if (t && !auto) teile.push(t);
+  return teile.join(' · ');
 }
 function bkrfqgKPModalHTML() {
   const standortOpts = bkrfqgState.standorte.map(s=>`<option value="${s.id}">${s.name}</option>`).join('');
