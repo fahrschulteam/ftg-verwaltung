@@ -977,7 +977,7 @@ function bkrfqgDozenten(el) {
           ${baender.map(b=>`<th style="text-align:center;font-size:10px;line-height:1.4"
               title="${b.titel} · ${(b.bkrfqv||[]).join(', ')} · ${fmtH(b.dauer_min)}">
             <div style="font-size:11px">${b.nr}</div>
-            <div style="color:rgba(255,255,255,.55);font-weight:400;font-size:10px">${fmtH(b.dauer_min)}</div>
+            <div style="color:#8A939E;font-weight:600;font-size:10px;text-transform:none;letter-spacing:0">${fmtH(b.dauer_min)}</div>
           </th>`).join('')}
           <th style="text-align:center">Σ</th>
         </tr></thead>
@@ -1764,6 +1764,55 @@ function bkrfqgKPZurueck() {
   bkrfqgKursplaene(document.getElementById('bkrfqg-content'));
 }
 
+// ── Dozenten-Abgleich ────────────────────────────────────────────────
+// Kurstage speichern den Dozenten beim Erstellen fest ab. Wird danach unter
+// "Dozenten-Themen" etwas geändert, passt der Kursplan nicht mehr. Diese
+// Hilfen erkennen solche Tage und ordnen sie auf Knopfdruck neu zu.
+function bkrfqgKPThemenKey(kurstyp) {
+  return {BGQ_Gueter:'bgq_g',BGQ_Person:'bgq_p',BGQ_Kombi:'kombi_gp',Weiterbildung:'wb_r3_g',WB_T1:'wb_t1',WB_T2:'wb_t2',WB_T3:'wb_t3',WB_T4:'wb_t4',WB_T5:'wb_t5'}[kurstyp]||'bgq_g';
+}
+function bkrfqgKTBand(k) {
+  const m = (k.gegenstand||'').match(/^Band ([^:]+):/);
+  return m ? m[1].trim() : null;
+}
+// true = Kurstag hat einen Dozenten, der dieses Band laut Zuordnung nicht (mehr) hat
+function bkrfqgDozPasstNicht(kp, k) {
+  if (!k.unterrichtsleiter_id || k.meldung_status==='gemeldet') return false;
+  const bn = bkrfqgKTBand(k); if (!bn) return false;
+  const key = bkrfqgKPThemenKey(kp.kurstyp);
+  const zuordnung = bkrfqgState.dozentBaender.filter(d => d.band_nr===bn && d.kurstyp===key);
+  if (!zuordnung.length) return false; // Band hat gar keine Zuordnung -> nichts zu vergleichen
+  return !zuordnung.some(d => d.mitarbeiter_id===k.unterrichtsleiter_id);
+}
+async function bkrfqgDozAbgleich(kpId) {
+  const kp = bkrfqgState.kursplaene.find(x => x.id === kpId); if (!kp) return;
+  const key = bkrfqgKPThemenKey(kp.kurstyp);
+  const kt = bkrfqgKPKurstage;
+  const falsch = kt.filter(k => bkrfqgDozPasstNicht(kp, k));
+  if (!falsch.length) { toast('Alle Dozenten passen zu den Themen.'); return; }
+  const name = id => { const f = bkrfqgState.fahrlehrer.find(x=>x.id===id); return f ? f.vorname+' '+f.nachname : '–'; };
+  // Belegung je Dozent und Tag (ohne die falschen Tage), um Doppelbelegung zu vermeiden
+  const belegt = (dozId, k) => kt.some(o => o.id!==k.id && o.unterrichtsleiter_id===dozId && o.datum===k.datum
+    && (o.beginn||'') < (k.ende||'99') && (o.ende||'') > (k.beginn||''));
+  const plan = falsch.map(k => {
+    const bn = bkrfqgKTBand(k);
+    const kandidaten = bkrfqgState.dozentBaender.filter(d => d.band_nr===bn && d.kurstyp===key).map(d => d.mitarbeiter_id);
+    const neu = kandidaten.find(id => !belegt(id, k)) || null;
+    return { k, neu };
+  });
+  const zeilen = plan.map(p => `${bfmtD(p.k.datum)}: ${name(p.k.unterrichtsleiter_id)} → ${p.neu ? name(p.neu) : 'nicht zugeordnet (kein freier Dozent)'}`).join('\n');
+  if (!confirm(`${plan.length} Kurstag(e) werden neu zugeordnet:\n\n${zeilen}\n\nFortfahren?`)) return;
+  try {
+    for (const p of plan) {
+      await bkrfqgUpdate('bkrfqg_kurstage', p.k.id, { unterrichtsleiter_id: p.neu });
+      p.k.unterrichtsleiter_id = p.neu; // für die Belegungsprüfung der folgenden Tage
+    }
+    const ohne = plan.filter(p => !p.neu).length;
+    toast(`✓ ${plan.length - ohne} Kurstag(e) neu zugeordnet` + (ohne ? ` · ${ohne} ohne Dozent – bitte manuell zuordnen` : ''), ohne ? 'warn' : 'ok', 7000);
+    await bkrfqgKPOeffnen(kpId);
+  } catch (e) { toast('Fehler: ' + e.message, 'err'); }
+}
+
 function bkrfqgKPDetailView(el) {
   const kp = bkrfqgState.kursplaene.find(x => x.id === bkrfqgKPSelected);
   if (!kp) { bkrfqgKPZurueck(); return; }
@@ -1771,6 +1820,7 @@ function bkrfqgKPDetailView(el) {
   const totalH = Math.round(kt.reduce((s,k)=>s+(k.stunden||0),0)*10)/10;
   const isKombi = kp.kurstyp === 'BGQ_Kombi';
   const WT = ['So','Mo','Di','Mi','Do','Fr','Sa'];
+  const _dozFehler = kt.filter(k => bkrfqgDozPasstNicht(kp, k)).length;
 
   el.innerHTML = bKopf(
     BIC('kalender')+` ${kp.titel}`,
@@ -1782,6 +1832,7 @@ function bkrfqgKPDetailView(el) {
       <button class="btn btn-outline btn-sm" onclick="bkrfqgDruckenAnwesenheit()">\u270D Anwesenheit</button>
       <button class="btn btn-outline btn-sm" onclick="bkrfqgDrucken('dozent')">${BIC('drucker')} Dozenten</button>
       <button class="btn btn-outline btn-sm" onclick="bkrfqgDruckenDozentenplaene()">${BIC('personen')} Dozenten-Pläne</button>
+      ${_dozFehler ? `<button class="btn btn-outline btn-sm" style="color:var(--rot);border-color:var(--rot)" onclick="bkrfqgDozAbgleich('${kp.id}')" title="Kurstage, deren Dozent das Thema laut Dozenten-Themen nicht mehr hat, neu zuordnen">${BIC('wiederholen')} Dozenten abgleichen (${_dozFehler})</button>` : ''}
       <!-- Teilnehmererfassung entfaellt: Teilnehmer werden ausschliesslich im
            Dialog "Lehrgang dokumentieren" erfasst.
            Der Knopf "KBA-Meldung" ist vorerst mit ausgeblendet, weil
@@ -1808,20 +1859,20 @@ function bkrfqgKPDetailView(el) {
       ? `<span style="color:var(--rot);font-size:10px"> (Soll ${soll}h)</span>` : '';
     el.innerHTML += `
       <div style="display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap">
-        <span class="card" style="padding:6px 12px;font-size:12px;flex:0">🔘 Gemeinsam <strong>${gemH}h</strong>${abw(gemH,sollGem)}</span>
-        <span class="card" style="padding:6px 12px;font-size:12px;background:#fffbeb;border-color:#fde68a;flex:0">🚛 Güter <strong>${gH}h</strong>${abw(gH,sollG)}</span>
-        <span class="card" style="padding:6px 12px;font-size:12px;background:#f0f9ff;border-color:#bae6fd;flex:0">🚌 Person <strong>${pH}h</strong>${abw(pH,sollP)}</span>
+        <span class="card" style="padding:6px 12px;font-size:12px;flex:0">Gemeinsam <strong>${gemH}h</strong>${abw(gemH,sollGem)}</span>
+        <span class="card" style="padding:6px 12px;font-size:12px;border-left:3px solid #D97706;flex:0">Güter <strong>${gH}h</strong>${abw(gH,sollG)}</span>
+        <span class="card" style="padding:6px 12px;font-size:12px;border-left:3px solid #2B6CB0;flex:0">Person <strong>${pH}h</strong>${abw(pH,sollP)}</span>
         <span class="card" style="padding:6px 12px;font-size:12px;flex:0">Σ je Qualifikation: Güter <strong>${Math.round((gemH+gH)*10)/10}h</strong> / Person <strong>${Math.round((gemH+pH)*10)/10}h</strong> <span style="color:var(--grau);font-size:10px">· Soll ${sollGem+sollG}h</span></span>
       </div>`;
   }
 
   const tagRows = kt.map((k,i) => {
     const wt = WT[new Date(k.datum+'T12:00').getDay()];
-    const bg = isKombi && k.gruppe==='gueter' ? 'background:#fffbeb' :
-               isKombi && k.gruppe==='person' ? 'background:#f0f9ff' : '';
+    const bg = isKombi && k.gruppe==='gueter' ? 'box-shadow:inset 3px 0 0 #D97706' :
+               isKombi && k.gruppe==='person' ? 'box-shadow:inset 3px 0 0 #2B6CB0' : '';
     const gBadge = !isKombi ? '' :
-      k.gruppe==='gueter'    ? '<span style="background:#fef3c7;color:#d97706;border-radius:4px;padding:1px 6px;font-size:10px;white-space:nowrap">🚛 Güter</span>' :
-      k.gruppe==='person'    ? '<span style="background:#e0f2fe;color:#0891b2;border-radius:4px;padding:1px 6px;font-size:10px;white-space:nowrap">🚌 Person</span>' :
+      k.gruppe==='gueter'    ? '<span style="background:#FEF3E2;color:#B45309;border-radius:6px;padding:2px 8px;font-size:11px;font-weight:700;white-space:nowrap">Güter</span>' :
+      k.gruppe==='person'    ? '<span style="background:#E6EEF8;color:#2B579A;border-radius:6px;padding:2px 8px;font-size:11px;font-weight:700;white-space:nowrap">Person</span>' :
                                '<span style="color:var(--grau);font-size:10px">alle</span>';
     const mBadge = k.meldung_status==='gemeldet'
       ? '<span style="color:#059669;font-size:10px">✓ gemeldet</span>'
@@ -1836,7 +1887,7 @@ function bkrfqgKPDetailView(el) {
       ondragend="bkrfqgZiehEnde(event)">
       <td style="font-weight:600;white-space:nowrap;font-size:12px">${_fest?'':'<span draggable="true" ondragstart="bkrfqgZiehStart(event,\''+k.id+'\')" style="color:var(--grau);cursor:grab;margin-right:5px" title="Zum Tauschen auf einen anderen Kurstag ziehen">⠿</span>'}${bfmtD(k.datum)}<br><span style="color:var(--grau);font-weight:400;font-size:10px">${wt}</span></td>
       <td style="white-space:nowrap;font-size:11px">${k.beginn?.slice(0,5)||'–'}<br>${k.ende?.slice(0,5)||'–'}</td>
-      <td style="font-size:12px;max-width:260px">
+      <td style="font-size:12px;min-width:260px;max-width:420px">
         <div ${_fest?'':'contenteditable="true" spellcheck="false"'}
           onfocus="bkrfqgThemaFokus(this)"
           onblur="bkrfqgThemaSpeichern(this,'${k.id}')"
@@ -1866,7 +1917,8 @@ function bkrfqgKPDetailView(el) {
       <td style="font-size:10px;color:var(--grau)">${k.kenntnisbereich_kb||'–'}</td>
       <td style="text-align:center;font-weight:600">${k.stunden||0}</td>
       <td style="font-size:11px;white-space:nowrap">
-        ${k.mitarbeiter?k.mitarbeiter.vorname+' '+k.mitarbeiter.nachname:'–'}
+        ${k.mitarbeiter?k.mitarbeiter.vorname+' '+k.mitarbeiter.nachname:'<span style="color:var(--grau)">nicht zugeordnet</span>'}
+        ${bkrfqgDozPasstNicht(kp,k)?'<div style="font-size:10.5px;color:#C51D2A;font-weight:700;margin-top:2px" title="Dieser Dozent hat das Thema laut Dozenten-Themen nicht (mehr)">Thema nicht mehr zugeordnet</div>':''}
         ${(()=>{
           const m=(k.gegenstand||'').match(/^Band ([^:]+):/);
           const bn=m?m[1].trim():null;
