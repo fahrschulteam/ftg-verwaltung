@@ -391,3 +391,12 @@ span[style*="color:#fff"][style*="background:#8B5CF6" i][style*="border-radius:1
 .frow .chip-grid label.chip:hover{background:#F6F7F9}
 .frow .chip-grid label.chip:has(input:checked){border-color:var(--rot,#C51D2A);background:#FBEAEC;color:#9F1722}
 .frow .chip-grid input[type=checkbox]{width:18px!important;height:18px!important;min-width:18px;padding:0!important;margin:0;border-radius:5px!important;flex:none}
+
+/* 34. Datei-Auswahl (input type=file) einheitlich + Fuhrpark-Upload-Zeilen */
+input[type=file]{width:auto!important;max-width:100%;flex:1 1 220px;min-width:0;padding:4px!important;border:1px dashed #C9CFD6!important;border-radius:10px!important;background:#FAFBFC!important;font-size:12.5px!important;color:#68717D!important;cursor:pointer;box-shadow:none!important;height:auto!important}
+input[type=file]:hover{border-color:#9AA3AE!important}
+input[type=file]::file-selector-button{margin-right:10px;padding:6px 12px;border:1px solid #DFE3E8;border-radius:8px;background:#fff;color:#3F4650;font:700 12.5px Arial,"Helvetica Neue",Helvetica,sans-serif;cursor:pointer}
+input[type=file]::file-selector-button:hover{background:#F6F7F9}
+.fz-upload{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px}
+.fz-upload .btn{flex:none}
+.fz-hinweisbox{background:#F6F7F9;border:1px solid #E3E7EC;border-left:3px solid #68717D;border-radius:10px;padding:10px 12px;margin-top:8px;font-size:12px;color:#3F4650}

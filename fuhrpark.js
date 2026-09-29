@@ -52,6 +52,11 @@ function FIC(n, groesse){
     doc:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>'
       +'<polyline points="14 2 14 8 20 8"/>'
       +'<line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/>',
+    hoch:'<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>',
+    runter:'<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>',
+    archiv:'<rect x="2" y="3" width="20" height="5" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><line x1="10" y1="12" x2="14" y2="12"/>',
+    zurueck:'<polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/>',
+    haken:'<polyline points="20 6 9 17 4 12"/>',
     stift:'<path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/>',
     muell:'<polyline points="3 6 5 6 21 6"/>'
       +'<path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>',
@@ -215,11 +220,11 @@ function oeffneFahrzeugForm(id) {
       <div class="modal-body">
         <input type="hidden" id="fz-id" value="${v?.id||''}">
 
-        ${canWrite()?`<div style="background:#EFF6FF;border:1px solid #93c5fd;border-radius:8px;padding:12px 14px;margin-bottom:16px;">
-          <div style="font-weight:600;font-size:13px;color:var(--blau-dark);margin-bottom:3px;">${FIC('ausweis')} Fahrzeugschein automatisch auslesen</div>
+        ${canWrite()?`<div class="fz-hinweisbox" style="margin:0 0 16px">
+          <div style="font-weight:700;font-size:13px;color:var(--dunkel);margin-bottom:3px;">${FIC('ausweis')} Fahrzeugschein automatisch auslesen</div>
           <div style="font-size:12px;color:var(--grau);margin-bottom:8px;">Foto oder PDF der Zulassungsbescheinigung Teil I wählen – die Felder werden automatisch vorausgefüllt. Bitte danach prüfen.</div>
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-            <input type="file" id="fz-scan-file" accept="application/pdf,image/*" style="font-size:12px;">
+            <input type="file" id="fz-scan-file" accept="application/pdf,image/*">
             <button type="button" class="btn btn-primary btn-sm" onclick="leseScheinAus()">Auslesen</button>
           </div>
           <div id="fz-scan-status" style="font-size:12px;margin-top:7px;"></div>
@@ -348,9 +353,9 @@ function oeffneFahrzeug(id) {
   // Statuswechsel-Button je nach aktuellem Status
   let statusBtn = '';
   if (canWrite()) {
-    if (v.status==='bestellt') statusBtn = `<button class="btn btn-primary btn-sm" onclick="fzSetStatus('${v.id}','aktiv')">→ Auf „Aktuell" setzen</button>`;
-    else if (v.status==='aktiv') statusBtn = `<button class="btn btn-outline btn-sm" onclick="fzSetStatus('${v.id}','archiviert')">→ Archivieren</button>`;
-    else if (v.status==='archiviert') statusBtn = `<button class="btn btn-outline btn-sm" onclick="fzSetStatus('${v.id}','aktiv')">↩ Reaktivieren</button>`;
+    if (v.status==='bestellt') statusBtn = `<button class="btn btn-primary btn-sm" onclick="fzSetStatus('${v.id}','aktiv')">${FIC('haken')} Auf „Aktuell" setzen</button>`;
+    else if (v.status==='aktiv') statusBtn = `<button class="btn btn-outline btn-sm" onclick="fzSetStatus('${v.id}','archiviert')">${FIC('archiv')} Archivieren</button>`;
+    else if (v.status==='archiviert') statusBtn = `<button class="btn btn-outline btn-sm" onclick="fzSetStatus('${v.id}','aktiv')">${FIC('zurueck')} Reaktivieren</button>`;
   }
 
   const zb1 = v.zb1_path
@@ -377,18 +382,18 @@ function oeffneFahrzeug(id) {
 
         <div class="fsec">Zulassungsbescheinigung Teil 1</div>
         ${zb1}
-        ${canWrite()?`<div style="margin-top:6px"><input type="file" id="fz-zb1-file" accept="application/pdf,image/*" style="font-size:12px"><button class="btn btn-outline btn-sm" onclick="uploadZB1('${v.id}')">⬆ Hochladen</button></div>`:''}
+        ${canWrite()?`<div class="fz-upload"><input type="file" id="fz-zb1-file" accept="application/pdf,image/*"><button class="btn btn-outline btn-sm" onclick="uploadZB1('${v.id}')">${FIC('hoch')} ${v.zb1_path?'Ersetzen':'Hochladen'}</button></div>`:''}
 
         <div class="fsec">TÜV-Datenblatt Fahrerassistenzsysteme</div>
-        <div class="doc-row"><span>${FIC('ausweis')} FAS-Datenblatt (TÜV-Original, vorausgefüllt)</span><button class="btn btn-outline btn-sm" onclick="druckeFASDatenblatt('${v.id}')">⬇ Erstellen</button></div>
+        <div class="doc-row"><span>${FIC('ausweis')} FAS-Datenblatt (TÜV-Original, vorausgefüllt)</span><button class="btn btn-outline btn-sm" onclick="druckeFASDatenblatt('${v.id}')">${FIC('runter')} Erstellen</button></div>
         ${canWrite()?`
-        <div style="background:var(--hell);border-radius:8px;padding:10px 12px;margin-top:7px;font-size:12px">
-          <div style="margin-bottom:6px">Verbaute Assistenzsysteme automatisch ankreuzen lassen: Fahrzeug-Bestellung oder Ausstattungsliste (PDF/Foto) hochladen.</div>
-          <input type="file" id="fz-best-file" accept="application/pdf,image/*" style="font-size:12px">
-          <button class="btn btn-primary btn-sm" onclick="leseBestellungFAS('${v.id}')">Bestellung auslesen</button>
+        <div class="fz-hinweisbox">
+          <div style="margin-bottom:8px">Verbaute Assistenzsysteme automatisch ankreuzen lassen: Fahrzeug-Bestellung oder Ausstattungsliste (PDF/Foto) hochladen.</div>
+          <div class="fz-upload" style="margin:0"><input type="file" id="fz-best-file" accept="application/pdf,image/*">
+          <button class="btn btn-primary btn-sm" onclick="leseBestellungFAS('${v.id}')">Bestellung auslesen</button></div>
           <div id="fz-best-status" style="margin-top:6px"></div>
         </div>`:''}
-        <div class="doc-row" id="unfall-row"><span>${FIC('warnung')} EU-Unfallbericht (offizielles Formular zum Ausdrucken)</span><button class="btn btn-outline btn-sm" onclick="oeffneUnfallVorlage()">⬇ Öffnen / Drucken</button></div>
+        <div class="doc-row" id="unfall-row"><span>${FIC('warnung')} EU-Unfallbericht (offizielles Formular zum Ausdrucken)</span><button class="btn btn-outline btn-sm" onclick="oeffneUnfallVorlage()">${FIC('drucker')} Öffnen / Drucken</button></div>
       </div>
       <div class="modal-footer">
         <button class="btn btn-outline" onclick="document.getElementById('fz-detail').remove()">Schließen</button>
