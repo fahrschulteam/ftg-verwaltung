@@ -188,3 +188,47 @@ input:focus,textarea:focus{outline:2px solid var(--blau);border-color:transparen
 #view-kva .card{margin-top:6px;}
 
 /* === KOMPAKT-ENDE === */
+
+/* ── Abschluss (Schritt 6) im FTG-Design ───────────────────────────── */
+.kva-sum{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;background:#fff;border:1px solid #DFE3E8;border-left:4px solid #C51D2A;border-radius:14px;padding:16px 18px;margin-bottom:12px}
+.kva-sum-nr{font-size:11.5px;font-weight:700;color:#68717D;letter-spacing:.04em}
+.kva-sum-name{font-size:17px;font-weight:800;color:#20242B;margin-top:2px}
+.kva-sum-sub{font-size:12px;color:#68717D;margin-top:1px}
+.kva-sum-kl{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+.kva-sum-kl span{font-size:11.5px;font-weight:800;color:#fff;background:#20242B;border-radius:6px;padding:2px 8px}
+.kva-sum-kl em{font-size:12px;color:#68717D}
+.kva-sum-r{text-align:right;min-width:180px}
+.kva-sum-lbl{font-size:11px;font-weight:800;color:#68717D;text-transform:uppercase;letter-spacing:.06em}
+.kva-sum-betrag{font-size:28px;font-weight:900;color:#20242B;line-height:1.15;white-space:nowrap}
+.kva-sum-sav{display:flex;justify-content:flex-end;gap:10px;font-size:12px;color:#197341;margin-top:3px}
+.kva-sum-sav b{white-space:nowrap}
+
+.kva-opt{display:flex;align-items:center;gap:12px;background:#fff;border:1px solid #DFE3E8;border-radius:12px;padding:11px 14px;margin-bottom:8px;cursor:pointer;transition:border-color .15s,background .15s}
+.kva-opt:hover{background:#F8F9FA}
+.kva-opt-ic{flex:0 0 36px;height:36px;border-radius:10px;background:#F3F5F7;color:#68717D;display:flex;align-items:center;justify-content:center}
+.kva-opt-t{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.kva-opt-t b{font-size:13.5px;color:#20242B}
+.kva-opt-t span{font-size:12px;color:#68717D;line-height:1.35}
+.kva-sw{flex:0 0 40px;height:22px;border-radius:999px;background:#D5DAE0;position:relative;transition:background .15s}
+.kva-sw::after{content:"";position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.25);transition:left .15s}
+.kva-opt.on{border-color:#C51D2A;background:#FDF5F6}
+.kva-opt.on .kva-opt-ic{background:#FBEAEC;color:#C51D2A}
+.kva-opt.on .kva-sw{background:#C51D2A}
+.kva-opt.on .kva-sw::after{left:21px}
+
+.kva-acts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:12px 0 10px}
+@media(max-width:900px){.kva-acts{grid-template-columns:1fr 1fr}}
+.kva-act{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:92px;padding:12px 10px;background:#fff;border:1px solid #DFE3E8;border-radius:12px;cursor:pointer;color:#3F4650;font-family:inherit;text-align:center;transition:background .15s,border-color .15s}
+.kva-act:hover{background:#F6F7F9;border-color:#C9CFD6}
+.kva-act svg{color:#68717D;margin-bottom:2px}
+.kva-act b{font-size:13px;color:#20242B}
+.kva-act span{font-size:11px;color:#68717D;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.kva-act.prim{background:#C51D2A;border-color:#C51D2A}
+.kva-act.prim:hover{background:#9F1722;border-color:#9F1722}
+.kva-act.prim svg,.kva-act.prim b,.kva-act.prim span{color:#fff}
+.kva-act.prim span{opacity:.8}
+.kva-neu{display:inline-flex;align-items:center;gap:8px;min-height:36px;padding:0 14px;margin-bottom:14px;background:#fff;border:1px solid #DFE3E8;border-radius:10px;cursor:pointer;font-family:inherit;font-size:12.5px;font-weight:700;color:#3F4650}
+.kva-neu:hover{background:#F6F7F9}
+.kva-neu svg{width:16px;height:16px;color:#68717D}
+.kva-act.prim svg,.kva-act.prim svg *{color:#fff!important;stroke:#fff!important}
+.kva-opt.on .kva-opt-ic svg,.kva-opt.on .kva-opt-ic svg *{color:#C51D2A!important;stroke:#C51D2A!important}

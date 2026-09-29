@@ -192,6 +192,8 @@ function toggleInfoBlatt(){
   updatePrintArea();
   var ic=document.getElementById("infoblatt-icon");
   if(ic) ic.textContent=S.infoBlatt?"\u2705":"\u2b1c";
+  var row=document.getElementById("infoblatt-row");
+  if(row) row.classList.toggle("on",!!S.infoBlatt);
 }
 
 // Preistabelle rendern – vollständig mit allen Feldern
@@ -1597,45 +1599,47 @@ function rS5(){
   var items=buildItems(),dc=calcD(items),all=getSel();
   var odSub=odWerte().sub||"Fahrschule\\KVA";
   var r="<div class='card'><div class='ct'>Abschluss</div><div class='cs'>KVA drucken, speichern, per Outlook oder Post versenden.</div><div style='margin-top:14px;'>";
-  r+="<div style='background:linear-gradient(135deg,#3F4B57,#2A6CAE);border-radius:12px;padding:16px 18px;margin-bottom:14px;'>";
-  r+="<div style='display:flex;justify-content:space-between;align-items:flex-start;'>";
-  r+="<div><div style='font-size:12px;color:#94a3b8;margin-bottom:1px;'>"+esc(S.kva)+"</div>";
-  r+="<div style='font-size:15px;font-weight:700;color:#fff;'>"+esc((S.c.anrede==="Firma"&&S.c.company?S.c.company:S.c.name)||"\u2013")+"</div>";
-  if(S.c.anrede==="Firma"&&S.c.company&&S.c.name) r+="<div style='font-size:11px;color:#94a3b8;'>Fahrsch\u00fcler: "+esc(S.c.name)+"</div>";
-  r+="<div style='font-size:11px;color:#94a3b8;'>"+esc(all.map(function(c){return c.l;}).join(", ")||"\u2013")+"</div></div>";
-  r+="<div style='text-align:right;'><div style='font-size:11px;color:#94a3b8;'>Gesamtbetrag</div><div style='font-size:26px;font-weight:800;color:#fff;'>"+fmt(dc.total)+"</div></div></div>";
+  var IC=function(n){var P={
+    print:"<polyline points='6 9 6 2 18 2 18 9'/><path d='M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2'/><rect x='6' y='14' width='12' height='8'/>",
+    save:"<path d='M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4'/><polyline points='7 10 12 15 17 10'/><line x1='12' y1='15' x2='12' y2='3'/>",
+    mail:"<rect x='2' y='4' width='20' height='16' rx='2'/><polyline points='22 6 12 13 2 6'/>",
+    edit:"<path d='M12 20h9'/><path d='M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z'/>",
+    neu:"<path d='M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z'/><polyline points='14 2 14 8 20 8'/><line x1='12' y1='12' x2='12' y2='18'/><line x1='9' y1='15' x2='15' y2='15'/>",
+    info:"<path d='M9 2h6a1 1 0 0 1 1 1v2H8V3a1 1 0 0 1 1-1z'/><path d='M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2'/><line x1='8' y1='11' x2='16' y2='11'/><line x1='8' y1='15' x2='13' y2='15'/>",
+    fl:"<rect x='2' y='5' width='20' height='14' rx='2'/><circle cx='8' cy='12' r='2.5'/><line x1='13' y1='10' x2='18' y2='10'/><line x1='13' y1='14' x2='17' y2='14'/>"
+  }[n];return "<svg width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'>"+P+"</svg>";};
+  var kunde=(S.c.anrede==="Firma"&&S.c.company?S.c.company:S.c.name)||"–";
+  r+="<div class='kva-sum'>";
+  r+="<div class='kva-sum-l'><div class='kva-sum-nr'>"+esc(S.kva)+"</div>";
+  r+="<div class='kva-sum-name'>"+esc(kunde)+"</div>";
+  if(S.c.anrede==="Firma"&&S.c.company&&S.c.name) r+="<div class='kva-sum-sub'>Fahrschüler: "+esc(S.c.name)+"</div>";
+  r+="<div class='kva-sum-kl'>"+(all.length?all.map(function(c){return "<span>"+esc(c.l)+"</span>";}).join(""):"<em>keine Klasse gewählt</em>")+"</div></div>";
+  r+="<div class='kva-sum-r'><div class='kva-sum-lbl'>Gesamtbetrag</div><div class='kva-sum-betrag'>"+fmt(dc.total)+"</div>";
   if(dc.tSav>0.01){
-    var savLine3=function(label,val){
-      return "<div style='margin-top:8px;background:rgba(168,212,255,.16);border:1px solid rgba(168,212,255,.4);border-radius:8px;padding:6px 10px;'>"
-        +"<div style='display:flex;justify-content:space-between;align-items:baseline;'>"
-        +"<span style='font-size:12px;font-weight:700;color:#a8d4ff;'>"+esc(label)+"</span>"
-        +"<span style='font-size:13px;font-weight:800;color:#a8d4ff;'>-"+fmt(val)+"</span></div></div>";
-    };
-    if(dc.tErw>0.01) r+=savLine3("Mehrklassenvorteil",dc.tErw);
-    if(dc.mEur>0)    r+=savLine3("Mofa-Rabatt",dc.mEur);
-    if(dc.aV>0)      r+=savLine3(dc.aL||"Rabatt",dc.aV);
+    var sav=function(label,val){return "<div class='kva-sum-sav'><span>"+esc(label)+"</span><b>−"+fmt(val)+"</b></div>";};
+    if(dc.tErw>0.01) r+=sav("Mehrklassenvorteil",dc.tErw);
+    if(dc.mEur>0)    r+=sav("Mofa-Rabatt",dc.mEur);
+    if(dc.aV>0)      r+=sav(dc.aL||"Rabatt",dc.aV);
   }
-  r+="</div>";
-  // Infoblatt-Toggle ÜBER den Drucken-Buttons
-  r+="<div id='infoblatt-row' style='background:#eef4fb;border:1.5px solid #2A6CAE;border-radius:10px;padding:10px 14px;margin-bottom:10px;display:flex;align-items:center;gap:12px;cursor:pointer;' onclick='toggleInfoBlatt()'>";
-  r+="<div style='flex:1;'><div style='font-size:13px;font-weight:700;color:#2A6CAE;'>&#128203; Ausbildungsinformationen beilegen</div>";
-  r+="<div style='font-size:11px;color:#555;margin-top:2px;'>2. Seite mit Theorie, Fahrstunden &amp; Antragsunterlagen f\u00fcr die gew\u00e4hlten Klassen</div></div>";
-  r+="<span id='infoblatt-icon' style='font-size:22px;'>"+(S.infoBlatt?"\u2705":"\u2b1c")+"</span>";
-  r+="</div>";
-  // hatFL: Bereits vorhandene Fahrerlaubnis -> Grundstunden 12->6
+  r+="</div></div>";
+  // Optionen als Schalter (Infoblatt / vorhandene Fahrerlaubnis)
+  r+="<div id='infoblatt-row' class='kva-opt"+(S.infoBlatt?" on":"")+"' onclick='toggleInfoBlatt()'>";
+  r+="<span class='kva-opt-ic'>"+IC("info")+"</span>";
+  r+="<div class='kva-opt-t'><b>Ausbildungsinformationen beilegen</b><span>2. Seite mit Theorie, Fahrstunden &amp; Antragsunterlagen für die gewählten Klassen</span></div>";
+  r+="<span class='kva-sw'></span></div>";
   var hatFLon=S.hatFL;
-  r+="<div id='hatfl-row' style='background:"+(hatFLon?"#fff5f5":"#fafafa")+";border:1.5px solid "+(hatFLon?"#C0001A":"#e0e0e0")+";border-radius:10px;padding:10px 14px;margin-bottom:10px;display:flex;align-items:center;gap:12px;cursor:pointer;' data-act='hatFL'>";
-  r+="<div style='flex:1;'><div style='font-size:13px;font-weight:700;color:"+(hatFLon?"#C0001A":"#555")+";'>&#128091; Bewerber besitzt bereits eine Fahrerlaubnisklasse</div>";
-  r+="<div style='font-size:11px;color:#555;margin-top:2px;'>Grundunterricht reduziert: 12 \u2192 6 DS gem. \u00a7\u202f5 FahrschAusbO \u2014 bitte auf dem Ausbildungsinformationsblatt pr\u00fcfen</div></div>";
-  r+="<span style='font-size:22px;'>"+(hatFLon?"\u2705":"\u2b1c")+"</span>";
+  r+="<div id='hatfl-row' class='kva-opt"+(hatFLon?" on":"")+"' data-act='hatFL'>";
+  r+="<span class='kva-opt-ic'>"+IC("fl")+"</span>";
+  r+="<div class='kva-opt-t'><b>Bewerber besitzt bereits eine Fahrerlaubnisklasse</b><span>Grundunterricht reduziert: 12 → 6 DS gem. § 5 FahrschAusbO — bitte auf dem Ausbildungsinformationsblatt prüfen</span></div>";
+  r+="<span class='kva-sw'></span></div>";
+  // Aktionen
+  r+="<div class='kva-acts'>";
+  r+="<button class='kva-act prim' data-act='print' onclick=''>"+IC("print")+"<b>Drucken</b><span>Strg + P</span></button>";
+  r+="<button class='kva-act' data-act='save' onclick=''>"+IC("save")+"<b>Als PDF speichern</b><span>"+(_kvaDir?esc(_kvaDir.name)+(_kvaPerm==='granted'?' ✓':' – Zugriff erneuern'):'OneDrive-Ordner in Einstellungen wählen')+"</span></button>";
+  r+="<button class='kva-act' data-act='mail' onclick=''>"+IC("mail")+"<b>Per Outlook senden</b><span>"+esc(S.c.email||'E-Mail-Adresse fehlt')+"</span></button>";
+  r+="<button class='kva-act' data-act='go' data-id='0' onclick=''>"+IC("edit")+"<b>Bearbeiten</b><span>zurück zu Schritt 1</span></button>";
   r+="</div>";
-  r+="<div style='display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;'>";
-  r+="<button class='acb' style='border-color:#C0001A;background:#fff5f5;' data-act='print' onclick=''><span style='font-size:20px;'>&#128424;&#65039;</span><span style='font-size:12px;font-weight:700;'>Drucken</span><span style='font-size:10px;color:#C0001A;font-weight:600;'>Strg+P</span></button>";
-  r+="<button class='acb' style='border-color:#2A6CAE;background:#f3f8fc;' data-act='save' onclick=''><span style='font-size:20px;'>&#128190;</span><span style='font-size:12px;font-weight:700;'>Als PDF in OneDrive</span><span style='font-size:9px;color:#2A6CAE;font-weight:600;'>"+(_kvaDir?esc(_kvaDir.name)+(_kvaPerm==='granted'?' \u2713':' \u2013 Zugriff erneuern'):'Ordner in Einstellungen w\u00e4hlen')+"</span></button>";
-  r+="<button class='acb' style='border-color:#2A6CAE;background:#eef4fb;' data-act='mail' onclick=''><span style='font-size:20px;'>&#9993;&#65039;</span><span style='font-size:12px;font-weight:700;'>Per Outlook senden</span><span style='font-size:9px;color:#888;'>"+esc(S.c.email||'E-Mail eingeben')+"</span></button>";
-  r+="<button class='acb' data-act='go' data-id='0' onclick=''><span style='font-size:20px;'>&#9999;&#65039;</span><span style='font-size:12px;font-weight:700;'>Bearbeiten</span></button>";
-  r+="</div>";
-  r+="<button data-act='resetall' onclick='' style='width:100%;background:#f8fafc;border:1.5px solid #ddd;border-radius:10px;padding:9px 14px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:14px;font-size:12px;color:#666;font-weight:600;'><span style='font-size:16px;'>&#128196;</span>Neuer KVA starten</button>";
+  r+="<button class='kva-neu' data-act='resetall' onclick=''>"+IC("neu")+"Neuen KVA starten</button>";
 r+="<div class='dv'></div><div class='sec'>Vorschau KVA</div>";
   r+=buildKVAhtml(items,dc);
   r+="<div class='nr' style='margin-top:18px;'><button class='nbk' data-act='go' data-id='4'>&#8592; Zur\u00fcck zu Rabatten</button></div>";
