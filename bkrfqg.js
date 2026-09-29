@@ -1822,29 +1822,60 @@ function bkrfqgKPDetailView(el) {
   const WT = ['So','Mo','Di','Mi','Do','Fr','Sa'];
   const _dozFehler = kt.filter(k => bkrfqgDozPasstNicht(kp, k)).length;
 
-  el.innerHTML = bKopf(
-    BIC('kalender')+` ${kp.titel}`,
-    `${kp.kurstyp} · ${kp.bkrfqg_standorte?.name||''} · ${bfmtD(kp.startdatum)} – ${bfmtD(kp.enddatum)} · ${totalH} Std.`,
-    `<div style="display:flex;gap:6px;flex-wrap:wrap">
-      <button class="btn btn-outline btn-sm" onclick="bkrfqgKPZurueck()">← Zurück</button>
-      <button class="btn btn-outline btn-sm" onclick="bkrfqgKPEdit('${kp.id}');event.stopPropagation()">${BIC('stift')} Kursplan</button>
-      <button class="btn btn-outline btn-sm" onclick="bkrfqgDrucken('lehrplan')">${BIC('liste')} Lehrplan</button>
-      <button class="btn btn-outline btn-sm" onclick="bkrfqgDruckenAnwesenheit()">\u270D Anwesenheit</button>
-      <button class="btn btn-outline btn-sm" onclick="bkrfqgDrucken('dozent')">${BIC('drucker')} Dozenten</button>
-      <button class="btn btn-outline btn-sm" onclick="bkrfqgDruckenDozentenplaene()">${BIC('personen')} Dozenten-Pläne</button>
-      ${_dozFehler ? `<button class="btn btn-outline btn-sm" style="color:var(--rot);border-color:var(--rot)" onclick="bkrfqgDozAbgleich('${kp.id}')" title="Kurstage, deren Dozent das Thema laut Dozenten-Themen nicht mehr hat, neu zuordnen">${BIC('wiederholen')} Dozenten abgleichen (${_dozFehler})</button>` : ''}
-      <!-- Teilnehmererfassung entfaellt: Teilnehmer werden ausschliesslich im
-           Dialog "Lehrgang dokumentieren" erfasst.
-           Der Knopf "KBA-Meldung" ist vorerst mit ausgeblendet, weil
-           bkrfqgKBAMeldung() seine Liste noch aus bkrfqg_kursplan_teilnehmer
-           liest und ohne Erfassung nur leere Meldungen erzeugen wuerde.
-           Beides kommt zurueck, sobald der Export auf die Lehrgangsteilnehmer
-           umgebaut ist. -->
-      ${bkrfqgIstBgq(kp.kurstyp) ? `<button class="btn btn-outline btn-sm" onclick="bkrfqgTnSuchDialog()">${BIC('personen')} Teilnehmer (${bkrfqgKPTeilnehmer.length})</button>` : ''}
-      ${bkrfqgIstBgq(kp.kurstyp) ? `<button class="btn btn-outline btn-sm" onclick="bkrfqgBgqDialog('${kp.id}')">${BIC('amt')} BQR-Meldung</button>` : ''}
-      <button class="btn btn-primary btn-sm" onclick="bkrfqgKurstagNeu('${kp.id}')">＋ Kurstag</button>
-    </div>`
-  );
+  // ── Kopf: Zurück-Link, Titel + Eckdaten, Aktionen (Drucken gebündelt) ──
+  const _zeitraum = kp.startdatum && kp.enddatum ? bfmtD(kp.startdatum)+' – '+bfmtD(kp.enddatum)
+                  : kp.startdatum ? 'ab '+bfmtD(kp.startdatum) : '';
+  const _eck = [String(kp.titel||'').indexOf(bKursTypLabel(kp.kurstyp))===0 ? '' : bKursTypLabel(kp.kurstyp), kp.bkrfqg_standorte?.name, _zeitraum, totalH+' Std.'].filter(Boolean).join(' · ');
+  const _pfeil = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>';
+  const _haken = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2h6a1 1 0 0 1 1 1v2H8V3a1 1 0 0 1 1-1z"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><polyline points="9 14 11 16 15 12"/></svg>';
+  const _pfeilRunter = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>';
+  el.innerHTML = `
+    <style>
+      .kpd-back{display:inline-flex;align-items:center;gap:6px;background:none;border:none;padding:0;margin:0 0 8px;font:inherit;font-size:12.5px;font-weight:700;color:var(--grau);cursor:pointer}
+      .kpd-back:hover{color:var(--dunkel)}
+      .kpd-kopf{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap;margin-bottom:14px}
+      .kpd-titel{flex:1 1 320px;min-width:0}
+      .kpd-titel h2{margin:0;font-size:18px;font-weight:800;color:var(--dunkel);line-height:1.25}
+      .kpd-titel .kpd-eck{font-size:12.5px;color:var(--grau);margin-top:3px}
+      .kpd-acts{display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:flex-end}
+      .kpd-menu{position:relative}
+      .kpd-menu>summary{list-style:none;cursor:pointer}
+      .kpd-menu>summary::-webkit-details-marker{display:none}
+      .kpd-menu[open]>summary{background:#F6F7F9}
+      .kpd-menu-liste{position:absolute;right:0;top:calc(100% + 6px);z-index:30;min-width:220px;background:#fff;border:1px solid var(--border);border-radius:12px;box-shadow:0 10px 28px rgba(28,33,40,.14);padding:6px}
+      .kpd-menu-liste button{display:flex;align-items:center;gap:10px;width:100%;background:none;border:none;border-radius:8px;padding:9px 10px;font:inherit;font-size:13px;font-weight:600;color:var(--dunkel);cursor:pointer;text-align:left}
+      .kpd-menu-liste button:hover{background:#F6F7F9}
+      .kpd-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));background:#fff;border:1px solid var(--border);border-radius:14px;margin-bottom:12px;overflow:hidden}
+      .kpd-stats>div{padding:10px 14px;border-right:1px solid var(--border)}
+      .kpd-stats>div:last-child{border-right:none}
+      .kpd-stats .l{font-size:11px;font-weight:800;color:#697586;text-transform:uppercase;letter-spacing:.05em}
+      .kpd-stats .v{font-size:18px;font-weight:800;color:var(--dunkel);margin-top:2px;white-space:nowrap}
+      .kpd-stats .s{font-size:11px;color:var(--grau)}
+      @media(max-width:760px){.kpd-stats{grid-template-columns:1fr 1fr}.kpd-stats>div:nth-child(2){border-right:none}.kpd-stats>div:nth-child(-n+2){border-bottom:1px solid var(--border)}}
+    </style>
+    <button class="kpd-back" onclick="bkrfqgKPZurueck()">${_pfeil} Alle Kurspläne</button>
+    <div class="kpd-kopf">
+      <div class="kpd-titel">
+        <h2>${kp.titel || bKursTypLabel(kp.kurstyp)}</h2>
+        <div class="kpd-eck">${_eck}</div>
+      </div>
+      <div class="kpd-acts">
+        ${_dozFehler ? `<button class="btn btn-outline btn-sm" style="color:var(--rot);border-color:var(--rot)" onclick="bkrfqgDozAbgleich('${kp.id}')" title="Kurstage, deren Dozent das Thema laut Dozenten-Themen nicht mehr hat, neu zuordnen">${BIC('wiederholen')} Dozenten abgleichen (${_dozFehler})</button>` : ''}
+        <button class="btn btn-outline btn-sm" onclick="bkrfqgKPEdit('${kp.id}');event.stopPropagation()">${BIC('stift')} Kursplan</button>
+        ${bkrfqgIstBgq(kp.kurstyp) ? `<button class="btn btn-outline btn-sm" onclick="bkrfqgTnSuchDialog()">${BIC('personen')} Teilnehmer (${bkrfqgKPTeilnehmer.length})</button>` : ''}
+        ${bkrfqgIstBgq(kp.kurstyp) ? `<button class="btn btn-outline btn-sm" onclick="bkrfqgBgqDialog('${kp.id}')">${BIC('amt')} BQR-Meldung</button>` : ''}
+        <details class="kpd-menu">
+          <summary class="btn btn-outline btn-sm">${BIC('drucker')} Drucken ${_pfeilRunter}</summary>
+          <div class="kpd-menu-liste" onclick="this.parentNode.removeAttribute('open')">
+            <button onclick="bkrfqgDrucken('lehrplan')">${BIC('liste')} Lehrplan</button>
+            <button onclick="bkrfqgDruckenAnwesenheit()">${_haken} Anwesenheitslisten</button>
+            <button onclick="bkrfqgDrucken('dozent')">${BIC('drucker')} Dozenten-Übersicht</button>
+            <button onclick="bkrfqgDruckenDozentenplaene()">${BIC('personen')} Dozenten-Pläne</button>
+          </div>
+        </details>
+        <button class="btn btn-primary btn-sm" onclick="bkrfqgKurstagNeu('${kp.id}')">＋ Kurstag</button>
+      </div>
+    </div>`;
 
   if (isKombi) {
     const gemH  = Math.round(kt.filter(k=>k.gruppe==='gemeinsam').reduce((s,k)=>s+(k.stunden||0),0)*10)/10;
@@ -1858,11 +1889,11 @@ function bkrfqgKPDetailView(el) {
     const abw = (ist,soll) => Math.abs(ist-soll) > 0.5
       ? `<span style="color:var(--rot);font-size:10px"> (Soll ${soll}h)</span>` : '';
     el.innerHTML += `
-      <div style="display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap">
-        <span class="card" style="padding:6px 12px;font-size:12px;flex:0">Gemeinsam <strong>${gemH}h</strong>${abw(gemH,sollGem)}</span>
-        <span class="card" style="padding:6px 12px;font-size:12px;border-left:3px solid #D97706;flex:0">Güter <strong>${gH}h</strong>${abw(gH,sollG)}</span>
-        <span class="card" style="padding:6px 12px;font-size:12px;border-left:3px solid #2B6CB0;flex:0">Person <strong>${pH}h</strong>${abw(pH,sollP)}</span>
-        <span class="card" style="padding:6px 12px;font-size:12px;flex:0">Σ je Qualifikation: Güter <strong>${Math.round((gemH+gH)*10)/10}h</strong> / Person <strong>${Math.round((gemH+pH)*10)/10}h</strong> <span style="color:var(--grau);font-size:10px">· Soll ${sollGem+sollG}h</span></span>
+      <div class="kpd-stats">
+        <div><div class="l">Gemeinsam</div><div class="v">${gemH} h</div>${abw(gemH,sollGem)}</div>
+        <div style="box-shadow:inset 3px 0 0 #D97706"><div class="l">Güter</div><div class="v">${gH} h</div>${abw(gH,sollG)}</div>
+        <div style="box-shadow:inset 3px 0 0 #2B6CB0"><div class="l">Person</div><div class="v">${pH} h</div>${abw(pH,sollP)}</div>
+        <div><div class="l">Je Qualifikation</div><div class="v" style="font-size:15px">Güter ${Math.round((gemH+gH)*10)/10} h · Person ${Math.round((gemH+pH)*10)/10} h</div><div class="s">Soll je ${sollGem+sollG} h</div></div>
       </div>`;
   }
 

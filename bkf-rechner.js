@@ -236,9 +236,14 @@
         .bkr-t{font-size:13.5px;font-weight:700;color:var(--dunkel)}
         .bkr-s{font-size:11.5px;color:var(--grau)}
         .bkr-row input[type=date]{width:150px;padding:5px 8px;border:1px solid #D5DAE0;border-radius:10px;font-size:13px}
-        .bkr-seg{display:inline-flex;border:1px solid #DFE3E8;border-radius:10px;overflow:hidden}
-        .bkr-seg button{border:none;background:#fff;padding:7px 14px;font-size:13px;font-weight:700;color:#535C67;cursor:pointer}
+        .bkr-seg{display:inline-flex;border:1px solid #DFE3E8;border-radius:10px;overflow:hidden;background:#F6F7F9}
+        .bkr-seg button{display:inline-flex;align-items:center;gap:7px;border:none;border-right:1px solid #DFE3E8;background:#F6F7F9;padding:7px 14px;font-size:13px;font-weight:700;color:#3F4650;cursor:pointer;line-height:1}
+        .bkr-seg button:last-child{border-right:none}
+        .bkr-seg button:hover:not(.on){background:#EEF1F4}
         .bkr-seg button.on{background:var(--rot);color:#fff}
+        .bkr-seg .bkr-ic{display:inline-flex;gap:3px}
+        .bkr-seg svg{width:18px;height:18px;flex:none;color:#3F4650!important}
+        .bkr-seg button.on svg{color:#fff!important}
         .bkr-kb{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:4px 12px;margin-top:8px}
         .bkr-kb label{display:flex;align-items:center;gap:6px;font-size:12px;color:#3F4650;cursor:pointer}
         .bkr-kb input{width:16px;height:16px;min-width:16px}
@@ -272,7 +277,10 @@
 
   function renderEingabe() {
     const box = root.querySelector('.bkr-eingabe');
-    const seg = (v, l) => `<button type="button" data-art="${v}" class="${S.art === v ? 'on' : ''}">${l}</button>`;
+    const IC_LKW = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/><path d="M15 18H9"/><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.62l-3.48-4.35A1 1 0 0 0 17.52 8H14"/><circle cx="17" cy="18" r="2"/><circle cx="7" cy="18" r="2"/></svg>';
+    const IC_BUS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 6v6"/><path d="M15 6v6"/><path d="M2 12h19.6"/><path d="M18 18h3s.5-1.7.8-2.8c.1-.4.2-.8.2-1.2 0-.4-.1-.8-.2-1.2l-1.4-5C20.1 6.8 19.1 6 18 6H4a2 2 0 0 0-2 2v10h3"/><circle cx="7" cy="18" r="2"/><path d="M9 18h5"/><circle cx="16" cy="18" r="2"/></svg>';
+    const ICON = { C: IC_LKW, D: IC_BUS, CD: IC_LKW + IC_BUS };
+    const seg = (v, l) => `<button type="button" data-art="${v}" class="${S.art === v ? 'on' : ''}"><span class="bkr-ic">${ICON[v]}</span>${l}</button>`;
     box.innerHTML = `
       <div class="card bkr-sec">
         <div class="bkr-h">Teilnehmer</div>
