@@ -345,6 +345,35 @@ header{padding:0 18px!important}
 }
 </style>
 <link rel="stylesheet" href="ftg-design.css?v=20260929b">
+<style id="ds-dialog-fix">
+/* Dialoge an das Designsystem angleichen (30.09.2026) */
+:root{--blau-light:#EEF4FA}
+/* Eingabefelder in Dialogen: weiss, 1px Rand, 6px Rundung */
+.modal input:not([type=checkbox]):not([type=radio]),.modal select,.modal textarea{border:1px solid var(--border);border-radius:6px;padding:6px 10px;background:#fff}
+.modal input:not([type=checkbox]):not([type=radio]):focus,.modal select:focus,.modal textarea:focus{border-color:var(--rot)}
+/* Themen-Chips: neutral, ausgewaehlt = blau */
+[id$="_checks"]>label{text-transform:none!important;letter-spacing:0!important;font-size:13px!important;font-weight:500!important;border-radius:6px!important;border:1px solid var(--border)!important;background:#fff!important;color:var(--ink-3)!important;padding:5px 10px!important;margin:0!important}
+[id$="_checks"]>label:has(input:checked){border-color:var(--blau)!important;background:var(--blau-light)!important;color:var(--ink)!important}
+[id$="_checks"]>label .tk{color:var(--blau)}
+[id$="_checks"]>label>span[title]{color:var(--ink-4);opacity:1!important}
+[id$="_checks"]>label>span[title]:hover{color:var(--rot)}
+[id$="_counter"]{color:var(--ink-3)!important}
+/* Teilnehmerauswahl links */
+[id$="PartList"]{background:#fff!important;border-radius:6px!important;overflow-x:hidden!important}
+[id$="PartList"]>label{text-transform:none!important;letter-spacing:0!important;font-size:13px!important;font-weight:400!important;color:var(--ink)!important;border-bottom-color:var(--border-light)!important;margin:0!important}
+[id$="PartList"]>label>span{font-size:13px!important;overflow-wrap:anywhere}
+[id$="PartList"]>label strong{font-weight:600}
+[id$="PartSearch"],[id$="PartSearchBox"]{background:#fff!important}
+/* Erfasste Teilnehmer rechts */
+[id$="PartAdded"]{background:#fff!important;border-radius:6px!important}
+[id$="PartAdded"]>div{border-bottom-color:var(--border-light)!important;padding:5px 6px!important}
+[id$="PartAdded"] [data-pid]{color:var(--ink-4)!important;font-weight:400!important}
+[id$="PartAdded"] [data-pid]:hover{color:var(--rot)!important}
+/* Rechnungsdialog: Empfaenger-Knoepfe und Teilnehmerzeilen */
+button[onclick^="iiPickRecipient"],button[onclick^="giPickRecipient"]{border-radius:6px!important;border-width:1px!important;font-weight:500!important;color:var(--ink)!important;padding:5px 12px!important}
+[id^="iirow_"],[id^="girow_"]{border-width:1px!important;border-color:var(--border)!important;border-radius:6px!important;padding:8px 12px!important}
+[id^="iirow_"]:not([style*="opacity"]),[id^="girow_"]:not([style*="opacity"]){background:#fff!important}
+</style>
 </head>
 <body>
 
@@ -2928,7 +2957,7 @@ function openCompany(id){
     </div>`:''}
     <div class="modal-actions">
       <button class="btn ghost" onclick="closeModal()">Abbrechen</button>
-      <button class="btn" onclick="saveCompany('${id||''}')">Speichern</button>
+      <button class="btn primary" onclick="saveCompany('${id||''}')">Speichern</button>
     </div>`;
   showModal();
 }
@@ -5590,14 +5619,14 @@ function openInstrGroupInvoiceDialog(g){
   const recipChips=[
     ...firmList.map(f=>'<button type="button" onclick="iiPickRecipient(this)"'
       +' data-name="'+f.name.replace(/"/g,'&quot;')+'" data-email="'+(f.email||'')+'"'
-      +' style="padding:5px 14px;border-radius:20px;border:1.5px solid '+(f.name===defRecipient?'#C0001A':'#ddd')+';'
-      +'background:'+(f.name===defRecipient?'#fff5f5':'#fff')+';cursor:pointer;font-size:13px;font-weight:600">'
-      +'\uD83C\uDFE2 '+f.name+(f.count>1?' ('+f.count+' TN)':'')+'</button>'),
+      +' style="padding:5px 14px;border-radius:20px;border:1.5px solid '+(f.name===defRecipient?'var(--blau)':'var(--border)')+';'
+      +'background:'+(f.name===defRecipient?'var(--blau-light)':'#fff')+';cursor:pointer;font-size:13px;font-weight:600">'
+      +f.name+(f.count>1?' ('+f.count+' TN)':'')+'</button>'),
     ...tnRows.filter(r=>!r.firm).map(r=>'<button type="button" onclick="iiPickRecipient(this)"'
       +' data-name="'+r.pn.replace(/"/g,'&quot;')+'" data-email="'+(r.p?r.p.email||'':'')+'"'
       +' style="padding:5px 14px;border-radius:20px;border:1.5px solid #ddd;'
       +'background:#fff;cursor:pointer;font-size:13px;font-weight:600">'
-      +'\uD83D\uDC64 '+r.pn+'</button>')
+      +r.pn+'</button>')
   ].join('');
 
   const typeLabel=isADR?'ADR-Unterweisung (\u00a714 GGVSEB)'
@@ -5611,7 +5640,7 @@ function openInstrGroupInvoiceDialog(g){
   document.getElementById('modalContent').innerHTML=
     '<h3>Rechnungen erstellen</h3>'
     +'<div style="background:#f5f5f5;border-radius:9px;padding:10px 16px;margin-bottom:16px;font-size:14px">'
-    +'<strong>'+typeLabel+'</strong> \u00b7 '+dateStr+(g.location?' \u00b7 \uD83D\uDCCD '+g.location:'')
+    +'<strong>'+typeLabel+'</strong> \u00b7 '+dateStr+(g.location?' \u00b7 '+g.location:'')
     +'</div>'
     +'<div class="grid grid-2" style="margin-bottom:14px">'
     +'<div class="field"><label>Einzelpreis netto (\u20ac)'+(isConfiguredPrice?'<span style="color:#16a34a;font-size:11px;margin-left:6px">\u2713 aus Einstellungen</span>':'</span>')+'</label>'
@@ -5622,9 +5651,9 @@ function openInstrGroupInvoiceDialog(g){
     +'<div style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Rechnungsempf\u00e4nger</div>'
     +(recipChips?'<div style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:10px">'+recipChips+'</div>':'')
     +'<input id="ii_recipient_input" type="text" placeholder="Name der Firma oder Person\u2026"'
-    +' style="width:100%;padding:8px 12px;border-radius:8px;border:1.5px solid #C0001A;font-size:14px;font-weight:600;box-sizing:border-box">'
+    +' style="width:100%;padding:6px 10px;border-radius:6px;border:1px solid var(--border);font-size:14px;font-weight:500;box-sizing:border-box">'
     +'<textarea id="ii_recipient_addr" rows="2" placeholder="Anschrift (Stra\u00dfe, PLZ Ort) \u2013 nur n\u00f6tig, wenn keine Firma hinterlegt"'
-    +' style="width:100%;margin-top:7px;padding:8px 12px;border-radius:8px;border:1px solid #ddd;font-size:13px;box-sizing:border-box;resize:vertical"></textarea>'
+    +' style="width:100%;margin-top:7px;padding:6px 10px;border-radius:6px;border:1px solid var(--border);font-size:13px;box-sizing:border-box;resize:vertical"></textarea>'
     +'<input id="ii_recipient_email" type="hidden">'
     +'</div>'
     +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">'
@@ -5686,7 +5715,7 @@ function iiPickRecipient(btn){
   document.querySelectorAll('[onclick^="iiPickRecipient"]').forEach(b=>{
     b.style.borderColor='#ddd';b.style.background='#fff';
   });
-  btn.style.borderColor='#C0001A';btn.style.background='#fff5f5';
+  btn.style.borderColor='var(--blau)';btn.style.background='var(--blau-light)';
   const inp=document.getElementById('ii_recipient_input');
   const em=document.getElementById('ii_recipient_email');
   if(inp) inp.value=btn.dataset.name||'';
@@ -6119,7 +6148,7 @@ function certificateGroup(passedIds){
     '<h3>\uD83D\uDCC4 Bescheinigungen erstellen</h3>'
     +'<div style="background:#f5f5f5;border-radius:9px;padding:10px 16px;margin-bottom:14px;font-size:14px">'
       +'<strong>'+firstEntry.type+'</strong> \u00b7 '+dateStr
-      +(firstEntry.location?' \u00b7 \uD83D\uDCCD '+firstEntry.location:'')
+      +(firstEntry.location?' \u00b7 '+firstEntry.location:'')
     +'</div>'
     +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">'
       +'<div style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.05em">Teilnehmer wählen</div>'
@@ -6209,7 +6238,7 @@ function instrGroupCerts(g){
   document.getElementById('modalContent').innerHTML =
     '<h3>📄 Bescheinigungen</h3>'
     +'<div style="background:#f5f5f5;border-radius:9px;padding:10px 16px;margin-bottom:14px;font-size:14px">'
-      +'<strong>'+typeLabel+'</strong> \u00b7 '+dateStr+(g.location?' \u00b7 \uD83D\uDCCD '+g.location:'')
+      +'<strong>'+typeLabel+'</strong> \u00b7 '+dateStr+(g.location?' \u00b7 '+g.location:'')
     +'</div>'
     +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">'
       +'<div style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.05em">Teilnehmer w\u00e4hlen</div>'
@@ -7820,7 +7849,7 @@ function openParticipant(id, presetCoId){
     </div>
     <div class="modal-actions">
       <button class="btn ghost" onclick="closeModal()">Abbrechen</button>
-      <button class="btn" onclick="saveParticipant('${id||''}')">Speichern</button>
+      <button class="btn primary" onclick="saveParticipant('${id||''}')">Speichern</button>
     </div>`;
   showModal();
 }
@@ -8162,7 +8191,7 @@ function openCourse(id){
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:4px;align-items:start">
       <div class="field" style="margin:0">
         <label>Teilnehmer auswählen</label>
-        <input id="coursePartSearch" type="search" placeholder="🔍 Name oder Firma…" oninput="coursePartFilter()"
+        <input id="coursePartSearch" type="search" placeholder="Name oder Firma suchen…" oninput="coursePartFilter()"
           style="width:100%;padding:6px 10px;border-radius:6px;border:1px solid var(--border);background:var(--sand);font-size:13px;margin-bottom:5px">
         <div id="coursePartList" style="border:1px solid var(--border);border-radius:8px;max-height:180px;overflow-y:auto;background:#fdfcf9;padding:6px"></div>
       </div>
@@ -8176,7 +8205,7 @@ function openCourse(id){
 
     <div class="modal-actions" style="margin-top:16px">
       <button class="btn ghost" onclick="closeModal()">Abbrechen</button>
-      <button class="btn" onclick="saveCourse('${id||''}')">Speichern</button>
+      <button class="btn primary" onclick="saveCourse('${id||''}')">Speichern</button>
     </div>`;
   showModal();
   // Standard-Themen und BGQ-Felder initialisieren
@@ -8462,7 +8491,7 @@ function _renderThemesBox(boxId, allThemes, selected){
     </div>
     <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
       <input id="${boxId}_new" type="text" placeholder="Neues Thema eingeben…"
-        style="flex:1;min-width:180px;padding:6px 10px;border-radius:7px;border:1.5px solid #e0e0e0;background:#fff;font-size:13px;outline:none"
+        style="flex:1;min-width:180px;padding:6px 10px;border-radius:6px;border:1px solid var(--border);background:#fff;font-size:13px;outline:none"
         onfocus="this.style.borderColor='#C0001A'" onblur="this.style.borderColor='#e0e0e0'"
         onkeydown="if(event.key==='Enter'){event.preventDefault();_addTheme('${boxId}');}">
       <button class="btn ghost sm" type="button" onclick="_addTheme('${boxId}')">+ Hinzufügen</button>
@@ -9076,7 +9105,7 @@ function openCourseGroup(g){
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:4px;align-items:start">
       <div class="field" style="margin:0">
         <label>Teilnehmer auswählen</label>
-        <input id="coursePartSearch" type="search" placeholder="🔍 Name oder Firma…" oninput="coursePartFilter()"
+        <input id="coursePartSearch" type="search" placeholder="Name oder Firma suchen…" oninput="coursePartFilter()"
           style="width:100%;padding:6px 10px;border-radius:6px;border:1px solid var(--border);background:var(--sand);font-size:13px;margin-bottom:5px">
         <div id="coursePartList" style="border:1px solid var(--border);border-radius:8px;max-height:180px;overflow-y:auto;background:#fdfcf9;padding:6px"></div>
       </div>
@@ -9088,7 +9117,7 @@ function openCourseGroup(g){
     <div id="m_fesBausteine"></div>
     <div class="modal-actions" style="margin-top:16px">
       <button class="btn ghost" onclick="closeModal()">Abbrechen</button>
-      <button class="btn" onclick="saveCourseGroup('${g.entries.map(e=>e.id).join(',')}')">Speichern</button>
+      <button class="btn primary" onclick="saveCourseGroup('${g.entries.map(e=>e.id).join(',')}')">Speichern</button>
     </div>`;
   showModal();
   
@@ -9607,7 +9636,7 @@ function openAssignToGroup(g){
       ? '<p class="hint">Alle vorhandenen Teilnehmer sind bereits in diesem Lehrgang eingetragen.</p>'
       : `<div class="field">
           <label>Teilnehmer suchen</label>
-          <input id="assignSearch" type="search" placeholder="🔍 Name oder Firma…"
+          <input id="assignSearch" type="search" placeholder="Name oder Firma suchen…"
             oninput="filterAssignList()" style="margin-bottom:8px">
         </div>
         <div id="assignList" style="display:flex;flex-direction:column;gap:6px;max-height:320px;overflow-y:auto;padding:4px 2px">
@@ -9762,21 +9791,21 @@ function openGroupInvoiceDialog(g){
   const recipChips=[
     ...firmList.map(f=>'<button type="button" onclick="giPickRecipient(this)"'
       +' data-name="'+f.name.replace(/"/g,'&quot;')+'" data-email="'+(f.email||'')+'"'
-      +' style="padding:5px 14px;border-radius:20px;border:1.5px solid '+(f.name===defRecipient?'#C0001A':'#ddd')+';'
-      +'background:'+(f.name===defRecipient?'#fff5f5':'#fff')+';'
+      +' style="padding:5px 14px;border-radius:20px;border:1.5px solid '+(f.name===defRecipient?'var(--blau)':'var(--border)')+';'
+      +'background:'+(f.name===defRecipient?'var(--blau-light)':'#fff')+';'
       +'cursor:pointer;font-size:13px;font-weight:600;transition:all .12s">'
-      +'\uD83C\uDFE2 '+f.name+(f.count>1?' ('+f.count+' TN)':'')+'</button>'),
+      +f.name+(f.count>1?' ('+f.count+' TN)':'')+'</button>'),
     ...tnRows.filter(r=>!r.firm).map(r=>'<button type="button" onclick="giPickRecipient(this)"'
       +' data-name="'+r.pn.replace(/"/g,'&quot;')+'" data-email="'+(r.p?r.p.email||'':'')+'"'
       +' style="padding:5px 14px;border-radius:20px;border:1.5px solid #ddd;'
       +'background:#fff;cursor:pointer;font-size:13px;font-weight:600;transition:all .12s">'
-      +'\uD83D\uDC64 '+r.pn+'</button>')
+      +r.pn+'</button>')
   ].join('');
 
   document.getElementById('modalContent').innerHTML=
     '<h3>Rechnungen erstellen</h3>'
     +'<div style="background:#f5f5f5;border-radius:9px;padding:10px 16px;margin-bottom:16px;font-size:14px">'
-    +'<strong>'+g.type+'</strong> \u00b7 '+(g.dateTo&&g.dateTo!==g.date?fmt(g.date)+' \u2013 '+fmt(g.dateTo):fmt(g.date))+(g.location?' \u00b7 \uD83D\uDCCD '+g.location:'')
+    +'<strong>'+g.type+'</strong> \u00b7 '+(g.dateTo&&g.dateTo!==g.date?fmt(g.date)+' \u2013 '+fmt(g.dateTo):fmt(g.date))+(g.location?' \u00b7 '+g.location:'')
     +'</div>'
     // Preis + Datum
     // Preis-Modus Toggle
@@ -9796,9 +9825,9 @@ function openGroupInvoiceDialog(g){
     +'<div style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Rechnungsempfänger</div>'
     +(recipChips?'<div style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:10px">'+recipChips+'</div>':'')
     +'<input id="gi_recipient_input" type="text" placeholder="Name der Firma oder Person…"'
-    +' style="width:100%;padding:8px 12px;border-radius:8px;border:1.5px solid #C0001A;font-size:14px;font-weight:600;box-sizing:border-box">'
+    +' style="width:100%;padding:6px 10px;border-radius:6px;border:1px solid var(--border);font-size:14px;font-weight:500;box-sizing:border-box">'
     +'<textarea id="gi_recipient_addr" rows="2" placeholder="Anschrift (Straße, PLZ Ort) – nur nötig, wenn keine Firma hinterlegt"'
-    +' style="width:100%;margin-top:7px;padding:8px 12px;border-radius:8px;border:1px solid #ddd;font-size:13px;box-sizing:border-box;resize:vertical"></textarea>'
+    +' style="width:100%;margin-top:7px;padding:6px 10px;border-radius:6px;border:1px solid var(--border);font-size:13px;box-sizing:border-box;resize:vertical"></textarea>'
     +'<input id="gi_recipient_email" type="hidden">'
     +'<div style="margin-top:4px;font-size:12px;color:#999">Klick auf Firma/Person oben oder manuell eingeben</div>'
     +'</div>'
@@ -9953,8 +9982,8 @@ function giPickRecipient(btn){
     b.style.background='#fff';
   });
   // Diesen markieren
-  btn.style.border='1.5px solid #C0001A';
-  btn.style.background='#fff5f5';
+  btn.style.border='1px solid var(--blau)';
+  btn.style.background='var(--blau-light)';
   // Werte ins Input-Feld setzen
   const inp=document.getElementById('gi_recipient_input');
   const email=document.getElementById('gi_recipient_email');
@@ -10657,7 +10686,7 @@ function openInstruction(id,presetPart,forceType){
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:4px;align-items:start">
       <div class="field" style="margin:0">
         <label>Teilnehmer auswählen</label>
-        <input id="instrPartSearchBox" type="search" placeholder="🔍 Name oder Firma…" oninput="instrPartFilter()"
+        <input id="instrPartSearchBox" type="search" placeholder="Name oder Firma suchen…" oninput="instrPartFilter()"
           style="width:100%;padding:6px 10px;border-radius:6px;border:1px solid var(--border);background:var(--sand);font-size:13px;margin-bottom:5px">
         <div id="instrPartList" style="border:1px solid var(--border);border-radius:8px;max-height:180px;overflow-y:auto;background:#fdfcf9;padding:6px"></div>
       </div>
@@ -10669,7 +10698,7 @@ function openInstruction(id,presetPart,forceType){
     <input type="hidden" id="m_instrType" value="${iType}">
     <div class="modal-actions" style="margin-top:16px">
       <button class="btn ghost" onclick="closeModal()">Abbrechen</button>
-      <button class="btn" onclick="saveInstruction('${id||''}')">Speichern</button>
+      <button class="btn primary" onclick="saveInstruction('${id||''}')">Speichern</button>
     </div>`;
   showModal();
   instrPartFilter();
@@ -10885,7 +10914,7 @@ function openAdrInstruction(id,presetPart){
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:4px;align-items:start">
       <div class="field" style="margin:0">
         <label>Teilnehmer auswählen</label>
-        <input id="adrPartSearchBox" type="search" placeholder="🔍 Name oder Firma…" oninput="adrPartFilter()"
+        <input id="adrPartSearchBox" type="search" placeholder="Name oder Firma suchen…" oninput="adrPartFilter()"
           style="width:100%;padding:6px 10px;border-radius:6px;border:1px solid var(--border);background:var(--sand);font-size:13px;margin-bottom:5px">
         <div id="adrPartList" style="border:1px solid var(--border);border-radius:8px;max-height:180px;overflow-y:auto;background:#fdfcf9;padding:6px"></div>
       </div>
@@ -10896,7 +10925,7 @@ function openAdrInstruction(id,presetPart){
     </div>
     <div class="modal-actions" style="margin-top:16px">
       <button class="btn ghost" onclick="closeModal()">Abbrechen</button>
-      <button class="btn" onclick="saveAdrInstruction('${id||''}')">Speichern</button>
+      <button class="btn primary" onclick="saveAdrInstruction('${id||''}')">Speichern</button>
     </div>`;
   showModal();
   adrPartFilter();
