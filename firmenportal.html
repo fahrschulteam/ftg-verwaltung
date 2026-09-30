@@ -72,7 +72,21 @@
   #bkfRechner input[disabled]{opacity:.5}
   #bkfRechner .bkr-grid{grid-template-columns:1fr}
   @media(min-width:900px){#bkfRechner .bkr-grid{grid-template-columns:minmax(0,1.15fr) minmax(300px,1fr)}}
-  .bkfBtn{margin-top:5px;display:block;background:none;border:0;padding:0;color:var(--red);font-size:12px;font-weight:700;cursor:pointer;text-decoration:underline}
+  /* Modul-Rechner je Fahrer (klappt unter der Fahrerzeile auf) */
+  .bkfBtn{margin-top:6px;display:inline-flex;align-items:center;gap:4px;background:#fff;border:1px solid #2A6CAE;color:#2A6CAE;border-radius:8px;padding:4px 10px;font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap}
+  .bkfBtn:hover{background:#eef4fa}
+  .bkfBtn.on{background:#2A6CAE;color:#fff}
+  .hinweisZ{font-size:11.5px;color:var(--muted);margin-top:3px;max-width:230px;line-height:1.35}
+  .steps{display:flex;flex-wrap:wrap;gap:6px 18px;margin:10px 0 4px;font-size:13px;color:var(--ink)}
+  .steps span{display:inline-flex;align-items:center;gap:7px}
+  .steps b{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:#2A6CAE;color:#fff;font-size:12px}
+  tr.aktiv>td{background:#eef4fa}
+  tr.bkfZeile>td{padding:0 0 14px;background:#eef4fa;border-bottom:2px solid #2A6CAE}
+  .bkf-panel{background:#fff;border:1px solid #cfdcec;border-radius:12px;padding:16px;margin:0 8px}
+  .bkf-kopf{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+  .bkf-kopf h2{margin:0 0 2px}
+  .bkf-anl{margin:0 0 14px;padding:10px 14px 10px 32px;background:#f6f7f9;border-radius:10px;font-size:13px;line-height:1.55}
+  .bkf-anl li{margin:2px 0}
   #toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:#1c2126;color:#fff;padding:10px 16px;border-radius:10px;font-size:13px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:99}
   #toast.show{opacity:1}
 </style>
@@ -111,6 +125,13 @@
         <h2 style="margin:0">Ihre Fahrer</h2>
         <button class="btn ghost sm" onclick="neuerFahrer()">Neuen Fahrer anlegen</button>
       </div>
+      <div class="steps">
+        <span><b>1</b> Fahrer suchen</span>
+        <span><b>2</b> Bei der BKF-Weiterbildung auf &bdquo;Module pr&uuml;fen&ldquo; klicken</span>
+        <span><b>3</b> Fehlende Module mit freien Terminen anmelden</span>
+      </div>
+      <p class="muted" style="margin:0 0 4px">Berufskraftfahrer m&uuml;ssen bis zum Stichtag 5 Tagesmodule (35 Std.) besuchen (&sect; 5 BKrFQG).
+        Der Stichtag ist das Ablaufdatum der Schl&uuml;sselzahl 95 im F&uuml;hrerschein.</p>
       <input id="suche" placeholder="Fahrer suchen …" oninput="renderFahrer()" style="margin:10px 0;max-width:320px">
       <div style="overflow-x:auto">
       <table>
@@ -118,16 +139,27 @@
         <tbody id="fBody"></tbody>
       </table>
       </div>
-      <p class="muted" style="margin:10px 0 0">BKF: 5 Tagesmodule (35 Std.) müssen bis zum Stichtag absolviert sein (§ 5 BKrFQG).
-        Adresse, Telefon und E-Mail Ihrer Fahrer können Sie über ✎ selbst aktualisieren.</p>
+      <p class="muted" style="margin:10px 0 0">Adresse, Telefon und E-Mail Ihrer Fahrer können Sie über ✎ selbst aktualisieren.</p>
     </div>
 
-    <div class="card" id="bkfCard">
-      <h2>BKF-Modul-Rechner</h2>
-      <p class="muted" style="margin:0 0 12px">Welche Module braucht ein Fahrer noch? Klicken Sie in der Fahrerliste auf
-        <b>&bdquo;Module pr&uuml;fen&ldquo;</b> &ndash; die bei uns besuchten Module werden automatisch &uuml;bernommen.
-        Schulungen anderer Anbieter, ADR oder Tiertransport k&ouml;nnen Sie erg&auml;nzen. Passende freie Termine stehen direkt dabei.</p>
-      <div id="bkfRechner"></div>
+    <!-- BKF-Modul-Rechner: erscheint erst nach Klick auf "Module pruefen",
+         direkt unter dem jeweiligen Fahrer (wird per Skript dorthin verschoben) -->
+    <div id="bkfAblage" hidden>
+      <div class="bkf-panel" id="bkfCard">
+        <div class="bkf-kopf">
+          <div>
+            <h2 id="bkfTitel">BKF-Modul-Rechner</h2>
+            <div class="muted" id="bkfStand"></div>
+          </div>
+          <button class="btn ghost sm" onclick="rechnerZu()">Schlie&szlig;en &#10005;</button>
+        </div>
+        <ol class="bkf-anl">
+          <li>Die bei uns besuchten Module sind <b>bereits eingetragen</b>.</li>
+          <li>Hat der Fahrer Schulungen bei <b>anderen Anbietern</b>, eine <b>ADR-</b> oder <b>Tiertransport-Schulung</b> besucht? Dann bitte erg&auml;nzen &ndash; sie werden angerechnet.</li>
+          <li>Im Ergebnis sehen Sie sofort, <b>welche Module noch fehlen</b> &ndash; mit passenden freien Terminen zum direkten Anmelden.</li>
+        </ol>
+        <div id="bkfRechner"></div>
+      </div>
     </div>
 
     <div class="card intern" id="internCard" style="display:none">
@@ -221,7 +253,7 @@
 <script>
 (function(){
   var API="/.netlify/functions/firmenportal";
-  var daten=null, aktCode="", bearbId=null, zKey=null;
+  var daten=null, aktCode="", bearbId=null, zKey=null, offenId=null;
   var ANMELDUNG="https://newslettertool.netlify.app/anmeldung.html";
 
   function de(iso){ if(!iso) return ""; var p=String(iso).split("-"); return p.length===3?p[2]+"."+p[1]+"."+p[0]:iso; }
@@ -253,6 +285,7 @@
   };
 
   window.abmelden=function(){
+    rechnerParken(); offenId=null;
     daten=null; aktCode="";
     try{ sessionStorage.removeItem("ftg-portal-code"); }catch(e){}
     el("app").style.display="none";
@@ -263,26 +296,29 @@
   window.renderFahrer=function(){
     var q=(el("suche").value||"").toLowerCase();
     var b=el("fBody");
+    rechnerParken(); // Rechner vor dem Neuzeichnen sichern (sonst ginge er verloren)
     var rows=(daten.fahrer||[]).filter(function(f){ return (f.name+" "+f.email+" "+f.phone).toLowerCase().indexOf(q)!==-1; });
     if(!rows.length){ b.innerHTML='<tr><td colspan="5" class="muted">Keine Fahrer gefunden.</td></tr>'; return; }
     b.innerHTML=rows.map(function(f){
       var bkf;
-      if(!f.sz95){ bkf='<span class="tag t-mut">kein Stichtag bekannt</span>'; }
+      if(!f.sz95){ bkf='<span class="tag t-mut">Stichtag fehlt</span><div class="hinweisZ">Bitte teilen Sie uns das Ablaufdatum der Schl&uuml;sselzahl 95 mit: 0591 / 51403</div>'; }
       else{
         var t=tageBis(f.sz95);
         var cls=f.module>=5?"t-ok":(t!==null&&t<365&&f.module<5?"t-crit":"t-warn");
         bkf='<span class="tag '+cls+'">'+f.module+' / 5 Module · Stichtag '+de(f.sz95)+'</span>';
       }
-      bkf+='<button class="bkfBtn" onclick="modulePruefen(\''+f.id+'\')">Module pr&uuml;fen</button>';
+      var offen=(f.id===offenId);
+      bkf+='<div><button class="bkfBtn'+(offen?' on':'')+'" onclick="modulePruefen(\''+f.id+'\')">'+(offen?'Rechner schlie&szlig;en &#9650;':'Module pr&uuml;fen &#9660;')+'</button></div>';
       var fe="—";
       if(f.fe){ var tf=tageBis(f.fe); var fcls=tf===null?"t-mut":(tf<0?"t-crit":(tf<180?"t-warn":"t-ok"));
         fe='<span class="tag '+fcls+'">'+(tf!==null&&tf<0?"abgelaufen ":"gültig bis ")+de(f.fe)+'</span>'; }
       var kontakt=[f.street,[f.zip,f.city].filter(Boolean).join(" ")].filter(Boolean).join(", ");
-      return '<tr><td><b>'+esc(f.name)+'</b>'+(f.birth?'<div class="muted">geb. '+de(f.birth)+'</div>':'')+'</td>'
+      return '<tr data-id="'+esc(f.id)+'"'+(offen?' class="aktiv"':'')+'><td><b>'+esc(f.name)+'</b>'+(f.birth?'<div class="muted">geb. '+de(f.birth)+'</div>':'')+'</td>'
         +'<td style="font-size:12.5px">'+esc(kontakt||"—")+(f.phone?'<div class="muted">'+esc(f.phone)+'</div>':'')+(f.email?'<div class="muted">'+esc(f.email)+'</div>':'')+'</td>'
         +'<td>'+bkf+'</td><td>'+fe+'</td>'
         +'<td><button class="btn ghost sm" onclick="bearbeiten(\''+f.id+'\')" title="Kontaktdaten ändern">✎</button></td></tr>';
     }).join("");
+    rechnerEinhaengen();
   };
 
   window.renderTermine=function(){
@@ -407,17 +443,40 @@
   // ── BKF-Modul-Rechner ────────────────────────────────────────────────
   function rechnerStart(){
     var box=el("bkfRechner");
-    if(typeof window.bkfRechnerRender!=="function"){ el("bkfCard").style.display="none"; return; }
+    if(typeof window.bkfRechnerRender!=="function") return;
     if(!box.firstChild) window.bkfRechnerRender(box,{firma:true});
   }
+  // "Sandhaus, Thomas" -> "Thomas Sandhaus"
+  function anzeigeName(n){ var p=String(n||"").split(","); return p.length===2 ? (p[1].trim()+" "+p[0].trim()) : String(n||""); }
+  // Rechner zurueck in die (unsichtbare) Ablage legen
+  function rechnerParken(){ var c=el("bkfCard"), a=el("bkfAblage"); if(c&&a&&c.parentNode!==a) a.appendChild(c); }
+  // Rechner als eigene Tabellenzeile direkt unter dem geoeffneten Fahrer einblenden
+  function rechnerEinhaengen(){
+    if(!offenId) return;
+    var zeile=el("fBody").querySelector('tr[data-id="'+offenId.replace(/"/g,'')+'"]');
+    if(!zeile) return; // Fahrer durch die Suche ausgeblendet
+    var tr=document.createElement("tr"); tr.className="bkfZeile";
+    var td=document.createElement("td"); td.colSpan=5;
+    td.appendChild(el("bkfCard")); tr.appendChild(td);
+    zeile.parentNode.insertBefore(tr, zeile.nextSibling);
+  }
   window.modulePruefen=function(id){
+    if(offenId===id){ rechnerZu(); return; }
     var f=(daten.fahrer||[]).find(function(x){return x.id===id;}); if(!f) return;
-    if(typeof window.bkfRechnerVorbelegen!=="function") return;
+    if(typeof window.bkfRechnerVorbelegen!=="function"){ toast("Der Modul-Rechner ist gerade nicht verfügbar."); return; }
     rechnerStart();
     var b=f.bkf||{};
     window.bkfRechnerVorbelegen({ name:f.name, ablauf:f.sz95||"", eigene:b.eigene||[], ext:b.ext||[], altUe:b.altUe||0, stand:b.stand||"" });
-    el("bkfCard").scrollIntoView({behavior:"smooth",block:"start"});
+    el("bkfTitel").textContent="BKF-Modul-Rechner für "+anzeigeName(f.name);
+    el("bkfStand").textContent = f.sz95
+      ? ("Stichtag "+de(f.sz95)+" · bei uns bereits "+(f.module||0)+" von 5 Modulen besucht")
+      : "Kein Stichtag hinterlegt – die Berechnung funktioniert trotzdem; für die Frist bitte das Ablaufdatum der Schlüsselzahl 95 an uns melden.";
+    offenId=id;
+    renderFahrer();
+    var z=el("fBody").querySelector("tr.aktiv");
+    if(z) z.scrollIntoView({behavior:"smooth",block:"start"});
   };
+  window.rechnerZu=function(){ offenId=null; renderFahrer(); };
   window.toast=function(t){ var e=el("toast"); if(!e) return; e.textContent=t; e.classList.add("show"); setTimeout(function(){e.classList.remove("show");},1800); };
 
   // Daten neu holen, ohne den Anmeldebildschirm zu zeigen.
