@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Firmenportal – Fahrschulteam Thorsten Gels</title>
 <meta name="robots" content="noindex,nofollow" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root{--red:#d71920;--ink:#1c2126;--muted:#5b6570;--line:#e7e9ee;
     --green:#1f7a3d;--green-bg:#e7f7ec;--amber:#8a6100;--amber-bg:#fff5e0;--red-bg:#fdecec}
@@ -114,6 +116,55 @@
   #toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:#1c2126;color:#fff;padding:10px 16px;border-radius:10px;font-size:13px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:99}
   #toast.show{opacity:1}
 </style>
+<style id="ftg-design">
+  /* === FTG-Designsystem (wie Fahrschulverwaltung) – 30.09.2026 ===
+     Rot #C0001A nur fuer die EINE Hauptaktion je Fenster, Blau #2A6CAE fuer
+     wiederkehrende Aktionen, sonst neutrale Knoepfe. */
+  :root{--red:#C0001A;--rot:#C0001A;--rot-dark:#9a0015;--blau:#2A6CAE;--blau-dark:#1e5a96;--blau-hell:#eef4fa;
+    --ink:#3F4B57;--muted:#6B7280;--line:#E5E7EB;--border:#D1D5DB;--dunkel:#3F4B57;--grau:#6B7280}
+  body{font-family:'Poppins',-apple-system,"Segoe UI",Arial,sans-serif;background:#F3F4F6;color:var(--ink);font-size:14px}
+  .wrap{max-width:1040px}
+  /* Kopfbereich mit roter Linie wie in den E-Mails */
+  header{background:#fff;border:1px solid var(--line);border-bottom:3px solid var(--rot);border-radius:10px;padding:14px 18px;margin-bottom:18px}
+  header h1{font-size:20px;font-weight:700;color:var(--ink)}
+  header p{color:var(--muted)}
+  /* Firmenleiste */
+  .top{background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px 18px;margin-bottom:24px}
+  .top h2{font-size:15px;font-weight:600}
+  .top h2::before{content:"Angemeldet als ";font-weight:400;color:var(--muted)}
+  /* Karten = klar getrennte Bloecke */
+  .card{border:1px solid var(--line);border-radius:10px;box-shadow:0 1px 3px rgba(0,0,0,.06);margin-bottom:28px;overflow:hidden}
+  .card.intern{border-left:1px solid var(--line)}
+  .kopf{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
+    margin:-18px -18px 16px;padding:14px 18px;background:#F9FAFB;border-bottom:1px solid var(--line);border-left:4px solid var(--rot)}
+  .kopf .kt{display:flex;align-items:center;gap:12px;min-width:0}
+  .kopf .ic{flex:none;width:38px;height:38px;border-radius:10px;background:#fff;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;color:var(--rot)}
+  .kopf .ic svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  .kopf h2{margin:0;font-size:16px;font-weight:600;color:var(--ink)}
+  .kopf .sub{font-size:12.5px;color:var(--muted);margin-top:1px}
+  .kopf.blau{border-left-color:var(--blau)}
+  .kopf.blau .ic{color:var(--blau)}
+  /* Beschriftungen, Felder */
+  th{font-size:11px;font-weight:600;letter-spacing:.04em;color:var(--muted)}
+  label{font-size:12.5px;font-weight:500}
+  input{border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-size:14px;font-family:inherit}
+  input:focus{outline:none;border-color:var(--blau);box-shadow:0 0 0 3px rgba(42,108,174,.12)}
+  /* Knoepfe */
+  .btn,.btn.ghost{display:inline-flex;align-items:center;justify-content:center;gap:6px;background:#fff;color:var(--ink);
+    border:1px solid var(--border);border-radius:6px;padding:8px 14px;font-size:13px;font-weight:500;font-family:inherit;line-height:1.2}
+  .btn:hover,.btn.ghost:hover{background:#F9FAFB;border-color:#9AA1AB}
+  .btn.sm{padding:5px 10px;font-size:12.5px}
+  .btn.primary{background:var(--rot);border-color:var(--rot);color:#fff}
+  .btn.primary:hover{background:var(--rot-dark);border-color:var(--rot-dark)}
+  .btn.blau{background:var(--blau);border-color:var(--blau);color:#fff}
+  .btn.blau:hover{background:var(--blau-dark);border-color:var(--blau-dark)}
+  .bkfBtn{border-radius:6px;font-weight:600}
+  .steps b{background:var(--blau)}
+  .trow,.terminrow{border-color:var(--line);border-radius:8px}
+  .trow:hover{border-color:var(--border);background:#FCFCFD}
+  .modal{border-radius:10px}
+  .modal h2{font-size:16px;font-weight:600}
+</style>
 </head>
 <body>
 <div class="wrap">
@@ -127,13 +178,13 @@
 
   <!-- Anmeldung -->
   <div class="card" id="loginCard">
-    <h2>Anmeldung</h2>
+    <div class="kopf"><div class="kt"><div class="ic"><svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div><div><h2>Anmeldung</h2><div class="sub">Zugang für Firmenkunden</div></div></div></div>
     <p class="muted" style="margin:0 0 12px">Bitte geben Sie den Zugangscode Ihrer Firma ein. Sie haben keinen Code?
       Rufen Sie uns an: <b>0591 / 51403</b>.</p>
     <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:end">
       <div style="flex:1;min-width:200px"><label>Zugangscode</label>
         <input id="code" placeholder="z. B. A1B2C3D4" autocomplete="off" style="text-transform:uppercase"></div>
-      <button class="btn" id="loginBtn" onclick="laden()">Anmelden</button>
+      <button class="btn primary" id="loginBtn" onclick="laden()">Anmelden</button>
     </div>
     <div class="err" id="loginErr"></div>
   </div>
@@ -145,10 +196,8 @@
     </div>
 
     <div class="card">
-      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
-        <h2 style="margin:0">Ihre Fahrer</h2>
-        <button class="btn ghost sm" onclick="neuerFahrer()">Neuen Fahrer anlegen</button>
-      </div>
+      <div class="kopf"><div class="kt"><div class="ic"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div><div><h2>Ihre Fahrer</h2><div class="sub">Kontaktdaten, BKF-Weiterbildung und Fahrerlaubnis</div></div></div>
+        <button class="btn ghost sm" onclick="neuerFahrer()">+ Neuen Fahrer anlegen</button></div>
       <div class="steps">
         <span><b>1</b> Fahrer suchen</span>
         <span><b>2</b> Bei der BKF-Weiterbildung auf &bdquo;Module pr&uuml;fen&ldquo; klicken</span>
@@ -187,14 +236,12 @@
     </div>
 
     <div class="card intern" id="internCard" style="display:none">
-      <h2>Ihre firmeninternen Termine</h2>
-      <p class="muted" style="margin:0 0 12px">Diese Termine haben wir für Ihre Firma reserviert.
-        Sie sind nicht öffentlich buchbar – tragen Sie hier einfach Ihre Fahrer ein.</p>
+      <div class="kopf"><div class="kt"><div class="ic"><svg viewBox="0 0 24 24"><path d="M3 21h18"/><path d="M5 21V7l7-4 7 4v14"/><path d="M9 21v-6h6v6"/></svg></div><div><h2>Ihre firmeninternen Termine</h2><div class="sub">Nur für Ihre Firma reserviert – nicht öffentlich buchbar. Tragen Sie hier einfach Ihre Fahrer ein.</div></div></div></div>
       <div id="internListe"></div>
     </div>
 
     <div class="card">
-      <h2 id="termineKopf">Kommende Kurstermine</h2>
+      <div class="kopf blau" id="termineKopf"><div class="kt"><div class="ic"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div><div><h2>Kommende Kurstermine</h2><div class="sub">Öffentliche Termine – Ihre Fahrer per Klick anmelden</div></div></div></div>
       <div class="okbox" id="aOk" hidden></div>
       <div id="termine"></div>
       <p class="muted" style="margin:8px 0 0">Klicken Sie bei einem Termin auf <b>&bdquo;Fahrer anmelden&ldquo;</b> und haken Sie Ihre Fahrer an &ndash; oder melden Sie sich telefonisch: 0591 / 51403.</p>
@@ -219,7 +266,7 @@
     <div class="err" id="mErr"></div>
     <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
       <button class="btn ghost" onclick="schliessen()">Abbrechen</button>
-      <button class="btn" id="mSave" onclick="speichern()">Speichern</button>
+      <button class="btn primary" id="mSave" onclick="speichern()">Speichern</button>
     </div>
   </div>
 </div>
@@ -248,7 +295,7 @@
       <button class="btn ghost" onclick="neuerFahrer()">Neuen Fahrer anlegen</button>
       <span style="display:flex;gap:8px">
         <button class="btn ghost" onclick="aSchliessen()">Abbrechen</button>
-        <button class="btn" id="aSave" onclick="aAnmelden()">Verbindlich anmelden</button>
+        <button class="btn primary" id="aSave" onclick="aAnmelden()">Verbindlich anmelden</button>
       </span>
     </div>
   </div>
@@ -267,7 +314,7 @@
       <button class="btn ghost" onclick="neuerFahrer()">Neuen Fahrer anlegen</button>
       <span style="display:flex;gap:8px">
         <button class="btn ghost" onclick="zSchliessen()">Abbrechen</button>
-        <button class="btn" id="zSave" onclick="zuordnen()">Eintragen</button>
+        <button class="btn primary" id="zSave" onclick="zuordnen()">Eintragen</button>
       </span>
     </div>
   </div>
@@ -298,7 +345,7 @@
     <div class="err" id="nErr"></div>
     <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
       <button class="btn ghost" onclick="nSchliessen()">Abbrechen</button>
-      <button class="btn" id="nSave" onclick="fahrerAnlegen()">Fahrer anlegen</button>
+      <button class="btn primary" id="nSave" onclick="fahrerAnlegen()">Fahrer anlegen</button>
     </div>
   </div>
 </div>
@@ -410,7 +457,7 @@
         +(k.location?'<div class="t-ort">'+esc(k.location)+'</div>':'')
         +(drin?'<div class="t-ort" style="color:#1f7a3d;font-weight:700">'+drin+' Ihrer Fahrer angemeldet</div>':'')+'</div>'
         +'<div class="t-platz"><span class="tag '+(frei>0?"t-ok":"t-crit")+'">'+(frei>0?frei+(frei===1?" Platz frei":" Plätze frei"):"ausgebucht")+'</span></div>'
-        +'<div class="t-akt">'+(frei>0?'<button class="btn sm" onclick="aOeffnen('+i+')">Fahrer anmelden</button>':'')+'</div>'
+        +'<div class="t-akt">'+(frei>0?'<button class="btn blau sm" onclick="aOeffnen('+i+')">Fahrer anmelden</button>':'')+'</div>'
         +'</div>';
     }).join("");
   };
@@ -434,7 +481,7 @@
         +'<div style="display:flex;gap:10px;justify-content:space-between;align-items:center;flex-wrap:wrap">'
         +'<span><b>'+esc(k.type)+'</b> · '+esc(zeitraum(k))+(k.location?' · '+esc(k.location):'')+'</span>'
         +'<span style="display:flex;gap:8px;align-items:center">'+tag
-        +'<button class="btn sm" onclick="zOeffnen(\''+esc(k.key)+'\')">Fahrer eintragen</button></span></div>'
+        +'<button class="btn blau sm" onclick="zOeffnen(\''+esc(k.key)+'\')">Fahrer eintragen</button></span></div>'
         +(eingetragen?'<ul class="fliste">'+eingetragen+'</ul>':'<p class="muted" style="margin:6px 0 0">Noch niemand eingetragen.</p>')
         +'</div>';
     }).join("");
