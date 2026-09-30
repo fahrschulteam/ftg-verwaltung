@@ -143,7 +143,7 @@ exports.handler = async (event) => {
 
   try {
     // Firma über den Code finden – der Code ist der einzige Schlüssel.
-    const firmen = await supa(`schulung_companies?portal_code=eq.${encodeURIComponent(code)}&select=id,name`);
+    const firmen = await supa(`schulung_companies?portal_code=eq.${encodeURIComponent(code)}&select=id,name,addr,contact,email,invoice_email,phone`);
     if (!Array.isArray(firmen) || !firmen.length) {
       return antwort(401, { success: false, message: 'Dieser Zugangscode ist nicht gültig.' });
     }
@@ -207,10 +207,11 @@ exports.handler = async (event) => {
         fahrer: {
           id: p.id,
           name: [p.last_name, p.first_name].filter(Boolean).join(', '),
-          birth: p.birth || '',
+          vorname: p.first_name || '', nachname: p.last_name || '',
+          birth: p.birth || '', birthplace: p.birthplace || '',
           street: p.street || '', zip: p.zip || '', city: p.city || '',
           phone: p.phone || '', email: p.email || '',
-          fe: '', sz95: '', module: 0, fehlen: 5,
+          fe: '', sz95: '', module: 0, fehlen: 5, bkf: {},
         },
       });
     }
@@ -300,27 +301,48 @@ exports.handler = async (event) => {
 
     // ── Übersicht: eigene Fahrer + Kurstermine ─────────────────────────
     const fahrer = await supa(
-      `schulung_participants?company_id=eq.${firma.id}&select=id,legacy_id,first_name,last_name,birth,street,zip,city,phone,email,ext_dates&order=last_name.asc&limit=1000`,
+      `schulung_participants?company_id=eq.${firma.id}&select=id,legacy_id,first_name,last_name,birth,birthplace,street,zip,city,phone,email,ext_dates&order=last_name.asc&limit=1000`,
     );
     // BKF-Kurse (klein genug, um sie einmal zu laden und je Fahrer zuzuordnen)
     let kurse = [];
     try { kurse = await supa(`schulung_courses?select=participant_id,participant_legacy,type,date_from,passed&type=like.BKF*`); } catch { kurse = []; }
     // Kommende Termine aus dem öffentlichen Kurskalender
     let termine = [];
-    try { termine = await supa(`kurskalender_public?select=type,date,bis,location,capacity,belegt,termine&order=date.asc`); } catch { termine = []; }
+    try { termine = await supa(`kurskalender_public?select=id,type,date,bis,location,capacity,belegt,termine&order=date.asc`); } catch { termine = []; }
+    // Welche eigenen Fahrer stehen schon in welchem kommenden Termin?
+    // (fuer die Klick-Anmeldung im Portal: bereits Angemeldete ausgrauen)
+    const eigeneIds = new Set((fahrer || []).map((p) => p.id));
+    const schonDrin = {};
+    try {
+      const belegung = await supa(`schulung_courses?date_from=gte.${heute}&participant_id=not.is.null&select=type,date_from,location,participant_id&limit=5000`);
+      for (const r of belegung || []) {
+        if (!eigeneIds.has(r.participant_id)) continue;
+        const k = [r.date_from || '', r.type || '', r.location || ''].join('|');
+        (schonDrin[k] = schonDrin[k] || []).push(r.participant_id);
+      }
+    } catch { /* nur Komfort – Anmeldung funktioniert auch ohne */ }
     // Firmeninterne Termine – nur für diese Firma sichtbar
     let intern = [];
     try { intern = zuTerminen(await interneZeilen(firma.id, heute)); } catch { intern = []; }
 
     return antwort(200, {
       success: true,
-      firma: { name: firma.name },
+      // Eigene Firmendaten (fuer die Anmeldung per Klick: Rechnungsanschrift,
+      // Bestaetigungs-E-Mail) – nur die Daten der angemeldeten Firma.
+      firma: {
+        name: firma.name,
+        addr: firma.addr || '',
+        contact: firma.contact || '',
+        email: firma.invoice_email || firma.email || '',
+        phone: firma.phone || '',
+      },
       fahrer: (fahrer || []).map((p) => {
         const s = bkfStatus(p, kurse);
         return {
           id: p.id,
           name: [p.last_name, p.first_name].filter(Boolean).join(', '),
-          birth: p.birth || '',
+          vorname: p.first_name || '', nachname: p.last_name || '',
+          birth: p.birth || '', birthplace: p.birthplace || '',
           street: p.street || '', zip: p.zip || '', city: p.city || '',
           phone: p.phone || '', email: p.email || '',
           fe: (p.ext_dates || {}).FE || '',
@@ -328,7 +350,8 @@ exports.handler = async (event) => {
           bkf: bkfDetails(p, kurse),
         };
       }),
-      termine: (termine || []).filter((t) => (t.date || '') >= heute).slice(0, 12),
+      termine: (termine || []).filter((t) => (t.date || '') >= heute).slice(0, 12)
+        .map((t) => ({ ...t, angemeldet: schonDrin[[t.date || '', t.type || '', t.location || ''].join('|')] || [] })),
       intern,
     });
   } catch (e) {

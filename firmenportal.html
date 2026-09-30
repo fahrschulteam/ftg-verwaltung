@@ -87,6 +87,15 @@
   .bkf-kopf h2{margin:0 0 2px}
   .bkf-anl{margin:0 0 14px;padding:10px 14px 10px 32px;background:#f6f7f9;border-radius:10px;font-size:13px;line-height:1.55}
   .bkf-anl li{margin:2px 0}
+  /* Besuchte Module in der Fahrerliste */
+  .modlist{margin-top:4px;font-size:11.5px;line-height:1.45;color:#1f7a3d}
+  .modlist .ex{color:var(--muted)}
+  /* Anmeldung per Klick */
+  .okbox{position:relative;background:var(--green-bg);border:1px solid #bfe3cb;color:#14532d;border-radius:12px;padding:12px 40px 12px 14px;margin:0 0 12px;font-size:14px}
+  .okbox ul{margin:6px 0;padding-left:20px}
+  .okbox .zu{position:absolute;top:8px;right:8px;background:none;border:0;font-size:18px;cursor:pointer;color:#14532d}
+  .agb{display:flex;gap:8px;align-items:flex-start;font-size:12.5px;font-weight:400;margin:12px 0 0;cursor:pointer}
+  .agb input{width:18px;height:18px;flex:none;margin-top:1px}
   #toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:#1c2126;color:#fff;padding:10px 16px;border-radius:10px;font-size:13px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:99}
   #toast.show{opacity:1}
 </style>
@@ -170,9 +179,10 @@
     </div>
 
     <div class="card">
-      <h2>Kommende Kurstermine</h2>
+      <h2 id="termineKopf">Kommende Kurstermine</h2>
+      <div class="okbox" id="aOk" hidden></div>
       <div id="termine"></div>
-      <p class="muted" style="margin:8px 0 0">Anmeldung direkt über den Link – oder telefonisch unter 0591 / 51403.</p>
+      <p class="muted" style="margin:8px 0 0">Klicken Sie bei einem Termin auf <b>&bdquo;Fahrer anmelden&ldquo;</b> und haken Sie Ihre Fahrer an &ndash; oder melden Sie sich telefonisch: 0591 / 51403.</p>
     </div>
   </div>
 </div>
@@ -195,6 +205,36 @@
     <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
       <button class="btn ghost" onclick="schliessen()">Abbrechen</button>
       <button class="btn" id="mSave" onclick="speichern()">Speichern</button>
+    </div>
+  </div>
+</div>
+
+<!-- Fahrer per Klick zu einem öffentlichen Kurstermin anmelden -->
+<div class="modal-bg" id="aBg">
+  <div class="modal wide">
+    <h2 style="margin-bottom:4px">Fahrer anmelden</h2>
+    <p class="muted" style="margin:0 0 12px" id="aTermin"></p>
+    <input id="aSuche" placeholder="Fahrer suchen …" oninput="aListe()" style="margin-bottom:10px">
+    <div class="wahl" id="aWahl"></div>
+    <p class="muted" style="margin:8px 0 0" id="aFrei"></p>
+    <div id="aFehlt" hidden style="margin-top:12px">
+      <p class="muted" style="margin:0 0 8px">Für die Bestätigung und die Rechnung fehlen uns noch Angaben zu Ihrer Firma:</p>
+      <div style="display:grid;gap:8px">
+        <div><label>E-Mail für die Bestätigung</label><input id="a_email" type="email"></div>
+        <div class="grid2">
+          <div><label>Straße / Hausnummer</label><input id="a_strasse"></div>
+          <div><label>PLZ, Ort</label><input id="a_plzort"></div>
+        </div>
+      </div>
+    </div>
+    <label class="agb"><input type="checkbox" id="aAgb"> <span>Ich akzeptiere die Lehrgangsbedingungen: Bei Absage weniger als 7 Tage vor Beginn werden 50 % berechnet, bei Nichterscheinen die volle Gebühr.</span></label>
+    <div class="err" id="aErr"></div>
+    <div style="display:flex;gap:8px;justify-content:space-between;margin-top:16px;flex-wrap:wrap">
+      <button class="btn ghost" onclick="neuerFahrer()">Neuen Fahrer anlegen</button>
+      <span style="display:flex;gap:8px">
+        <button class="btn ghost" onclick="aSchliessen()">Abbrechen</button>
+        <button class="btn" id="aSave" onclick="aAnmelden()">Verbindlich anmelden</button>
+      </span>
     </div>
   </div>
 </div>
@@ -253,7 +293,21 @@
 <script>
 (function(){
   var API="/.netlify/functions/firmenportal";
-  var daten=null, aktCode="", bearbId=null, zKey=null, offenId=null;
+  var daten=null, aktCode="", bearbId=null, zKey=null, offenId=null, aIdx=null;
+  var ANMELDE_API="https://newslettertool.netlify.app/.netlify/functions/anmeldung";
+  // Oeffentliche Kursnamen (wie im Kurskalender)
+  var KURSNAME={
+    "BKF Modul 1":"BKF-Modul 1 – Risikobewusstsein und Verhalten",
+    "BKF Modul 2G":"BKF-Modul 2 – Rahmenbedingungen und Ereignisse",
+    "BKF Modul 2P":"BKF-Modul 2P – Rahmenbedingungen und Ereignisse",
+    "BKF Modul 3":"BKF-Modul 3 – Gefahrensituationen, Stress und Unfälle",
+    "BKF Modul 4":"BKF-Modul 4 – Firma – Fahrer – Fahrzeug",
+    "BKF Modul 5G":"BKF-Modul 5 – Recht und Dokumente im Güterkraftverkehr",
+    "BKF Modul 5P":"BKF-Modul 5P – Recht und Dokumente im Personenkraftverkehr",
+    "FES Modul 1":"Fahreignungsseminar (2 Termine in der Woche)"
+  };
+  function kursName(t){ t=String(t||"").trim(); return KURSNAME[t]||t; }
+  function modulKurz(t){ return String(t||"").replace(/^BKF Modul\s*/,"Modul ").replace(/^(Modul [0-9])G$/,"$1"); }
   var ANMELDUNG="https://newslettertool.netlify.app/anmeldung.html";
 
   function de(iso){ if(!iso) return ""; var p=String(iso).split("-"); return p.length===3?p[2]+"."+p[1]+"."+p[0]:iso; }
@@ -307,6 +361,11 @@
         var cls=f.module>=5?"t-ok":(t!==null&&t<365&&f.module<5?"t-crit":"t-warn");
         bkf='<span class="tag '+cls+'">'+f.module+' / 5 Module · Stichtag '+de(f.sz95)+'</span>';
       }
+      var bk=f.bkf||{};
+      var besucht=(bk.eigene||[]).slice().sort(function(a,b){ return String(a.d).localeCompare(String(b.d)); })
+        .map(function(m){ return '<div>✓ '+esc(modulKurz(m.t))+(m.d?' · '+de(m.d):'')+'</div>'; })
+        .concat((bk.ext||[]).map(function(x){ return '<div class="ex">✓ extern'+(x.a?' ('+esc(x.a)+')':'')+(x.d?' · '+de(x.d):'')+'</div>'; }));
+      if(besucht.length) bkf+='<div class="modlist">'+besucht.join("")+'</div>';
       var offen=(f.id===offenId);
       bkf+='<div><button class="bkfBtn'+(offen?' on':'')+'" onclick="modulePruefen(\''+f.id+'\')">'+(offen?'Rechner schlie&szlig;en &#9650;':'Module pr&uuml;fen &#9660;')+'</button></div>';
       var fe="—";
@@ -328,10 +387,12 @@
     e.innerHTML=t.map(function(k){
       var frei=Math.max(0,(k.capacity||18)-(k.belegt||0));
       var termin=zeitraum(k);
-      var link=ANMELDUNG+"?modul="+encodeURIComponent(k.type||"")+"&termin="+encodeURIComponent(termin);
-      return '<div class="terminrow"><span><b>'+esc(k.type)+'</b> · '+esc(termin)+(k.location?' · '+esc(k.location):'')+'</span>'
+      var i=t.indexOf(k);
+      var drin=(k.angemeldet||[]).length;
+      return '<div class="terminrow"><span><b>'+esc(kursName(k.type))+'</b> · '+esc(termin)+(k.location?' · '+esc(k.location):'')
+        +(drin?'<div class="muted">'+drin+' Ihrer Fahrer angemeldet</div>':'')+'</span>'
         +'<span style="display:flex;gap:8px;align-items:center"><span class="tag '+(frei>0?"t-ok":"t-crit")+'">'+(frei>0?frei+" Plätze frei":"ausgebucht")+'</span>'
-        +'<a class="btn sm" target="_blank" rel="noopener" href="'+link+'">Fahrer anmelden</a></span></div>';
+        +(frei>0?'<button class="btn sm" onclick="aOeffnen('+i+')">Fahrer anmelden</button>':'')+'</span></div>';
     }).join("");
   };
 
@@ -436,8 +497,96 @@
       daten.fahrer.sort(function(a,b){ return a.name.localeCompare(b.name,"de"); });
       nSchliessen(); renderFahrer();
       if(zKey) renderWahl();
+      if(aIdx!==null) aListe();
     }catch(e){ err.textContent="Der Dienst ist gerade nicht erreichbar."; }
     finally{ btn.disabled=false; }
+  };
+
+  // ── Fahrer per Klick zu einem Kurstermin anmelden ────────────────────
+  // Nutzt dieselbe Anmeldung wie das oeffentliche Formular: Eintrag im
+  // Posteingang der Verwaltung (beim richtigen Termin), Bestaetigung an die
+  // Firma, Benachrichtigung an das Fahrschulteam.
+  function adresseTeilen(a){
+    var zeilen=String(a||"").split(/\n|,/).map(function(x){return x.trim();}).filter(Boolean);
+    for(var j=zeilen.length-1;j>=0;j--){
+      if(/^\d{5}\s+\S/.test(zeilen[j])){ return { strasse: zeilen.slice(0,j).join(", "), plzOrt: zeilen[j] }; }
+    }
+    return { strasse:"", plzOrt:"" };
+  }
+  function vorNach(f){
+    if(f.vorname||f.nachname) return { v:f.vorname||"", n:f.nachname||"" };
+    var p=String(f.name||"").split(","); return { v:(p[1]||"").trim(), n:(p[0]||"").trim() };
+  }
+  function aFreiePlaetze(k){ return Math.max(0,(k.capacity||18)-(k.belegt||0)); }
+  window.aOeffnen=function(i){
+    var k=(daten.termine||[])[i]; if(!k) return;
+    aIdx=i;
+    el("aTermin").textContent=kursName(k.type)+" · "+zeitraum(k)+(k.location?" · "+k.location:"")+" · Beginn 08:00 Uhr";
+    el("aSuche").value=""; el("aErr").textContent=""; el("aAgb").checked=false;
+    var fi=daten.firma||{}, ad=adresseTeilen(fi.addr);
+    el("a_email").value=fi.email||""; el("a_strasse").value=ad.strasse; el("a_plzort").value=ad.plzOrt;
+    el("aFehlt").hidden=!!(fi.email && ad.strasse && ad.plzOrt);
+    aListe();
+    el("aBg").classList.add("open");
+  };
+  window.aSchliessen=function(){ el("aBg").classList.remove("open"); aIdx=null; };
+  function aGewaehlt(){ return Array.prototype.map.call(el("aWahl").querySelectorAll('input[type=checkbox]:checked:not([data-drin])'),function(b){return b.value;}); }
+  function aGrenze(){
+    var k=(daten.termine||[])[aIdx]; if(!k) return;
+    var frei=aFreiePlaetze(k), n=aGewaehlt().length;
+    Array.prototype.forEach.call(el("aWahl").querySelectorAll('input[type=checkbox]:not([data-drin])'),function(b){ b.disabled=!b.checked && n>=frei; });
+    el("aFrei").textContent="Noch "+frei+(frei===1?" Platz":" Plätze")+" frei"+(n?" · "+n+" ausgewählt":"")+(n>=frei?" – mehr Plätze gibt es für diesen Termin nicht.":"");
+  }
+  window.aListe=function(){
+    var k=(daten.termine||[])[aIdx]; if(!k) return;
+    var merk=new Set(aGewaehlt());
+    var drin=new Set(k.angemeldet||[]);
+    var q=(el("aSuche").value||"").toLowerCase();
+    var rows=(daten.fahrer||[]).filter(function(f){ return f.name.toLowerCase().indexOf(q)!==-1; });
+    if(!rows.length){ el("aWahl").innerHTML='<p class="muted" style="padding:12px">Keine Fahrer gefunden. Legen Sie unten einen neuen Fahrer an.</p>'; aGrenze(); return; }
+    el("aWahl").innerHTML=rows.map(function(f){
+      if(drin.has(f.id)) return '<label class="drin"><input type="checkbox" data-drin="1" disabled checked>'+esc(f.name)+' · bereits angemeldet</label>';
+      return '<label><input type="checkbox" value="'+esc(f.id)+'"'+(merk.has(f.id)?' checked':'')+' onchange="aGrenzeCb()">'+esc(f.name)+(f.birth?' · geb. '+de(f.birth):'')+'</label>';
+    }).join("");
+    aGrenze();
+  };
+  window.aGrenzeCb=function(){ aGrenze(); };
+  window.aAnmelden=async function(){
+    var k=(daten.termine||[])[aIdx]; if(!k) return;
+    var err=el("aErr"); err.textContent="";
+    var ids=aGewaehlt();
+    if(!ids.length){ err.textContent="Bitte mindestens einen Fahrer anhaken."; return; }
+    var email=(el("a_email").value||"").trim(), strasse=(el("a_strasse").value||"").trim(), plzOrt=(el("a_plzort").value||"").trim();
+    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ el("aFehlt").hidden=false; err.textContent="Bitte eine gültige E-Mail-Adresse für die Bestätigung angeben."; return; }
+    if(!strasse||!plzOrt){ el("aFehlt").hidden=false; err.textContent="Bitte die Firmenanschrift (Straße und PLZ, Ort) angeben – sie steht auf der Rechnung."; return; }
+    if(!el("aAgb").checked){ err.textContent="Bitte die Lehrgangsbedingungen bestätigen."; return; }
+    var gew=(daten.fahrer||[]).filter(function(f){ return ids.indexOf(f.id)!==-1; });
+    var fi=daten.firma||{};
+    var payload={
+      mode:"gruppe", consent:true, rechnung:"firma", lang:"de", newsletter:false,
+      nachricht:"Angemeldet über das Firmenportal.",
+      firma:{ firmenbezeichnung:fi.name||"", ansprechpartner:fi.contact||"", strasse:strasse, plzOrt:plzOrt, telefon:fi.phone||"", email:email },
+      teilnehmer:gew.map(function(f){ var vn=vorNach(f); return { anrede:"", vorname:vn.v, nachname:vn.n, name:f.name, geburtsdatum:de(f.birth), geburtsort:f.birthplace||"" }; }),
+      termine:[{ kursid:(k.id!=null?"verw-"+k.id:""), lehrgang:k.type||"", name:kursName(k.type), datum:de(k.date), bis:(k.bis&&k.bis!==k.date?de(k.bis):""), ort:k.location||"" }]
+    };
+    var btn=el("aSave"); btn.disabled=true; btn.textContent="Wird angemeldet …";
+    try{
+      var r=await fetch(ANMELDE_API,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(payload)});
+      var d=await r.json().catch(function(){ return {}; });
+      if(!d||!d.success){ err.textContent=(d&&d.message)||"Die Anmeldung konnte nicht gesendet werden. Bitte rufen Sie uns an: 0591 / 51403."; return; }
+      k.angemeldet=(k.angemeldet||[]).concat(ids);
+      k.belegt=(k.belegt||0)+ids.length;
+      var namen=gew.map(function(f){ var vn=vorNach(f); return (vn.v+" "+vn.n).trim()||f.name; });
+      var box=el("aOk");
+      box.innerHTML='<button class="zu" title="Schließen" onclick="this.parentNode.hidden=true">&#10005;</button>'
+        +'✅ <b>'+namen.length+(namen.length===1?' Fahrer':' Fahrer')+' angemeldet</b> für <b>'+esc(kursName(k.type))+' · '+esc(zeitraum(k))+'</b>'
+        +'<ul>'+namen.map(function(n){ return '<li>'+esc(n)+'</li>'; }).join("")+'</ul>'
+        +'Die Bestätigung geht an <b>'+esc(email)+'</b>.';
+      box.hidden=false;
+      aSchliessen(); renderTermine();
+      el("termineKopf").scrollIntoView({behavior:"smooth",block:"start"});
+    }catch(e){ err.textContent="Der Dienst ist gerade nicht erreichbar. Bitte später erneut versuchen oder anrufen: 0591 / 51403."; }
+    finally{ btn.disabled=false; btn.textContent="Verbindlich anmelden"; }
   };
 
   // ── BKF-Modul-Rechner ────────────────────────────────────────────────
