@@ -155,6 +155,17 @@ exports.handler = async (event) => {
       for (const f of ['street', 'zip', 'city', 'phone', 'email']) {
         if (typeof (body.patch || {})[f] === 'string') erlaubt[f] = body.patch[f].trim().slice(0, 200);
       }
+      // Optional: Stichtag BKF (Ablaufdatum Schluesselzahl 95) – wird in
+      // ext_dates.SZ95 gespeichert; SZ95_PORTAL merkt, dass die Firma ihn
+      // eingetragen hat. Nur eigene Fahrer (company_id-Filter).
+      const sz = typeof (body.patch || {}).sz95 === 'string' ? body.patch.sz95.trim() : '';
+      if (sz) {
+        const jahr = +sz.slice(0, 4);
+        if (!istDatum(sz) || jahr < 2000 || jahr > 2100) return antwort(400, { success: false, message: 'Bitte ein gültiges Datum für den Stichtag eintragen.' });
+        const akt = await supa(`schulung_participants?id=eq.${encodeURIComponent(body.id || '')}&company_id=eq.${firma.id}&select=ext_dates`);
+        if (!Array.isArray(akt) || !akt.length) return antwort(403, { success: false, message: 'Dieser Fahrer gehört nicht zu Ihrer Firma.' });
+        erlaubt.ext_dates = { ...(akt[0].ext_dates || {}), SZ95: sz, SZ95_PORTAL: heute };
+      }
       if (!body.id || !Object.keys(erlaubt).length) return antwort(400, { success: false, message: 'Keine Änderungen übergeben.' });
       erlaubt.updated_at = jetzt;
       // company_id-Filter stellt sicher: nur eigene Fahrer sind änderbar.

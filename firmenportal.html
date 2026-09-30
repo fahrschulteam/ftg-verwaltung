@@ -98,6 +98,8 @@
   .okbox .zu{position:absolute;top:8px;right:8px;background:none;border:0;font-size:18px;cursor:pointer;color:#14532d}
   .agb{display:flex;gap:8px;align-items:flex-start;font-size:12.5px;font-weight:400;margin:12px 0 0;cursor:pointer}
   .agb input{width:18px;height:18px;flex:none;margin-top:1px}
+  .linkbtn{display:block;margin-top:4px;background:none;border:0;padding:0;color:#2A6CAE;font-size:12px;font-weight:600;cursor:pointer;text-decoration:underline;font-family:inherit;text-align:left}
+  .feldhilfe{font-size:11.5px;color:var(--muted);margin-top:3px;line-height:1.4}
   /* Kommende Kurstermine: einheitliche Zeilen (Datum | Kurs + Ort | Plaetze | Knopf) */
   .trow{display:grid;grid-template-columns:150px minmax(0,1fr) 120px 150px;gap:14px;align-items:center;
     border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin-bottom:8px;font-size:13.5px}
@@ -212,7 +214,7 @@
         <tbody id="fBody"></tbody>
       </table>
       </div>
-      <p class="muted" style="margin:10px 0 0">Adresse, Telefon und E-Mail Ihrer Fahrer können Sie über ✎ selbst aktualisieren.</p>
+      <p class="muted" style="margin:10px 0 0">Adresse, Telefon, E-Mail und Stichtag Ihrer Fahrer können Sie über ✎ selbst aktualisieren.</p>
     </div>
 
     <!-- BKF-Modul-Rechner: erscheint erst nach Klick auf "Module pruefen",
@@ -252,7 +254,7 @@
 <!-- Kontaktdaten bearbeiten -->
 <div class="modal-bg" id="mBg">
   <div class="modal">
-    <h2 style="margin-bottom:12px">Kontaktdaten bearbeiten</h2>
+    <h2 style="margin-bottom:12px">Fahrerdaten bearbeiten</h2>
     <p style="font-weight:700;margin:0 0 12px" id="mName"></p>
     <div style="display:flex;flex-direction:column;gap:10px">
       <div><label>Straße / Hausnummer</label><input id="m_street"></div>
@@ -262,6 +264,11 @@
       </div>
       <div><label>Telefon / Mobil</label><input id="m_phone"></div>
       <div><label>E-Mail</label><input id="m_email"></div>
+      <div style="border-top:1px solid var(--line);padding-top:10px">
+        <label>Stichtag BKF-Weiterbildung <span style="font-weight:400;color:var(--muted)">(optional)</span></label>
+        <input id="m_sz95" type="date">
+        <div class="feldhilfe">Das ist das Ablaufdatum der <b>Schlüsselzahl 95</b>. Es steht im Führerschein auf der Rückseite in Spalte 12 hinter der Zahl 95, z. B. „95.23.02.29".</div>
+      </div>
     </div>
     <div class="err" id="mErr"></div>
     <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
@@ -417,7 +424,7 @@
     if(!rows.length){ b.innerHTML='<tr><td colspan="5" class="muted">Keine Fahrer gefunden.</td></tr>'; return; }
     b.innerHTML=rows.map(function(f){
       var bkf;
-      if(!f.sz95){ bkf='<span class="tag t-mut">Stichtag fehlt</span><div class="hinweisZ">Bitte teilen Sie uns das Ablaufdatum der Schl&uuml;sselzahl 95 mit: 0591 / 51403</div>'; }
+      if(!f.sz95){ bkf='<span class="tag t-mut">Stichtag fehlt</span><button class="linkbtn" onclick="bearbeiten(\''+f.id+'\',true)">Stichtag eintragen (optional)</button>'; }
       else{
         var t=tageBis(f.sz95);
         var cls=f.module>=5?"t-ok":(t!==null&&t<365&&f.module<5?"t-crit":"t-warn");
@@ -685,7 +692,7 @@
     el("bkfTitel").textContent="BKF-Modul-Rechner für "+anzeigeName(f.name);
     el("bkfStand").textContent = f.sz95
       ? ("Stichtag "+de(f.sz95)+" · bei uns bereits "+(f.module||0)+" von 5 Modulen besucht")
-      : "Kein Stichtag hinterlegt – die Berechnung funktioniert trotzdem; für die Frist bitte das Ablaufdatum der Schlüsselzahl 95 an uns melden.";
+      : "Kein Stichtag hinterlegt – die Berechnung funktioniert trotzdem. Den Stichtag können Sie optional über ✎ eintragen.";
     offenId=id;
     renderFahrer();
     var z=el("fBody").querySelector("tr.aktiv");
@@ -703,7 +710,7 @@
     }catch(e){}
   }
 
-  window.bearbeiten=function(id){
+  window.bearbeiten=function(id,stichtag){
     var f=(daten.fahrer||[]).find(function(x){return x.id===id;}); if(!f) return;
     bearbId=id;
     el("mName").textContent=f.name;
@@ -712,8 +719,10 @@
     el("m_city").value=f.city||"";
     el("m_phone").value=f.phone||"";
     el("m_email").value=f.email||"";
+    el("m_sz95").value=f.sz95||"";
     el("mErr").textContent="";
     el("mBg").classList.add("open");
+    if(stichtag) setTimeout(function(){ try{ el("m_sz95").focus(); }catch(e){} },50);
   };
   window.schliessen=function(){ el("mBg").classList.remove("open"); bearbId=null; };
 
@@ -721,6 +730,15 @@
     if(!bearbId) return;
     var patch={ street:el("m_street").value, zip:el("m_zip").value,
       city:el("m_city").value, phone:el("m_phone").value, email:el("m_email").value };
+    // Stichtag nur mitschicken, wenn er neu eingetragen oder geaendert wurde
+    var fAlt=(daten.fahrer||[]).find(function(x){return x.id===bearbId;})||{};
+    var sz=(el("m_sz95").value||"").trim();
+    var szNeu=!!sz && sz!==(fAlt.sz95||"");
+    if(szNeu){
+      var jahr=+sz.slice(0,4);
+      if(!/^\d{4}-\d{2}-\d{2}$/.test(sz) || jahr<2000 || jahr>2100){ el("mErr").textContent="Bitte ein gültiges Datum für den Stichtag eintragen."; return; }
+      patch.sz95=sz;
+    }
     var btn=el("mSave"); btn.disabled=true;
     try{
       var r=await fetch(API,{method:"POST",headers:{"content-type":"application/json"},
@@ -729,7 +747,9 @@
       if(!d.success){ el("mErr").textContent=d.message||"Speichern fehlgeschlagen."; return; }
       var f=(daten.fahrer||[]).find(function(x){return x.id===bearbId;});
       if(f){ f.street=patch.street; f.zip=patch.zip; f.city=patch.city; f.phone=patch.phone; f.email=patch.email; }
-      schliessen(); renderFahrer();
+      schliessen();
+      // Neuer Stichtag: Modul-Stand neu berechnen lassen
+      if(szNeu){ await neuLaden(); toast("Stichtag gespeichert"); } else renderFahrer();
     }catch(e){ el("mErr").textContent="Der Dienst ist gerade nicht erreichbar."; }
     finally{ btn.disabled=false; }
   };
