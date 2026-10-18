@@ -5674,13 +5674,13 @@ function openInstrGroupInvoiceDialog(g){
   }).join('');
 
   const recipChips=[
-    ...firmList.map(f=>'<button type="button" onclick="iiPickRecipient(this)"'
-      +' data-name="'+f.name.replace(/"/g,'&quot;')+'" data-email="'+(f.email||'')+'"'
+    ...firmList.map(f=>'<button type="button" onclick="iiPickRecipient(this);rlPreviewChip(\'ii\',this)" title="Klick: Rechnung ansehen &amp; drucken"'
+      +' data-firm="1" data-name="'+f.name.replace(/"/g,'&quot;')+'" data-email="'+(f.email||'')+'"'
       +' style="padding:5px 14px;border-radius:20px;border:1.5px solid '+(f.name===defRecipient?'var(--blau)':'var(--border)')+';'
       +'background:'+(f.name===defRecipient?'var(--blau-light)':'#fff')+';cursor:pointer;font-size:13px;font-weight:600">'
       +f.name+(f.count>1?' ('+f.count+' TN)':'')+'</button>'),
-    ...tnRows.filter(r=>!r.firm).map(r=>'<button type="button" onclick="iiPickRecipient(this)"'
-      +' data-name="'+r.pn.replace(/"/g,'&quot;')+'" data-email="'+(r.p?r.p.email||'':'')+'"'
+    ...tnRows.filter(r=>!r.firm).map(r=>'<button type="button" onclick="iiPickRecipient(this);rlPreviewChip(\'ii\',this)" title="Klick: Rechnung ansehen &amp; drucken"'
+      +' data-cid="'+r.e.id+'" data-name="'+r.pn.replace(/"/g,'&quot;')+'" data-email="'+(r.p?r.p.email||'':'')+'"'
       +' style="padding:5px 14px;border-radius:20px;border:1.5px solid #ddd;'
       +'background:#fff;cursor:pointer;font-size:13px;font-weight:600">'
       +r.pn+'</button>')
@@ -5730,7 +5730,10 @@ function openInstrGroupInvoiceDialog(g){
     +'\uD83E\uDDFE 1 Sammelrechnung<br><span style="font-size:12px;font-weight:400;opacity:.85">(alle Ausgew\u00e4hlten)</span></button>'
     +'<button class="btn ghost" style="flex:1;min-width:180px;justify-content:center" onclick="iiCreateEach()">'
     +'\uD83D\uDCC4 Einzelrechnungen<br><span style="font-size:12px;font-weight:400;color:#888">(je Person eine Rechnung)</span></button>'
-    +'</div></div>'
+    +'</div>'
+    +'<button class="btn" style="background:var(--blau);color:#fff;border-color:transparent;justify-content:center;width:100%" onclick="rlStart(\'ii\')">'
+    +'\u25B6 Rechnungslauf starten<br><span style="font-size:12px;font-weight:400;opacity:.9">(je Firma 1 Sammelrechnung \u00b7 Privatpersonen je 1 Rechnung)</span></button>'
+    +'</div>'
     +'<div class="modal-actions" style="margin-top:14px"><button class="btn ghost" onclick="closeModal()">Schlie\u00dfen</button></div>';
 
   showModal();
@@ -9946,14 +9949,14 @@ function openGroupInvoiceDialog(g){
 
   // Empfänger-Buttons für bekannte Firmen/Personen
   const recipChips=[
-    ...firmList.map(f=>'<button type="button" onclick="giPickRecipient(this)"'
-      +' data-name="'+f.name.replace(/"/g,'&quot;')+'" data-email="'+(f.email||'')+'"'
+    ...firmList.map(f=>'<button type="button" onclick="giPickRecipient(this);rlPreviewChip(\'gi\',this)" title="Klick: Rechnung ansehen &amp; drucken"'
+      +' data-firm="1" data-name="'+f.name.replace(/"/g,'&quot;')+'" data-email="'+(f.email||'')+'"'
       +' style="padding:5px 14px;border-radius:20px;border:1.5px solid '+(f.name===defRecipient?'var(--blau)':'var(--border)')+';'
       +'background:'+(f.name===defRecipient?'var(--blau-light)':'#fff')+';'
       +'cursor:pointer;font-size:13px;font-weight:600;transition:all .12s">'
       +f.name+(f.count>1?' ('+f.count+' TN)':'')+'</button>'),
-    ...tnRows.filter(r=>!r.firm).map(r=>'<button type="button" onclick="giPickRecipient(this)"'
-      +' data-name="'+r.pn.replace(/"/g,'&quot;')+'" data-email="'+(r.p?r.p.email||'':'')+'"'
+    ...tnRows.filter(r=>!r.firm).map(r=>'<button type="button" onclick="giPickRecipient(this);rlPreviewChip(\'gi\',this)" title="Klick: Rechnung ansehen &amp; drucken"'
+      +' data-cid="'+r.e.id+'" data-name="'+r.pn.replace(/"/g,'&quot;')+'" data-email="'+(r.p?r.p.email||'':'')+'"'
       +' style="padding:5px 14px;border-radius:20px;border:1.5px solid #ddd;'
       +'background:#fff;cursor:pointer;font-size:13px;font-weight:600;transition:all .12s">'
       +r.pn+'</button>')
@@ -9986,7 +9989,7 @@ function openGroupInvoiceDialog(g){
     +'<textarea id="gi_recipient_addr" rows="2" placeholder="Anschrift (Straße, PLZ Ort) – nur nötig, wenn keine Firma hinterlegt"'
     +' style="width:100%;margin-top:7px;padding:6px 10px;border-radius:6px;border:1px solid var(--border);font-size:13px;box-sizing:border-box;resize:vertical"></textarea>'
     +'<input id="gi_recipient_email" type="hidden">'
-    +'<div style="margin-top:4px;font-size:12px;color:#999">Klick auf Firma/Person oben oder manuell eingeben</div>'
+    +'<div style="margin-top:4px;font-size:12px;color:#999">Klick auf Firma/Person oben zeigt die Rechnung (zum Ansehen &amp; Drucken) und w\u00e4hlt den Empf\u00e4nger</div>'
     +'</div>'
     // Teilnehmer
     +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">'
@@ -10006,7 +10009,10 @@ function openGroupInvoiceDialog(g){
     +'\uD83E\uDDFE 1 Sammelrechnung<br><span style="font-size:12px;font-weight:400;opacity:.85">(alle Ausgew\u00e4hlten, Empf\u00e4nger wie oben)</span></button>'
     +'<button class="btn ghost" style="flex:1;min-width:180px;justify-content:center" onclick="giCreateEach()">'
     +'\uD83D\uDCC4 Einzelrechnungen<br><span style="font-size:12px;font-weight:400;color:#888">(je Person eine eigene Rechnung)</span></button>'
-    +'</div></div>'
+    +'</div>'
+    +'<button class="btn" style="background:var(--blau);color:#fff;border-color:transparent;justify-content:center;width:100%" onclick="rlStart(\'gi\')">'
+    +'\u25B6 Rechnungslauf starten<br><span style="font-size:12px;font-weight:400;opacity:.9">(je Firma 1 Sammelrechnung \u00b7 Privatpersonen je 1 Rechnung)</span></button>'
+    +'</div>'
     +'<div class="modal-actions" style="margin-top:14px"><button class="btn ghost" onclick="closeModal()">Schlie\u00dfen</button></div>';
 
   showModal();
@@ -10239,6 +10245,185 @@ function giCreateEach(){
   save();
   toast('✓ '+count+' Einzelrechnungen gespeichert');
   openGroupInvoiceDialog(g);
+}
+
+
+// ═══════════════════════════════════════════════════════════
+//  Rechnungsvorschau je Empfänger (Klick auf Kachel) + Rechnungslauf
+//  kind 'gi' = Lehrgang-Dialog, 'ii' = Unterweisungs-Dialog
+// ═══════════════════════════════════════════════════════════
+function _rlCtx(kind){
+  if(kind==='ii'){
+    const g=window._iiGroup;
+    const type=g.isADR?'ADR-Unterweisung':(g.instrType||'Gabelstapler');
+    return{kind,g,type,rows:window._iiTnRows||[],sel:iiGetSelected(),
+      price:+((document.getElementById('ii_price')||{}).value)||0,flat:false,
+      make:(ids,name,mail,desc,addr)=>_iiMakeInv(ids,name,mail,desc,addr),
+      desc:(label,n,isFirm)=>type+' · '+fmt(g.date)+' · '+label+(isFirm?' ('+n+' TN)':''),
+      reopen:()=>openInstrGroupInvoiceDialog(g)};
+  }
+  const g=window._giGroup;
+  return{kind,g,type:g.type,rows:window._giTnRows||[],sel:giGetSelected(),
+    price:+((document.getElementById('gi_price')||{}).value)||0,flat:(window._giPriceMode||'pp')==='flat',
+    make:(ids,name,mail,desc,addr)=>_giMakeInv(ids,name,mail,desc,g.type,addr),
+    desc:(label,n,isFirm)=>'Lehrgang '+g.type+' · '+fmt(g.date)+' · '+label+(isFirm?' ('+n+' TN)':''),
+    reopen:()=>openGroupInvoiceDialog(g)};
+}
+// Anschrift einer Privatperson (für Rechnungen ohne Firma)
+function _rlPersAddr(p){
+  if(!p)return '';
+  const str=p.street||p.strasse||'';
+  const z=[p.zip||p.plz||'',p.city||p.ort||''].filter(Boolean).join(' ');
+  return [str,z].filter(Boolean).join('\n');
+}
+// Empfänger-Gruppen bilden: je Firma eine Gruppe, jede Privatperson eine eigene
+function _rlGroups(ctx,rows){
+  const map={},list=[];
+  rows.forEach(r=>{
+    const key=r.firm?'F|'+r.firm:'P|'+r.e.id;
+    if(!map[key]){
+      let email='',addr='';
+      if(r.firm){email=coInvMail((state.companies||[]).find(c=>c.name===r.firm));}
+      else{email=r.p?(r.p.email||''):'';addr=_rlPersAddr(r.p);}
+      map[key]={key,isFirm:!!r.firm,name:r.firm||r.pn,email,addr,rows:[]};
+      list.push(map[key]);
+    }
+    map[key].rows.push(r);
+  });
+  return list;
+}
+// Rechnungs-Entwurf (noch nicht gespeichert) für eine Gruppe bauen
+function _rlDraft(ctx,grp){
+  return ctx.make(grp.rows.map(r=>r.e.id),grp.name,grp.email,
+    ctx.desc(grp.name,grp.rows.length,grp.isFirm),grp.addr);
+}
+// Mehrere Rechnungen in EIN PDF zeichnen (jede Rechnung ab neuer Seite)
+function _rlPdfMany(ids){
+  let doc=null;
+  ids.forEach(id=>{
+    const d=invoicePDF(id,{doc:doc||undefined,addPage:!!doc,noPreview:true,skipTaxCheck:!!doc});
+    if(d)doc=d;
+  });
+  return doc;
+}
+
+// Klick auf eine Empfänger-Kachel: Rechnung anzeigen (Vorschau mit Drucken)
+function rlPreviewChip(kind,btn){
+  try{
+    const ctx=_rlCtx(kind);
+    const isFirm=btn.dataset.firm==='1';
+    const name=btn.dataset.name||'';
+    const all=ctx.rows.filter(r=>isFirm?r.firm===name:(r.e.id===btn.dataset.cid));
+    if(!all.length){toast('Keine Teilnehmer für '+name);return;}
+    const selIds=new Set(ctx.sel.map(r=>r.e.id));
+    const open=all.filter(r=>!r.billed&&selIds.has(r.e.id));
+    if(open.length){
+      if(!ctx.price){toast('Bitte zuerst den Preis eingeben');return;}
+      if(ctx.flat){toast('Vorschau je Empfänger nur mit „Preis pro Person“ möglich');return;}
+      const grp=_rlGroups(ctx,open)[0];
+      const inv=_rlDraft(ctx,grp);
+      if(!inv)return;
+      inv.number='ENTWURF';
+      state.invoices.push(inv);           // nur kurz für die Vorschau, wird NICHT gespeichert
+      try{invoicePDF(inv.id);}
+      finally{const i=state.invoices.indexOf(inv);if(i>=0)state.invoices.splice(i,1);}
+      const billedN=all.filter(r=>r.billed).length;
+      toast('Entwurf – noch nicht gespeichert'+(billedN?' · '+billedN+' TN sind bereits abgerechnet':''));
+      return;
+    }
+    // Alles schon abgerechnet -> vorhandene Rechnung(en) zeigen
+    const invs=[...new Set(all.filter(r=>r.billed&&r.inv).map(r=>r.inv))];
+    if(!invs.length){toast('Keine ausgewählten offenen Teilnehmer für '+name);return;}
+    if(invs.length===1){invoicePDF(invs[0].id);return;}
+    const doc=_rlPdfMany(invs.map(i=>i.id));
+    if(doc)previewPdf(doc,'Rechnungen_'+name.replace(/[^\w\-]+/g,'_')+'.pdf');
+  }catch(e){console.error('Rechnungsvorschau',e);toast('Fehler bei der Vorschau: '+e.message);}
+}
+
+// Rechnungslauf: alle ausgewählten, offenen Teilnehmer nach Empfänger abrechnen
+function rlStart(kind){
+  const ctx=_rlCtx(kind);
+  if(!ctx.price){toast('Bitte zuerst den Preis eingeben');return;}
+  if(ctx.flat){toast('Rechnungslauf nur mit „Preis pro Person“ möglich');return;}
+  const open=ctx.sel.filter(r=>!r.billed);
+  if(!open.length){toast('Keine offenen Teilnehmer ausgewählt');return;}
+  const groups=_rlGroups(ctx,open);
+  const drafts=[];
+  for(const grp of groups){const inv=_rlDraft(ctx,grp);if(!inv)return;drafts.push({grp,inv});}
+  window._rlRun={kind,drafts};
+  const total=drafts.reduce((a,d)=>a+d.inv.gross,0);
+  const rows=drafts.map(d=>{
+    const co=d.grp.isFirm?(state.companies||[]).find(c=>c.name===d.grp.name):null;
+    const noAddr=d.grp.isFirm?!(co&&co.addr&&co.addr.trim()):!d.grp.addr;
+    const warn=[];
+    if(noAddr)warn.push('Anschrift fehlt');
+    if(!d.grp.email)warn.push('keine E-Mail');
+    return '<tr>'
+      +'<td style="padding:7px 8px;border-bottom:1px solid var(--border)"><div style="font-weight:600">'+_esc(d.grp.name)+'</div>'
+      +'<div style="font-size:12px;color:#888">'+(d.grp.isFirm?'Sammelrechnung':'Einzelrechnung')+' · '+d.grp.rows.map(r=>_esc(r.pn)).join(', ')+'</div>'
+      +(warn.length?'<div style="font-size:12px;color:#C0001A">⚠ '+warn.join(' · ')+'</div>':'')+'</td>'
+      +'<td style="padding:7px 8px;border-bottom:1px solid var(--border);text-align:center">'+d.grp.rows.length+'</td>'
+      +'<td style="padding:7px 8px;border-bottom:1px solid var(--border);text-align:right;white-space:nowrap">'+eur(d.inv.gross)+'</td></tr>';
+  }).join('');
+  const mc=document.getElementById('modalContent');
+  [...mc.children].forEach(el=>{if(el.id!=='rlPanel'){el.dataset.rlHidden='1';el.style.display='none';}});
+  let panel=document.getElementById('rlPanel');if(panel)panel.remove();
+  panel=document.createElement('div');panel.id='rlPanel';
+  panel.innerHTML='<h3>Rechnungslauf prüfen</h3>'
+    +'<div style="background:#f5f5f5;border-radius:9px;padding:10px 16px;margin-bottom:14px;font-size:14px">'
+    +'Es werden <strong>'+drafts.length+' Rechnungen</strong> für <strong>'+open.length+' Teilnehmer</strong> erstellt · Rechnungsdatum '+fmt(drafts[0].inv.date)
+    +' · Summe <strong style="color:#C0001A">'+eur(total)+'</strong></div>'
+    +'<table style="width:100%;border-collapse:collapse;font-size:14px;margin-bottom:14px">'
+    +'<thead><tr style="font-size:11px;font-weight:600;color:var(--grau);letter-spacing:.04em;text-transform:uppercase">'
+    +'<th style="text-align:left;padding:6px 8px">Empfänger</th><th style="padding:6px 8px">TN</th><th style="text-align:right;padding:6px 8px">Betrag</th></tr></thead>'
+    +'<tbody>'+rows+'</tbody></table>'
+    +'<div class="modal-actions"><button class="btn ghost" onclick="rlBack()">Zurück</button>'
+    +'<button class="btn btn-primary" style="background:#C0001A;color:#fff;border-color:transparent" onclick="rlConfirm()">✓ Jetzt '+drafts.length+' Rechnungen erstellen</button></div>';
+  mc.appendChild(panel);
+  mc.scrollTop=0;try{document.getElementById('modal').scrollTop=0;}catch(e){}
+}
+function rlBack(){
+  const p=document.getElementById('rlPanel');if(p)p.remove();
+  document.querySelectorAll('#modalContent [data-rl-hidden]').forEach(el=>{el.style.display='';delete el.dataset.rlHidden;});
+}
+function rlConfirm(){
+  const run=window._rlRun;
+  if(!run||!run.drafts||!run.drafts.length){rlBack();return;}
+  const created=[];
+  run.drafts.forEach(d=>{
+    const inv=d.inv;
+    // Doppelte Abrechnung verhindern (falls zwischendurch schon abgerechnet wurde)
+    const billed=new Set(state.invoices.flatMap(i=>i.items.map(it=>it.courseId)));
+    if(inv.items.some(it=>billed.has(it.courseId)))return;
+    const no=nextInvNo(inv.type);
+    inv.number=no.number;inv.year=no.year;inv.seq=no.seq;
+    state.invoices.push(inv);_invUpdateExtDates(inv);created.push(inv);
+  });
+  window._rlRun=null;
+  if(!created.length){toast('Keine Rechnungen erstellt – bereits abgerechnet');rlBack();return;}
+  save();
+  window._rlCreated=created.map(i=>i.id);
+  const list=created.map(inv=>'<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--border);border-radius:8px">'
+    +'<div style="flex:1;min-width:0"><div style="font-weight:600">'+_esc(inv.recipient)+'</div>'
+    +'<div style="font-size:12px;color:#888">'+inv.number+' · '+inv.items.length+' TN · '+eur(inv.gross)+'</div></div>'
+    +'<button class="btn sm" onclick="invoicePDF(\''+inv.id+'\')">🖨 Ansehen / Drucken</button></div>').join('');
+  const panel=document.getElementById('rlPanel');
+  panel.innerHTML='<h3>✓ Rechnungslauf abgeschlossen</h3>'
+    +'<div style="font-size:14px;margin-bottom:12px">'+created.length+' Rechnungen wurden gespeichert und stehen unter „Rechnungen“.</div>'
+    +'<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px">'+list+'</div>'
+    +'<div class="modal-actions"><button class="btn ghost" onclick="rlDone(\''+run.kind+'\')">Fertig</button>'
+    +'<button class="btn" style="background:var(--blau);color:#fff;border-color:transparent" onclick="rlPrintAll()">🖨 Alle Rechnungen drucken</button></div>';
+  toast('✓ '+created.length+' Rechnungen erstellt');
+}
+function rlPrintAll(){
+  const ids=window._rlCreated||[];
+  if(!ids.length)return;
+  const doc=_rlPdfMany(ids);
+  if(doc)previewPdf(doc,'Rechnungslauf_'+today()+'.pdf');
+}
+function rlDone(kind){
+  try{_rlCtx(kind).reopen();}catch(e){closeModal();}
+  try{renderAll();}catch(e){}
 }
 
 
@@ -12811,7 +12996,8 @@ function mahnungPDF(invId,stufe){
   previewPdf(doc,cfg.kurzLabel.replace(/\s/g,'_')+'_'+inv.number+'_'+datum+'.pdf');
   }catch(e){console.error('Mahnung-PDF Fehler',e);toast('PDF-Fehler: '+e.message);}
 }
-function invoicePDF(id){
+function invoicePDF(id,opts){
+  opts=opts||{};
   try{
   const inv=state.invoices.find(x=>x.id===id);
   const s=state.settings;
@@ -12822,11 +13008,12 @@ function invoicePDF(id){
   if(!inv.items||!inv.items.length){toast('⚠ Rechnung enthält keine Positionen');return;}
   if(!(inv.gross>0)){toast('⚠ Rechnungsbetrag ist 0 € – bitte prüfen');return;}
   // Pflichtangabe § 14 Abs. 4 Nr. 2 UStG: Steuernummer oder USt-IdNr.
-  if(!s.taxId||!s.taxId.trim()){
+  if(!opts.skipTaxCheck&&(!s.taxId||!s.taxId.trim())){
     if(!confirm('Steuernummer/USt-IdNr. ist nicht hinterlegt.\n\nDiese ist eine Pflichtangabe auf jeder Rechnung (auch bei Steuerbefreiung).\nUnter Einstellungen › Rechnungsangaben eintragen.\n\nRechnung trotzdem erstellen?')) return;
   }
   const {jsPDF}=window.jspdf;
-  const doc=new jsPDF('p','mm','a4');
+  const doc=opts.doc||new jsPDF('p','mm','a4');
+  if(opts.doc&&opts.addPage)doc.addPage();
   const PL=20, PR=190, PW=170, PC=105; // linker Rand, rechter Rand, Seitenbreite, Mitte
 
   // ── 1. Falt- und Lochmarken (DIN 5008) ────────────────────────────────────
@@ -13073,6 +13260,7 @@ const recipAddr=(recipientCo&&recipientCo.addr)?recipientCo.addr:(inv.recipientA
   // Footer: APV-Siegel + QR-Code (mit Zahlungshinweis – nur auf Rechnungen)
   pdfFooterImages(doc, true);
 
+  if(opts.noPreview)return doc;
   previewPdf(doc,'Rechnung_'+inv.number+'.pdf');
   }catch(e){console.error('Rechnung-PDF-Fehler',e);toast('Fehler beim Erstellen der Rechnung: '+e.message);}
 }
