@@ -13140,7 +13140,8 @@ const recipAddr=(recipientCo&&recipientCo.addr)?recipientCo.addr:(inv.recipientA
     y+=7;
     // Trennlinie nur ZWISCHEN Zeilen (nicht nach der letzten)
     if(n<inv.items.length-1){
-      doc.setDrawColor(220,215,205);doc.setLineWidth(0.15);doc.line(PL,y-1,PR,y-1);
+      // Linie knapp UNTER der Schrift der aktuellen Zeile (nicht durch die nächste Zeile)
+      doc.setDrawColor(220,215,205);doc.setLineWidth(0.15);doc.line(PL,y-4.5,PR,y-4.5);
     }
   });
   // Abschlusslinie nach der Tabelle (etwas kräftiger)
