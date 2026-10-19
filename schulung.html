@@ -1432,6 +1432,9 @@ function _kursZuDb(c){
     bauart: c.bauart||'', antrieb: c.antrieb||'', tragfaehigkeit: c.tragfaehigkeit||'',
     pruef_theorie: c.pruefTheorie||'', pruef_praxis: c.pruefPraxis||'',
     confirmation_sent: c.confirmationSent||null,
+    // Teilnahmebescheinigung per E-Mail versendet (Zeitpunkt). Muss in der DB
+    // stehen, sonst geht die Info beim Neuladen / an anderen PCs verloren.
+    ...(window._ohneCertSpalte ? {} : {cert_mail_sent: _certZeit(c.certMailSent)}),
     // BQR/KBA-Meldestatus (Migration 31). Zwei Stufen, weil "Datei erzeugt"
     // noch keine Meldung ist - erst der Upload ins KBA-Portal zaehlt.
     bqr_datei_am: c.bqrDateiAm||null,
@@ -1462,6 +1465,7 @@ function _kursVonDb(r){
     bauart: r.bauart||'', antrieb: r.antrieb||'', tragfaehigkeit: r.tragfaehigkeit||'',
     pruefTheorie: r.pruef_theorie||'', pruefPraxis: r.pruef_praxis||'',
     confirmationSent: r.confirmation_sent||null,
+    certMailSent: r.cert_mail_sent||null,
     bqrDateiAm: r.bqr_datei_am||'',
     bqrGemeldetAm: r.bqr_gemeldet_am||'',
     fesBausteine: Array.isArray(r.fes_bausteine)?r.fes_bausteine:[],
@@ -1487,6 +1491,27 @@ async function ladeKurseHaupt(){
 // Spiegel des letzten bekannten DB-Stands: legacy_id → {hash, dbId}
 let _kursSpiegel = new Map();
 function _kursHash(c){ const {_dbId, ...rest}=c; return JSON.stringify(rest); }
+// ── Bescheinigungs-Versandvermerk (Spalte cert_mail_sent) ────────────────
+// Alte Einträge hatten nur "true" ohne Datum → als unbekannten Zeitpunkt
+// speichern (Sentinel 2000-01-01), damit der Vermerk nicht verloren geht.
+const CERT_ALT='2000-01-01T00:00:00.000Z';
+function _certZeit(v){ if(!v) return null; return typeof v==='string' ? v : CERT_ALT; }
+function _certDatumText(v){
+  const z=_certZeit(v); if(!z) return '';
+  if(z.slice(0,10)===CERT_ALT.slice(0,10)) return 'vor der Umstellung (Datum unbekannt)';
+  const d=new Date(z);
+  return 'am '+d.toLocaleDateString('de-DE')+' um '+d.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})+' Uhr';
+}
+// Fehlt die DB-Spalte noch (SQL nicht ausgeführt), schaltet die App das Feld
+// ab, statt den kompletten Kurs-Sync zu blockieren.
+async function _certSpalteFehlt(r){
+  try{
+    const t=await r.clone().text();
+    if(/cert_mail_sent/.test(t)){ window._ohneCertSpalte=true;
+      console.warn('Spalte cert_mail_sent fehlt in schulung_courses – bitte SQL ausführen'); return true; }
+  }catch(_e){}
+  return false;
+}
 let _kursSyncAktiv=false, _kursSyncLief=false;
 async function syncKurseHaupt(){
   if(!_kursSyncAktiv) return;
@@ -1502,13 +1527,18 @@ async function syncKurseHaupt(){
         // INSERT
         const body=_kursZuDb(c);
         body.id=_neueUuid(); body.created_at=new Date().toISOString();
-        const r=await fetch(`${MAIN_URL}/rest/v1/schulung_courses`,{method:'POST',headers:mainHeaders(),body:JSON.stringify(body)});
+        let r=await fetch(`${MAIN_URL}/rest/v1/schulung_courses`,{method:'POST',headers:mainHeaders(),body:JSON.stringify(body)});
+        if(!r.ok && await _certSpalteFehlt(r)){ delete body.cert_mail_sent;
+          r=await fetch(`${MAIN_URL}/rest/v1/schulung_courses`,{method:'POST',headers:mainHeaders(),body:JSON.stringify(body)}); }
         if(r.ok){ c._dbId=body.id; _kursSpiegel.set(c.id,{hash,dbId:body.id}); }
         else { console.error('Kurs-Insert',r.status,await r.text().catch(()=>'')); _syncFehlerMelden('Kurs-Insert'); }
       } else if(bekannt.hash!==hash){
         // UPDATE
-        const r=await fetch(`${MAIN_URL}/rest/v1/schulung_courses?id=eq.${bekannt.dbId}`,
+        let r=await fetch(`${MAIN_URL}/rest/v1/schulung_courses?id=eq.${bekannt.dbId}`,
           {method:'PATCH',headers:mainHeaders({'Prefer':'return=minimal'}),body:JSON.stringify(_kursZuDb(c))});
+        if(!r.ok && await _certSpalteFehlt(r)){
+          r=await fetch(`${MAIN_URL}/rest/v1/schulung_courses?id=eq.${bekannt.dbId}`,
+            {method:'PATCH',headers:mainHeaders({'Prefer':'return=minimal'}),body:JSON.stringify(_kursZuDb(c))}); }
         if(r.ok){ c._dbId=bekannt.dbId; _kursSpiegel.set(c.id,{hash,dbId:bekannt.dbId}); }
         else { console.error('Kurs-Update',r.status,await r.text().catch(()=>'')); _syncFehlerMelden('Kurs-Update'); }
       }
@@ -2211,7 +2241,7 @@ function normalizeData(){
     const k=c.date+'|'+c.type+'|'+(c.location||'');
     return c.participant||!groupHasReal[k]; // leere nur behalten wenn Gruppe keine echten hat
   });
-  state.courses=state.courses.filter(Boolean).map(c=>({id:c.id||uid(),participant:c.participant||'',type:c.type||'Gabelstapler',date:c.dateFrom||c.date||today(),dateFrom:c.dateFrom||c.date||today(),dateTo:c.dateTo||c.dateFrom||c.date||today(),location:c.location||'',locationPraxis:c.locationPraxis||'',theory:+c.theory||0,practice:+c.practice||0,vehicleHours:+c.vehicleHours||0,simHours:+c.simHours||0,passed:!!c.passed,note:c.note||'',dozent:c.dozent||'',themes:Array.isArray(c.themes)?c.themes:[],lsDauer:c.lsDauer||'',capacity:+c.capacity||0,bauart:c.bauart||'',antrieb:c.antrieb||'',tragfaehigkeit:c.tragfaehigkeit||'',pruefTheorie:c.pruefTheorie||'',pruefPraxis:c.pruefPraxis||'',confirmationSent:c.confirmationSent||null,
+  state.courses=state.courses.filter(Boolean).map(c=>({id:c.id||uid(),participant:c.participant||'',type:c.type||'Gabelstapler',date:c.dateFrom||c.date||today(),dateFrom:c.dateFrom||c.date||today(),dateTo:c.dateTo||c.dateFrom||c.date||today(),location:c.location||'',locationPraxis:c.locationPraxis||'',theory:+c.theory||0,practice:+c.practice||0,vehicleHours:+c.vehicleHours||0,simHours:+c.simHours||0,passed:!!c.passed,note:c.note||'',dozent:c.dozent||'',themes:Array.isArray(c.themes)?c.themes:[],lsDauer:c.lsDauer||'',capacity:+c.capacity||0,bauart:c.bauart||'',antrieb:c.antrieb||'',tragfaehigkeit:c.tragfaehigkeit||'',pruefTheorie:c.pruefTheorie||'',pruefPraxis:c.pruefPraxis||'',confirmationSent:c.confirmationSent||null,certMailSent:c.certMailSent||null,
     // FES: tatbezogene Bausteine je Teilnehmer (verkehrspädagogische Teilmaßnahme)
     fesBausteine:Array.isArray(c.fesBausteine)?c.fesBausteine:[]}));
   state.planned=state.planned.filter(Boolean).map(pl=>({id:pl.id||uid(),type:pl.type||'Gabelstapler',date:pl.date||today(),location:pl.location||'',capacity:+pl.capacity||0,dozent:pl.dozent||'',note:pl.note||'',participants:Array.isArray(pl.participants)?pl.participants:[]}));
@@ -4881,6 +4911,7 @@ function qualMenu(courseId){
       <button class="btn ghost" onclick="closeModal()">Schließen</button>
       <button class="btn ghost" onclick="openCourse('${c.id}')">${IC('stift')} Bearbeiten</button>
       <button class="btn" onclick="certificate('${c.id}')">📄 Bescheinigung herunterladen</button>
+      ${c.passed?`<button class="btn ghost" onclick="certMailManuell('${c.id}')" title="${c.certMailSent?'Bereits versendet '+_certDatumText(c.certMailSent):'Noch nicht per E-Mail versendet'}">✉ Per E-Mail senden${c.certMailSent?' ✓':''}</button>`:''}
     </div>`;
   showModal();
 }
@@ -5887,18 +5918,32 @@ function certificate(id){
 // ist jeder Tag/Modul ein eigener Lehrgangseintrag (co) → pro Tag eine eigene
 // Bescheinigung. Idempotent über co.certMailSent + state.sentCertKeys (kein
 // Doppelversand). Ohne hinterlegte E-Mail wird still übersprungen. Keine Rechnung.
-async function sendBescheinigungMail(co){
+async function sendBescheinigungMail(co, opt){
+  opt=opt||{};
+  const manuell=!!opt.manuell, erneut=!!opt.erneut;
+  let dedupeKey='';
   try{
-    if(!co||co.passed!==true) return;          // nur bei bestanden/anwesend
-    // In den Einstellungen ausgeschaltet → kein automatischer Versand
-    if(((state.settings||{}).autoMails||{}).bescheinigung===false) return;
+    if(!co||co.passed!==true){ if(manuell) toast('⚠ Bescheinigung nur für bestandene / teilgenommene Einträge'); return; }
+    // In den Einstellungen ausgeschaltet → kein AUTOMATISCHER Versand (manuell geht)
+    if(!manuell && ((state.settings||{}).autoMails||{}).bescheinigung===false) return;
     const p = state.participants.find(x=>x.id===co.participant);
     if(!p) return;
     // Stabiler Dedupe-Schlüssel (überlebt auch das Neu-Anlegen der Kurs-Einträge
     // beim Speichern des Gruppen-Dialogs, wo sich die id ändert)
-    const dedupeKey = (co.participant||'')+'|'+(co.type||'')+'|'+(co.dateFrom||co.date||'');
+    dedupeKey = (co.participant||'')+'|'+(co.type||'')+'|'+(co.dateFrom||co.date||'');
     state.sentCertKeys = state.sentCertKeys || {};
-    if(co.certMailSent || state.sentCertKeys[dedupeKey]) return;  // nie doppelt
+    // Sperre gegen Doppelklick / mehrere gleichzeitige Auslöser: sofort (vor
+    // jedem await) belegen, damit ein zweiter Aufruf gar nicht erst startet.
+    window._certInFlight = window._certInFlight || new Set();
+    if(window._certInFlight.has(dedupeKey)) return;
+    window._certInFlight.add(dedupeKey);
+    if(!erneut){
+      // 1. Lokal schon vermerkt?
+      if(co.certMailSent || state.sentCertKeys[dedupeKey] || _certGleiche(co).some(x=>x.certMailSent)) return;
+      // 2. In der Datenbank schon vermerkt? (anderer PC, neu geladen, Eintrag neu angelegt)
+      const dbZeit = await _certInDb(co);
+      if(dbZeit){ _certVermerken(co, dedupeKey, dbZeit); return; }
+    }
     const email = String(p.email||'').trim();
     if(!email) return;                          // keine E-Mail → still überspringen
     if(!window.jspdf||!window.jspdf.jsPDF) return;
@@ -5940,9 +5985,68 @@ async function sendBescheinigungMail(co){
       body:JSON.stringify({to:email, toName:pFullName(p), subject:'Ihre Teilnahmebescheinigung – '+(co.type||'Lehrgang'),
         htmlContent:html, attachments:[{content:b64, name:fname}]})});
     const d = await r.json().catch(()=>({}));
-    if(r.ok && d.ok!==false){ co.certMailSent=true; state.sentCertKeys[dedupeKey]=true; save(); toast('✓ Bescheinigung an '+email+' gesendet'); }
+    if(r.ok && d.ok!==false){
+      const jetzt=new Date().toISOString();
+      _certVermerken(co, dedupeKey, jetzt);
+      _certInDbVermerken(co, jetzt);
+      toast('✓ Bescheinigung an '+email+' gesendet');
+    }
     else { toast('⚠ Bescheinigung an '+email+' konnte nicht gesendet werden'); }
   }catch(e){ /* Versand ist best-effort – Fehler nicht blockierend */ }
+  finally{ if(dedupeKey && window._certInFlight) window._certInFlight.delete(dedupeKey); }
+}
+// Alle Einträge desselben TN / Lehrgangs / Datums (auch Doppel-Einträge)
+function _certGleiche(co){
+  const d=co.dateFrom||co.date||'';
+  return state.courses.filter(x=>x.participant===co.participant && x.type===co.type && (x.dateFrom||x.date||'')===d);
+}
+function _certVermerken(co, key, zeit){
+  co.certMailSent=zeit;
+  _certGleiche(co).forEach(x=>{ x.certMailSent=zeit; });
+  state.sentCertKeys=state.sentCertKeys||{}; state.sentCertKeys[key]=true;
+  save();
+}
+function _certFilter(co){
+  const d=co.dateFrom||co.date||'';
+  return 'participant_legacy=eq.'+encodeURIComponent(co.participant||'')
+    +'&type=eq.'+encodeURIComponent(co.type||'')
+    +(d?'&date_from=eq.'+encodeURIComponent(d):'');
+}
+// Liefert den Versandzeitpunkt aus der DB oder null (auch wenn nicht prüfbar)
+async function _certInDb(co){
+  if(window._ohneCertSpalte || typeof MAIN_URL==='undefined') return null;
+  try{
+    const r=await _fetchMitTimeout(`${MAIN_URL}/rest/v1/schulung_courses?select=cert_mail_sent&${_certFilter(co)}&cert_mail_sent=not.is.null&limit=1`,
+      {headers:mainHeaders()}, 6000);
+    if(!r.ok){ await _certSpalteFehlt(r); return null; }
+    const rows=await r.json();
+    return rows && rows[0] && rows[0].cert_mail_sent || null;
+  }catch(_e){ return null; }
+}
+// Sofort in die DB schreiben – nicht erst beim nächsten Sync
+async function _certInDbVermerken(co, zeit){
+  if(window._ohneCertSpalte || typeof MAIN_URL==='undefined') return;
+  try{
+    const r=await fetch(`${MAIN_URL}/rest/v1/schulung_courses?${_certFilter(co)}`,
+      {method:'PATCH',headers:mainHeaders({'Prefer':'return=minimal'}),body:JSON.stringify({cert_mail_sent:zeit})});
+    if(!r.ok) await _certSpalteFehlt(r);
+  }catch(_e){}
+}
+// Manuell per Knopf: ist schon eine raus, wird vorher nachgefragt
+async function certMailManuell(courseId){
+  const co=state.courses.find(c=>c.id===courseId); if(!co) return;
+  const p=state.participants.find(x=>x.id===co.participant);
+  const email=p?String(p.email||'').trim():'';
+  if(!email){ toast('⚠ Beim Teilnehmer ist keine E-Mail-Adresse hinterlegt'); return; }
+  if(co.passed!==true){ toast('⚠ Bescheinigung nur für bestandene / teilgenommene Einträge'); return; }
+  const lokal=co.certMailSent || (_certGleiche(co).find(x=>x.certMailSent)||{}).certMailSent;
+  const zeit=lokal || await _certInDb(co);
+  if(zeit){
+    askConfirm('Die Teilnahmebescheinigung wurde '+_certDatumText(zeit)+' bereits versendet.\n\nErneut an '+email+' senden?',
+      ()=>sendBescheinigungMail(co,{manuell:true,erneut:true}), 'Erneut senden', 'btn');
+  } else {
+    sendBescheinigungMail(co,{manuell:true});
+  }
 }
 
 
@@ -8180,6 +8284,7 @@ function viewParticipant(id){
     ${cs.length?cs.map(c=>`<div style="padding:8px 0;border-bottom:1px solid #eee7da;font-size:14px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
       <span>${fmt(c.date)}</span> <span class="tag ${typeTag(c.type)}">${c.type}</span> ${c.passed?'<span class="tag green">'+(String(c.type||'').indexOf('BKF Modul')===0?'teilgenommen':'bestanden')+'</span>':'<span class="tag crit">'+(String(c.type||'').indexOf('BKF Modul')===0?'nicht teilgenommen':'nicht bestanden')+'</span>'}
       <button class="btn sm" style="margin-left:auto" onclick="certificate('${c.id}')">📄 Bescheinigung</button>
+      ${c.passed?`<button class="btn sm ghost" onclick="certMailManuell('${c.id}')" title="${c.certMailSent?'Bereits versendet '+_certDatumText(c.certMailSent):'Noch nicht per E-Mail versendet'}">✉${c.certMailSent?' ✓':''}</button>`:''}
       ${(c.type==='Gabelstapler'||c.type==='Ladekran'||c.type==='Baumaschinen')&&c.passed?`<button class="btn sm" onclick="fahrausweis('${c.id}')">🪪 ${c.type==='Gabelstapler'?'Fahrausweis':'Befähigungsnachweis'}</button>`:''}
     </div>`).join(''):'<p class="hint">Keine</p>'}
     <h4 style="margin:18px 0 8px;color:var(--steel)">Unterweisungen (${ins.length})</h4>

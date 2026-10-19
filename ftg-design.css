@@ -418,3 +418,9 @@ input[type=file]::file-selector-button:hover{background:#F6F7F9}
 .dok-act[title="Entfernen"]:hover svg{color:#C51D2A!important}
 .dok-count{background:#EEF1F4!important;color:#68717D!important;font-weight:700}
 .dok-chip:not(.active):hover{border-color:#C9CFD6!important;color:#20242B!important;background:#fff!important}
+
+/* ── Nur EINE Laufleiste: Solange ein Dialog offen ist, scrollt die Seite dahinter
+      nicht mit. Gescrollt wird dann ausschließlich im Dialog. Gilt für die Dialoge
+      der Verwaltung (.modal-overlay) und des Schulungsmoduls (.modal-bg). ── */
+html:has(.modal-overlay.open), html:has(.modal-bg.open){ overflow:hidden !important; }
+html:has(.modal-overlay.open) body, html:has(.modal-bg.open) body{ overflow:hidden !important; }

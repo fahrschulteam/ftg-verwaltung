@@ -80,7 +80,7 @@
     eigene: {},          // nr -> { an:true, datum:'' }
     adr: { an: false, datum: '' },
     tier: { an: false, datum: '' },
-    extern: [],          // { titel, datum, ue, kb:[] }
+    extern: [],          // { titel, datum, ue, kb:[], q:'fahrer'|'' (Eigenangabe), fest:true (nicht änderbar) }
   };
 
   // ── Hilfen ────────────────────────────────────────────────────────
@@ -194,9 +194,49 @@
     return { f, posten, ueIst, ueFehlt, anzahl, empfehlung, hinweise, abgedeckt, plan, pflicht };
   }
 
+  // ── Hilfe "Wo finde ich das Ablaufdatum?" (Fahrerseite / Firmenportal) ──
+  // Eigene Schemazeichnung des Fahrerqualifizierungsnachweises (FQN), Feld 4b.
+  let infoOffen = false;
+  const FQN_BILD = `<svg viewBox="0 0 340 214" role="img" aria-label="Schemazeichnung Fahrerqualifizierungsnachweis: Das Ablaufdatum steht in Feld 4b" style="display:block;width:100%;max-width:360px;height:auto">
+    <rect x="1" y="1" width="338" height="212" rx="12" fill="#EAF1F8" stroke="#9DB3C8" stroke-width="2"/>
+    <rect x="14" y="14" width="34" height="24" rx="3" fill="#1F4E9A"/>
+    <text x="31" y="31" text-anchor="middle" font-family="Arial,sans-serif" font-size="13" font-weight="bold" fill="#fff">D</text>
+    <text x="58" y="25" font-family="Arial,sans-serif" font-size="10.5" font-weight="bold" fill="#20242B">FAHRERQUALIFIZIERUNGSNACHWEIS</text>
+    <text x="58" y="37" font-family="Arial,sans-serif" font-size="7.5" fill="#68717D">BUNDESREPUBLIK DEUTSCHLAND</text>
+    <rect x="14" y="52" width="82" height="104" rx="4" fill="#fff" stroke="#9DB3C8"/>
+    <circle cx="55" cy="90" r="17" fill="#C9D5E1"/><path d="M27 150c0-22 13-33 28-33s28 11 28 33z" fill="#C9D5E1"/>
+    <g font-family="Arial,sans-serif" font-size="10" fill="#20242B">
+      <text x="110" y="64"><tspan fill="#68717D">1.</tspan> Mustermann</text>
+      <text x="110" y="80"><tspan fill="#68717D">2.</tspan> Max</text>
+      <text x="110" y="96"><tspan fill="#68717D">3.</tspan> 12.03.1985 Lingen</text>
+      <text x="110" y="112"><tspan fill="#68717D">4a.</tspan> 01.09.2022</text>
+      <text x="110" y="131" font-weight="bold"><tspan fill="#68717D">4b.</tspan> 01.09.2027</text>
+      <text x="110" y="150"><tspan fill="#68717D">4c.</tspan> Landkreis …</text>
+      <text x="110" y="166"><tspan fill="#68717D">5a.</tspan> B072RRE2I55</text>
+    </g>
+    <rect x="104" y="118" width="98" height="19" rx="5" fill="none" stroke="#C51D2A" stroke-width="2.5"/>
+    <path d="M250 127H210m0 0l8-5m-8 5l8 5" fill="none" stroke="#C51D2A" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+    <text x="256" y="124" font-family="Arial,sans-serif" font-size="10" font-weight="bold" fill="#C51D2A">Dieses</text>
+    <text x="256" y="136" font-family="Arial,sans-serif" font-size="10" font-weight="bold" fill="#C51D2A">Datum</text>
+    <text x="14" y="200" font-family="Arial,sans-serif" font-size="7.5" fill="#68717D">Schemazeichnung – Vorderseite der Karte</text>
+  </svg>`;
+  function infoPanel() {
+    return `<div class="bkr-info">
+        <div class="bkr-t" style="margin-bottom:6px">Wo finde ich das Ablaufdatum?</div>
+        ${FQN_BILD}
+        <div class="bkr-s" style="margin-top:8px;font-size:12.5px;line-height:1.5">
+          <b>Fahrerqualifizierungsnachweis (FQN):</b> Auf der Vorderseite der Karte steht das Ablaufdatum in <b>Feld 4b</b>.<br>
+          <b>Noch keinen FQN?</b> Dann steht das Datum auf der Rückseite des Führerscheins in Spalte 12 hinter der Schlüsselzahl <b>95</b>, z. B. „95 (01.09.2027)“.
+        </div>
+      </div>`;
+  }
+
   // ── Darstellung ───────────────────────────────────────────────────
   let root = null;
-  let OPT = {};         // { firma:true } = Firmenportal (ohne E-Mail-Karte), fahrer = vorbelegter Name
+  let OPT = {};         // { firma:true } = Firmenportal (ohne E-Mail-Karte), fahrer = vorbelegter Name,
+                        // { selbst:true } = persönliche Fahrerseite (mein-bkf.html): eigene Module nur lesbar,
+                        //   ablaufFest = Stichtag nicht änderbar, onChange = Rückruf nach jeder Änderung
+  const EIGENANGABE = '<span class="bkr-eigen" title="Nicht vom Fahrschulteam geprüft">vom Fahrer selbst eingetragen</span>';
 
   function render(el, opt) {
     root = el;
@@ -204,12 +244,12 @@
     el.innerHTML = `
       <div class="toolbar" style="margin-bottom:14px;justify-content:space-between">
         <div style="display:flex;flex-direction:column;gap:2px">
-          ${OPT.firma ? '' : '<div style="font-size:16px;font-weight:700;color:var(--dunkel)">BKF-Modul-Rechner</div>'}
-          <div style="font-size:12px;color:var(--grau)">${OPT.fahrer ? `Vorbelegt mit den Daten von <b style="color:var(--dunkel)">${esc(OPT.fahrer)}</b> – weitere Schulungen (z. B. extern, ADR) einfach ergänzen.` : 'Vorhandene Schulungen eintragen – darunter steht sofort, welche Module noch fehlen.'}</div>
+          ${OPT.firma || OPT.selbst ? '' : '<div style="font-size:16px;font-weight:700;color:var(--dunkel)">BKF-Modul-Rechner</div>'}
+          <div style="font-size:12px;color:var(--grau)">${OPT.selbst ? 'Tragen Sie Ihre Schulungen bei anderen Anbietern ein – darunter steht sofort, welche Module Ihnen noch fehlen.' : OPT.fahrer ? `Vorbelegt mit den Daten von <b style="color:var(--dunkel)">${esc(OPT.fahrer)}</b> – weitere Schulungen (z. B. extern, ADR) einfach ergänzen.` : 'Vorhandene Schulungen eintragen – darunter steht sofort, welche Module noch fehlen.'}</div>
         </div>
         <div style="display:flex;gap:8px">
           <button class="btn btn-outline btn-sm" id="bkr-kopieren">Ergebnis kopieren</button>
-          <button class="btn btn-outline btn-sm" id="bkr-reset">Neu</button>
+          ${OPT.selbst ? '' : '<button class="btn btn-outline btn-sm" id="bkr-reset">Neu</button>'}
         </div>
       </div>
       <div class="bkr-grid">
@@ -263,11 +303,15 @@
         .bkr-termin:last-child{border-bottom:none}
         .bkr-datum{flex:0 0 52px;text-align:center;background:#FBEAEC;color:#9F1722;border-radius:10px;padding:6px 0;line-height:1.15}
         .bkr-datum b{display:block;font-size:11px}.bkr-datum span{display:block;font-size:14px;font-weight:900}
+        .bkr-i{flex:0 0 26px;width:26px;height:26px;border-radius:50%;border:2px solid #2A6CAE;background:#fff;color:#2A6CAE;font:italic 700 15px Georgia,"Times New Roman",serif;line-height:1;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;padding:0}
+        .bkr-i:hover,.bkr-i.on{background:#2A6CAE;color:#fff}
+        .bkr-info{margin-top:10px;padding:12px 14px;border:1px solid #cfdcec;border-radius:12px;background:#F7FAFD}
+        .bkr-eigen{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;background:#FFF7E6;color:#8A5A00;border:1px solid #F5DDA6;white-space:nowrap}
         .bkr-note{font-size:12px;color:#8A5A00;background:#FFF7E6;border:1px solid #F5DDA6;border-radius:10px;padding:7px 10px;margin-top:6px}
       </style>`;
-    el.querySelector('#bkr-reset').onclick = () => {
+    if (el.querySelector('#bkr-reset')) el.querySelector('#bkr-reset').onclick = () => {
       if (OPT.fahrer) { OPT.fahrer = ''; render(el); }
-      S.art = 'C'; S.ablauf = ''; S.eigene = {}; S.adr = { an: false, datum: '' }; S.tier = { an: false, datum: '' }; S.extern = []; M.name = ''; M.email = '';
+      S.art = 'C'; S.ablauf = ''; S.eigene = {}; S.adr = { an: false, datum: '' }; S.tier = { an: false, datum: '' }; S.extern = []; M.name = ''; M.email = ''; M.mobil = ''; M.sms = null;
       renderEingabe(); renderErgebnis();
     };
     el.querySelector('#bkr-kopieren').onclick = kopieren;
@@ -283,24 +327,26 @@
     const seg = (v, l) => `<button type="button" data-art="${v}" class="${S.art === v ? 'on' : ''}"><span class="bkr-ic">${ICON[v]}</span>${l}</button>`;
     box.innerHTML = `
       <div class="card bkr-sec">
-        <div class="bkr-h">Teilnehmer</div>
+        <div class="bkr-h">${OPT.selbst ? 'Ihre Angaben' : 'Teilnehmer'}</div>
         <div class="bkr-row bkr-1z" style="flex-wrap:wrap;row-gap:8px">
           <div class="bkr-seg" title="Steuert, welche Kenntnisbereiche relevant sind">${seg('C', 'Güter (C)')}${seg('D', 'Personen (D)')}${seg('CD', 'Beides')}</div>
           <span style="flex:1"></span>
           <span class="bkr-lbl" title="Optional – legt den 5-Jahres-Zeitraum fest">Ablauf SZ 95</span>
-          <input type="date" id="bkr-ablauf" value="${esc(S.ablauf)}">
+          ${OPT.selbst || OPT.firma ? `<button type="button" class="bkr-i${infoOffen ? ' on' : ''}" id="bkr-info-btn" aria-expanded="${infoOffen}" aria-label="Wo finde ich das Ablaufdatum?" title="Wo finde ich das Ablaufdatum?">i</button>` : ''}
+          <input type="date" id="bkr-ablauf" value="${esc(S.ablauf)}" ${OPT.selbst && OPT.ablaufFest ? 'disabled title="Vom Fahrschulteam bzw. Ihrer Firma eingetragen"' : ''}>
         </div>
+        ${(OPT.selbst || OPT.firma) && infoOffen ? infoPanel() : ''}
       </div>
 
       <div class="card bkr-sec">
-        <div class="bkr-h">Bei uns besucht (DEGENER Runde 3)</div>
+        <div class="bkr-h">${OPT.selbst ? 'Beim Fahrschulteam besucht <span style="text-transform:none;letter-spacing:0;font-weight:600">· wird automatisch eingetragen</span>' : 'Bei uns besucht (DEGENER Runde 3)'}</div>
         ${MODULE.map(m => {
           const e = S.eigene[m.nr] || {};
           return `<div class="bkr-row bkr-1z${e.an ? ' an' : ''}">
-            <label title="KB ${kbVon(m).join(', ')} · ${esc(m.info)}"><input type="checkbox" data-mod="${m.nr}" ${e.an ? 'checked' : ''}>
+            <label title="KB ${kbVon(m).join(', ')} · ${esc(m.info)}"><input type="checkbox" data-mod="${m.nr}" ${e.an ? 'checked' : ''} ${OPT.selbst ? 'disabled' : ''}>
               <span class="bkr-nrk">${m.nr}</span><span class="bkr-t bkr-el">${esc(m.titel)}</span>
               <span class="bkr-s bkr-kbk">KB ${kbVon(m).join(', ')}</span></label>
-            <input type="date" data-moddatum="${m.nr}" value="${esc(e.datum || '')}" ${e.an ? '' : 'disabled'}>
+            <input type="date" data-moddatum="${m.nr}" value="${esc(e.datum || '')}" ${e.an && !OPT.selbst ? '' : 'disabled'}>
           </div>`;
         }).join('')}
       </div>
@@ -309,34 +355,37 @@
         <div class="bkr-h">Sonderschulungen <span style="text-transform:none;letter-spacing:0;font-weight:600">· je 7 UE, max. 5 Jahre alt</span></div>
         ${[['adr', 'ADR-Schulung', 'Gefahrgut: Basis-, Aufbau- oder Auffrischungskurs'], ['tier', 'Tiertransport', 'Befähigungsnachweis Tiertransport']].map(([k, t, s]) => `
           <div class="bkr-row bkr-1z${S[k].an ? ' an' : ''}">
-            <label title="${s}"><input type="checkbox" data-sonder="${k}" ${S[k].an ? 'checked' : ''}>
-              <span class="bkr-t bkr-el">${t}</span><span class="bkr-s bkr-kbk">${s}</span></label>
-            <input type="date" data-sonderdatum="${k}" value="${esc(S[k].datum)}" ${S[k].an ? '' : 'disabled'}>
+            <label title="${s}"><input type="checkbox" data-sonder="${k}" ${S[k].an ? 'checked' : ''} ${S[k].fest ? 'disabled' : ''}>
+              <span class="bkr-t bkr-el">${t}</span>${S[k].an && S[k].q === 'fahrer' && !OPT.selbst ? EIGENANGABE : ''}<span class="bkr-s bkr-kbk">${s}</span></label>
+            <input type="date" data-sonderdatum="${k}" value="${esc(S[k].datum)}" ${S[k].an && !S[k].fest ? '' : 'disabled'}>
           </div>`).join('')}
       </div>
 
       <div class="card bkr-sec">
         <div class="bkr-h" style="display:flex;justify-content:space-between;align-items:center">
-          <span>Externe Weiterbildungen</span>
-          <button class="btn btn-outline btn-sm" id="bkr-ext-neu">+ Externe Schulung</button>
+          <span>${OPT.selbst ? 'Schulungen bei anderen Anbietern' : 'Externe Weiterbildungen'}</span>
+          <button class="btn btn-outline btn-sm" id="bkr-ext-neu">${OPT.selbst ? '+ Schulung eintragen' : '+ Externe Schulung'}</button>
         </div>
-        ${S.extern.length ? '' : '<div class="bkr-s">Keine – Kenntnisbereiche von der Teilnahmebescheinigung ankreuzen.</div>'}
-        ${S.extern.map((x, i) => `
+        ${OPT.selbst ? '<div class="bkr-s" style="margin-bottom:8px">Die Kenntnisbereiche (z. B. 1.2, 2.1, 3.4) stehen auf Ihrer Teilnahmebescheinigung. Bitte Datum eintragen und die Bereiche ankreuzen.</div>' : (S.extern.length ? '' : '<div class="bkr-s">Keine – Kenntnisbereiche von der Teilnahmebescheinigung ankreuzen.</div>')}
+        ${S.extern.map((x, i) => { const zu = x.fest ? 'disabled' : ''; return `
           <div class="bkr-ext">
+            ${x.fest ? '<div class="bkr-s" style="margin-bottom:6px">Vom Fahrschulteam eingetragen</div>' : (x.q === 'fahrer' && !OPT.selbst ? '<div style="margin-bottom:6px">' + EIGENANGABE + '</div>' : '')}
             <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-              <input type="text" data-ext="${i}" data-f="titel" placeholder="Anbieter / Thema" value="${esc(x.titel)}" style="flex:1;min-width:160px">
-              <input type="date" data-ext="${i}" data-f="datum" value="${esc(x.datum)}">
-              <input type="number" data-ext="${i}" data-f="ue" min="1" max="35" value="${esc(x.ue)}" style="width:70px" title="Unterrichtseinheiten"> <span class="bkr-s">UE</span>
-              <button class="btn btn-danger btn-sm" data-extdel="${i}" title="Entfernen">✕</button>
+              <input type="text" data-ext="${i}" data-f="titel" placeholder="${OPT.selbst ? 'Anbieter, z. B. DEKRA' : 'Anbieter / Thema'}" value="${esc(x.titel)}" style="flex:1;min-width:160px" ${zu}>
+              <input type="date" data-ext="${i}" data-f="datum" value="${esc(x.datum)}" ${zu}>
+              ${OPT.selbst ? '' : `<input type="number" data-ext="${i}" data-f="ue" min="1" max="35" value="${esc(x.ue)}" style="width:70px" title="Unterrichtseinheiten"> <span class="bkr-s">UE</span>`}
+              ${x.fest ? '' : `<button class="btn btn-danger btn-sm" data-extdel="${i}" title="Entfernen">✕</button>`}
             </div>
             <div class="bkr-kb">
-              ${UKB.filter(u => relevant(u.k)).map(u => `<label><input type="checkbox" data-extkb="${i}" value="${u.k}" ${x.kb.includes(u.k) ? 'checked' : ''}> <b>${u.k}</b> ${esc(u.t)}</label>`).join('')}
+              ${UKB.filter(u => x.fest ? x.kb.includes(u.k) : (relevant(u.k) || x.kb.includes(u.k))).map(u => `<label><input type="checkbox" data-extkb="${i}" value="${u.k}" ${x.kb.includes(u.k) ? 'checked' : ''} ${zu}> <b>${u.k}</b> ${esc(u.t)}</label>`).join('')}
             </div>
-          </div>`).join('')}
+          </div>`; }).join('')}
       </div>`;
 
     // Ereignisse
     box.querySelectorAll('[data-art]').forEach(b => b.onclick = () => { S.art = b.dataset.art; renderEingabe(); renderErgebnis(); });
+    const ib = box.querySelector('#bkr-info-btn');
+    if (ib) ib.onclick = () => { infoOffen = !infoOffen; renderEingabe(); };
     box.querySelector('#bkr-ablauf').onchange = e => { S.ablauf = e.target.value; renderErgebnis(); };
     box.querySelectorAll('[data-mod]').forEach(c => c.onchange = () => {
       const nr = c.dataset.mod; S.eigene[nr] = S.eigene[nr] || { datum: '' }; S.eigene[nr].an = c.checked;
@@ -344,10 +393,10 @@
     });
     box.querySelectorAll('[data-moddatum]').forEach(d => d.onchange = () => { const nr = d.dataset.moddatum; S.eigene[nr] = S.eigene[nr] || { an: true }; S.eigene[nr].datum = d.value; renderErgebnis(); });
     box.querySelectorAll('[data-sonder]').forEach(c => c.onchange = () => {
-      const k = c.dataset.sonder; S[k].an = c.checked; box.querySelector(`[data-sonderdatum="${k}"]`).disabled = !c.checked; c.closest('.bkr-row').classList.toggle('an', c.checked); renderErgebnis();
+      const k = c.dataset.sonder; S[k].an = c.checked; if (!c.checked) S[k].q = ''; else if (OPT.selbst) S[k].q = 'fahrer'; box.querySelector(`[data-sonderdatum="${k}"]`).disabled = !c.checked; c.closest('.bkr-row').classList.toggle('an', c.checked); renderErgebnis();
     });
     box.querySelectorAll('[data-sonderdatum]').forEach(d => d.onchange = () => { S[d.dataset.sonderdatum].datum = d.value; renderErgebnis(); });
-    box.querySelector('#bkr-ext-neu').onclick = () => { S.extern.push({ titel: '', datum: '', ue: 7, kb: [] }); renderEingabe(); renderErgebnis(); };
+    box.querySelector('#bkr-ext-neu').onclick = () => { S.extern.push({ titel: '', datum: '', ue: 7, kb: [], q: OPT.selbst ? 'fahrer' : '' }); renderEingabe(); renderErgebnis(); };
     box.querySelectorAll('[data-ext]').forEach(inp => inp.oninput = () => { S.extern[inp.dataset.ext][inp.dataset.f] = inp.value; renderErgebnis(); });
     box.querySelectorAll('[data-extdel]').forEach(b => b.onclick = () => { S.extern.splice(+b.dataset.extdel, 1); renderEingabe(); renderErgebnis(); });
     box.querySelectorAll('[data-extkb]').forEach(c => c.onchange = () => {
@@ -381,7 +430,7 @@
 
       ${r.empfehlung.length ? `
       <div class="card bkr-sec">
-        <div class="bkr-h">Empfehlung – diese Module buchen</div>
+        <div class="bkr-h">${OPT.selbst ? 'Diese Module fehlen Ihnen noch' : 'Empfehlung – diese Module buchen'}</div>
         ${r.empfehlung.map(e => `
           <div class="bkr-mod">
             <div class="bkr-nr">${e.m.nr}</div>
@@ -391,7 +440,7 @@
       </div>` : ''}
 
       ${termineKarte(r)}
-      ${OPT.firma ? '' : mailKarte(r)}
+      ${OPT.firma || OPT.selbst ? '' : mailKarte(r)}
 
       <div class="card bkr-sec">
         <div class="bkr-h">Pflichtvorgaben nach Buchung</div>
@@ -407,8 +456,9 @@
       </div>` : ''}
 
       ${r.hinweise.map(h => `<div class="bkr-note">${esc(h)}</div>`).join('')}
-      <div class="bkr-s" style="margin-top:10px">Grundlage: § 5 BKrFQG, § 4 BKrFQV, Anlage 1 BKrFQV; Module nach DEGENER Runde 3. Unverbindliche Vorabauskunft – maßgeblich sind die Teilnahmebescheinigungen.</div>`;
+      <div class="bkr-s" style="margin-top:10px">Grundlage: § 5 BKrFQG, § 4 BKrFQV, Anlage 1 BKrFQV; Module nach DEGENER Runde 3. Unverbindliche Vorabauskunft${OPT.selbst ? ' auf Grundlage Ihrer eigenen Angaben' : ''} – maßgeblich sind die Teilnahmebescheinigungen.</div>`;
     mailEreignisse();
+    if (typeof OPT.onChange === 'function') { try { OPT.onChange(); } catch (e) { /* Speichern ist Sache der Seite */ } }
   }
 
   function kopieren() {
@@ -434,7 +484,7 @@
   const KALENDER_URL = 'https://newslettertool.netlify.app/kurskalender.html';
   const FIRMA = { name: 'Fahrschulteam Lingen', str: 'Rheiner Str. 158', ort: '49809 Lingen (Ems)', tel: '0591 / 51403', mail: 'lingen@fahrschulteam.info', web: 'www.fahrschulteam.info' };
   const T = { status: 'leer', kurse: [], fehler: '' };
-  const M = { name: '', email: '' };
+  const M = { name: '', email: '', mobil: '', sms: null };   // sms: null = Text automatisch, sonst von Hand geändert
 
   function termineLaden() {
     if (T.status === 'laedt' || T.status === 'ok') return;
@@ -524,19 +574,63 @@
   }
 
   function mailKarte(r) {
+    const feld = 'padding:7px 10px;border:1px solid #D5DAE0;border-radius:10px;font-size:13px';
     return `
       <div class="card bkr-sec">
         <div class="bkr-h">Ergebnis per E-Mail</div>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <input type="text" id="bkr-mail-name" placeholder="Anrede & Name, z. B. Herr Müller" value="${esc(M.name)}" style="flex:1 1 180px;padding:7px 10px;border:1px solid #D5DAE0;border-radius:10px;font-size:13px">
-          <input type="email" id="bkr-mail-to" placeholder="E-Mail-Adresse" value="${esc(M.email)}" style="flex:1 1 180px;padding:7px 10px;border:1px solid #D5DAE0;border-radius:10px;font-size:13px">
+          <input type="text" id="bkr-mail-name" placeholder="Anrede & Name, z. B. Herr Müller" value="${esc(M.name)}" style="flex:1 1 180px;${feld}">
+          <input type="email" id="bkr-mail-to" placeholder="E-Mail-Adresse" value="${esc(M.email)}" style="flex:1 1 180px;${feld}">
         </div>
-        <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+        <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;align-items:center">
           <button class="btn btn-outline btn-sm" id="bkr-mail-vorschau">Vorschau</button>
-          <button class="btn btn-primary btn-sm" id="bkr-mail-los">E-Mail erstellen</button>
+          <button class="btn btn-primary btn-sm" id="bkr-mail-los">E-Mail senden</button>
+          <span class="bkr-s" id="bkr-mail-status"></span>
         </div>
-        <div class="bkr-s" style="margin-top:6px">„E-Mail erstellen“ kopiert die gestaltete Nachricht und öffnet dein E-Mail-Programm – dort nur noch <b>Strg + V</b> und senden.</div>
+        <div class="bkr-s" style="margin-top:6px">Die gestaltete Nachricht wird direkt vom Fahrschulteam-Postfach verschickt – Outlook wird dafür nicht gebraucht. Antworten kommen bei lingen@fahrschulteam.info an.</div>
+      </div>
+      <div class="card bkr-sec">
+        <div class="bkr-h">Ergebnis per SMS</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <input type="tel" id="bkr-sms-to" placeholder="Mobilnummer, z. B. 0171 1234567" value="${esc(M.mobil)}" style="flex:1 1 200px;${feld}">
+        </div>
+        <textarea id="bkr-sms-text" rows="4" style="width:100%;margin-top:8px;${feld};font-family:inherit;resize:vertical">${esc(M.sms != null ? M.sms : smsText())}</textarea>
+        <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;align-items:center">
+          <button class="btn btn-primary btn-sm" id="bkr-sms-los">SMS senden</button>
+          ${M.sms != null ? '<button class="btn btn-outline btn-sm" id="bkr-sms-neu">Text neu erzeugen</button>' : ''}
+          <span class="bkr-s" id="bkr-sms-zahl"></span>
+          <span class="bkr-s" id="bkr-sms-status"></span>
+        </div>
+        <div class="bkr-s" style="margin-top:6px">Der Text lässt sich vor dem Senden ändern. Eine SMS fasst 160 Zeichen; längere Texte werden als mehrere SMS berechnet. Umlaute sind bewusst ausgeschrieben (ae, ue), sonst passen nur 70 Zeichen in eine SMS.</div>
       </div>`;
+  }
+
+  // Kurzfassung des Ergebnisses für die SMS (ohne Umlaute, siehe Hinweis in der Karte)
+  function smsText() {
+    const r = auswerten();
+    const ohne = t => String(t).replace(/ä/g, 'ae').replace(/ö/g, 'oe').replace(/ü/g, 'ue').replace(/Ä/g, 'Ae').replace(/Ö/g, 'Oe').replace(/Ü/g, 'Ue').replace(/ß/g, 'ss').replace(/[–—]/g, '-').replace(/[„“”]/g, '"');
+    const teile = ['Fahrschulteam Lingen:'];
+    if (r.anzahl === 0) teile.push('Ihre BKF-Weiterbildung ist vollstaendig (35 UE).');
+    else {
+      const mods = r.empfehlung.map(e => e.m.nr).sort((a, b) => a - b);
+      teile.push('Ihnen ' + (r.anzahl === 1 ? 'fehlt noch 1 BKF-Modul' : 'fehlen noch ' + r.anzahl + ' BKF-Module')
+        + (mods.length ? ' (Modul ' + mods.join(', ') + ')' : '') + '.');
+    }
+    if (S.ablauf) teile.push('Schluesselzahl 95 gueltig bis ' + fmtD(S.ablauf) + '.');
+    if (r.anzahl > 0) teile.push('Termine und Anmeldung: ' + (OPT.smsLink || KALENDER_URL));
+    teile.push('Tel. 0591/51403');
+    return ohne(teile.join(' '));
+  }
+  function smsZaehlen() {
+    const t = root.querySelector('#bkr-sms-text'), z = root.querySelector('#bkr-sms-zahl');
+    if (!t || !z) return;
+    const n = t.value.length;
+    // Zeichen außerhalb des SMS-Grundalphabets → nur 70 Zeichen je SMS
+    const sonder = /[^\n\r !"#$%&'()*+,\-./0-9:;<=>?@A-Z_a-zäöüÄÖÜß§¿¡£¥èéùìòÇØøÅåÆæÉ]/.test(t.value);
+    const je = sonder ? (n <= 70 ? 70 : 67) : (n <= 160 ? 160 : 153);
+    const anz = Math.max(1, Math.ceil(n / je));
+    z.textContent = n + ' Zeichen · ' + anz + ' SMS' + (sonder ? ' (Sonderzeichen enthalten)' : '');
+    z.style.color = anz > 3 ? '#C51D2A' : '';
   }
 
   function mailEreignisse() {
@@ -545,7 +639,15 @@
     n.oninput = () => { M.name = n.value; };
     t.oninput = () => { M.email = t.value; };
     root.querySelector('#bkr-mail-vorschau').onclick = () => vorschauZeigen(false);
-    root.querySelector('#bkr-mail-los').onclick = () => mailErstellen();
+    root.querySelector('#bkr-mail-los').onclick = () => mailSenden();
+    const st = root.querySelector('#bkr-sms-to'), sx = root.querySelector('#bkr-sms-text');
+    if (st) st.oninput = () => { M.mobil = st.value; };
+    if (sx) sx.oninput = () => { M.sms = sx.value; smsZaehlen(); };
+    const sn = root.querySelector('#bkr-sms-neu');
+    if (sn) sn.onclick = () => { M.sms = null; renderErgebnis(); };
+    const sl = root.querySelector('#bkr-sms-los');
+    if (sl) sl.onclick = () => smsSenden();
+    smsZaehlen();
   }
 
   // Gestaltete HTML-Mail (Tabellen + Inline-Styles, damit Outlook & Co. sie korrekt zeigen)
@@ -639,7 +741,7 @@
     o.innerHTML = `<div style="background:#fff;border-radius:16px;width:680px;max-width:100%;max-height:92vh;display:flex;flex-direction:column;overflow:hidden">
         <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid #E7EAEE">
           <b>E-Mail-Vorschau</b>
-          <div style="display:flex;gap:8px"><button class="btn btn-primary btn-sm" id="bkr-v-los">E-Mail erstellen</button><button class="btn btn-outline btn-sm" id="bkr-v-zu">Schließen</button></div>
+          <div style="display:flex;gap:8px"><button class="btn btn-primary btn-sm" id="bkr-v-los">E-Mail senden</button><button class="btn btn-outline btn-sm" id="bkr-v-zu">Schließen</button></div>
         </div>
         <iframe id="bkr-v-frame" style="border:0;width:100%;height:70vh;background:#F3F5F7"></iframe>
       </div>`;
@@ -647,28 +749,81 @@
     o.querySelector('#bkr-v-frame').srcdoc = mailHtml();
     o.querySelector('#bkr-v-zu').onclick = () => o.remove();
     o.onclick = e => { if (e.target === o) o.remove(); };
-    o.querySelector('#bkr-v-los').onclick = () => mailErstellen();
+    o.querySelector('#bkr-v-los').onclick = () => { o.remove(); mailSenden(); };
   }
 
-  async function mailErstellen() {
-    const html = mailHtml(), txt = mailText();
-    let kopiert = false;
+  const meldung = (id, text, art) => {
+    const e = root && root.querySelector(id);
+    if (e) { e.textContent = text; e.style.color = art === 'err' ? '#C51D2A' : (art === 'ok' ? '#197341' : ''); e.style.fontWeight = art ? '700' : ''; }
+    if (art && typeof toast === 'function') toast(text);
+  };
+
+  // E-Mail direkt über den Server verschicken (Netlify-Funktion send-email → Brevo).
+  // Kein Umweg über Outlook und die Zwischenablage mehr.
+  let mailLaeuft = false;
+  async function mailSenden() {
+    if (mailLaeuft) return;
+    const an = String(M.email || '').trim();
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(an)) { meldung('#bkr-mail-status', 'Bitte eine gültige E-Mail-Adresse eintragen.', 'err'); return; }
+    if (T.status === 'laedt') { meldung('#bkr-mail-status', 'Termine werden noch geladen – bitte kurz warten.', 'err'); return; }
+    mailLaeuft = true;
+    meldung('#bkr-mail-status', 'Wird gesendet …');
     try {
-      if (window.ClipboardItem && navigator.clipboard && navigator.clipboard.write) {
-        await navigator.clipboard.write([new ClipboardItem({
-          'text/html': new Blob([html], { type: 'text/html' }),
-          'text/plain': new Blob([txt], { type: 'text/plain' }),
-        })]);
-        kopiert = true;
+      const r = await fetch('/.netlify/functions/send-email', {
+        method: 'POST', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ to: an, toName: M.name || an, subject: 'Ihre BKF-Weiterbildung – Auswertung und Terminvorschlag', htmlContent: mailHtml() }),
+      });
+      const d = await r.json().catch(() => ({}));
+      if (r.ok && d.ok !== false) meldung('#bkr-mail-status', '✓ E-Mail an ' + an + ' gesendet', 'ok');
+      else meldung('#bkr-mail-status', 'E-Mail konnte nicht gesendet werden (Fehler ' + (d.status || r.status) + ').', 'err');
+    } catch (e) {
+      meldung('#bkr-mail-status', 'Keine Verbindung – die E-Mail wurde nicht gesendet.', 'err');
+    }
+    mailLaeuft = false;
+  }
+
+  // Anmeldung des Büro-Benutzers für den SMS-Versand (SMS kosten Geld – die
+  // Funktion send-sms nimmt nur Anfragen angemeldeter Benutzer an).
+  async function benutzerToken() {
+    try {
+      const c = window.sb || (window.parent && window.parent !== window && window.parent.sb);
+      if (c && c.auth && c.auth.getSession) { const x = await c.auth.getSession(); const t = x && x.data && x.data.session && x.data.session.access_token; if (t) return t; }
+    } catch (e) { /* weiter mit dem Speicher des Browsers */ }
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (!/auth/i.test(k)) continue;
+        const v = JSON.parse(localStorage.getItem(k) || 'null');
+        const t = v && (v.access_token || (v.currentSession && v.currentSession.access_token));
+        if (t) return t;
       }
-    } catch (e) { kopiert = false; }
-    if (!kopiert) { vorschauZeigen(); alert('Automatisches Kopieren ist hier nicht möglich. Bitte in der Vorschau alles markieren (Strg + A), kopieren (Strg + C) und in die E-Mail einfügen.'); return; }
-    if (typeof toast === 'function') toast('Gestaltete E-Mail kopiert – im E-Mail-Programm Strg + V drücken');
-    const betreff = 'Ihre BKF-Weiterbildung – Auswertung und Terminvorschlag';
-    const a = document.createElement('a');
-    a.href = 'mailto:' + encodeURIComponent(M.email || '') + '?subject=' + encodeURIComponent(betreff);
-    a.target = '_top';
-    document.body.appendChild(a); a.click(); a.remove();
+    } catch (e) { /* kein Token */ }
+    return '';
+  }
+
+  let smsLaeuft = false;
+  async function smsSenden() {
+    if (smsLaeuft) return;
+    const feld = root.querySelector('#bkr-sms-text');
+    const text = String(feld ? feld.value : '').trim();
+    const nr = String(M.mobil || '').trim();
+    if (nr.replace(/\D/g, '').length < 8) { meldung('#bkr-sms-status', 'Bitte eine Mobilnummer eintragen.', 'err'); return; }
+    if (!text) { meldung('#bkr-sms-status', 'Der SMS-Text ist leer.', 'err'); return; }
+    smsLaeuft = true;
+    meldung('#bkr-sms-status', 'Wird gesendet …');
+    try {
+      const token = await benutzerToken();
+      const r = await fetch('/.netlify/functions/send-sms', {
+        method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer ' + token },
+        body: JSON.stringify({ to: nr, text }),
+      });
+      const d = await r.json().catch(() => ({}));
+      if (r.ok && d.ok) meldung('#bkr-sms-status', '✓ SMS an ' + (d.an || nr) + ' gesendet', 'ok');
+      else meldung('#bkr-sms-status', d.message || 'SMS konnte nicht gesendet werden.', 'err');
+    } catch (e) {
+      meldung('#bkr-sms-status', 'Keine Verbindung – die SMS wurde nicht gesendet.', 'err');
+    }
+    smsLaeuft = false;
   }
 
   // Vorbelegen mit vorhandenen Daten (z. B. aus dem Firmenportal):
@@ -686,9 +841,18 @@
       if (!alt || String(k.d || '') > String(alt.datum || '')) S.eigene[i.nr] = { an: true, datum: k.d || '' };
     });
     S.art = g && p ? 'CD' : (p ? 'D' : 'C');
-    (d.ext || []).forEach(x => S.extern.push({ titel: x.a || 'externer Anbieter', datum: x.d || '', ue: '7', kb: Array.isArray(x.kb) ? x.kb.slice() : [] }));
+    if (d.art === 'C' || d.art === 'D' || d.art === 'CD') S.art = d.art;
+    // x.q === 'fahrer' = vom Fahrer selbst eingetragen (mein-bkf.html);
+    // x.art 'adr' / 'tier' = Sonderschulung statt Fremdseminar
+    (d.ext || []).forEach(x => {
+      if (x.art === 'adr' || x.art === 'tier') {
+        if (!S[x.art].an || String(x.d || '') > String(S[x.art].datum || '')) S[x.art] = { an: true, datum: x.d || '', q: x.q || '', fest: !!(OPT.selbst && x.q !== 'fahrer') };
+        return;
+      }
+      S.extern.push({ titel: x.a || (x.q === 'fahrer' ? '' : 'externer Anbieter'), datum: x.d || '', ue: '7', kb: Array.isArray(x.kb) ? x.kb.slice() : [], q: x.q || '', fest: !!(OPT.selbst && x.q !== 'fahrer') });
+    });
     const altUe = Math.max(0, Math.min(35, parseInt(d.altUe, 10) || 0));
-    if (altUe) S.extern.push({ titel: 'Frühere Nachweise (Übernahme)', datum: d.stand || '', ue: String(altUe), kb: [] });
+    if (altUe) S.extern.push({ titel: 'Frühere Nachweise (Übernahme)', datum: d.stand || '', ue: String(altUe), kb: [], fest: !!OPT.selbst, alt: true });
     OPT.fahrer = d.name || '';
     if (root) render(root);
   }
@@ -698,6 +862,15 @@
   window.bkfRechnerRender = render;
   window.bkfRechnerAuswerten = auswerten;
   window.bkfRechnerState = S;
+  // Eigene Angaben des Fahrers (für das Speichern auf mein-bkf.html)
+  window.bkfRechnerExport = function () {
+    return {
+      art: S.art, ablauf: S.ablauf,
+      adr: { an: !!S.adr.an && !S.adr.fest, datum: S.adr.datum || '' },
+      tier: { an: !!S.tier.an && !S.tier.fest, datum: S.tier.datum || '' },
+      extern: S.extern.filter(x => !x.fest).map(x => ({ titel: x.titel || '', datum: x.datum || '', kb: x.kb.slice() })),
+    };
+  };
 
   // ── Einklinken in das BKrFQG-Modul ─────────────────────────────────
   const ICON = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px;flex-shrink:0"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="11" x2="8" y2="11"/><line x1="12" y1="11" x2="12" y2="11"/><line x1="16" y1="11" x2="16" y2="11"/><line x1="8" y1="15" x2="8" y2="15"/><line x1="12" y1="15" x2="12" y2="15"/><line x1="16" y1="15" x2="16" y2="18"/><line x1="8" y1="18" x2="12" y2="18"/></svg>';

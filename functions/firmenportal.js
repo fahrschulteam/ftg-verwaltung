@@ -92,7 +92,7 @@ function bkfDetails(p, kurse) {
       .filter((k) => k.passed && String(k.type || '').indexOf('BKF Modul') === 0)
       .filter((k) => (k.participant_id && k.participant_id === p.id) || (k.participant_legacy && k.participant_legacy === (p.legacy_id || p.id)))
       .map((k) => ({ t: k.type, d: k.date_from || '' })),
-    ext: (Array.isArray(ext.BKF_EXT) ? ext.BKF_EXT : []).map((e) => ({ d: e.d || '', a: e.a || '', kb: Array.isArray(e.kb) ? e.kb : [] })),
+    ext: (Array.isArray(ext.BKF_EXT) ? ext.BKF_EXT : []).map((e) => ({ d: e.d || '', a: e.a || '', kb: Array.isArray(e.kb) ? e.kb : [], art: e.art || '', q: e.q || '' })),
     altUe: +ext.BKF_UE || 0,
     stand: ext.BKF_STAND || '',
   };

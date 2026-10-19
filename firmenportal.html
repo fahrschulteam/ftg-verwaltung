@@ -376,7 +376,7 @@
 </div>
 
 <div id="toast"></div>
-<script src="bkf-rechner.js?v=20260929c"></script>
+<script src="bkf-rechner.js?v=20261006a"></script>
 <script>
 (function(){
   var API="/.netlify/functions/firmenportal";
@@ -461,7 +461,7 @@
       var bk=f.bkf||{};
       var besucht=(bk.eigene||[]).slice().sort(function(a,b){ return String(a.d).localeCompare(String(b.d)); })
         .map(function(m){ return '<div>✓ '+esc(modulKurz(m.t))+(m.d?' · '+de(m.d):'')+'</div>'; })
-        .concat((bk.ext||[]).map(function(x){ return '<div class="ex">✓ extern'+(x.a?' ('+esc(x.a)+')':'')+(x.d?' · '+de(x.d):'')+'</div>'; }));
+        .concat((bk.ext||[]).map(function(x){ return '<div class="ex">✓ extern'+(x.a?' ('+esc(x.a)+')':'')+(x.d?' · '+de(x.d):'')+(x.q==='fahrer'?' · <i>vom Fahrer selbst eingetragen</i>':'')+'</div>'; }));
       if(besucht.length) bkf+='<div class="modlist">'+besucht.join("")+'</div>';
       var offen=(f.id===offenId);
       bkf+='<button class="bkfBtn'+(offen?' on':'')+'" onclick="modulePruefen(\''+f.id+'\')">'+(offen?'Rechner schlie&szlig;en &#9650;':'Module pr&uuml;fen &#9660;')+'</button></div>';

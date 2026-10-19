@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mein BKF-Stand – Fahrschulteam Lingen</title>
+<meta name="robots" content="noindex,nofollow">
+<!-- Der persönliche Schlüssel im Link darf nicht an andere Seiten weitergegeben werden -->
+<meta name="referrer" content="no-referrer">
+<style>
+  /* Persönliche Fahrerseite – dieselben Farben/Formen wie die Verwaltung (FTG-Design) */
+  :root{
+    --rot:#C51D2A; --rot-dark:#9F1722; --dunkel:#20242B; --grau:#68717D;
+    --hell:#F3F5F7; --border:#DFE3E8;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{font-family:Arial,"Helvetica Neue",Helvetica,sans-serif;background:var(--hell);color:var(--dunkel);font-size:15px;line-height:1.45;-webkit-font-smoothing:antialiased}
+  /* Kopf wie auf der Bescheinigung: Logo auf Weiß, darunter die rote Linie */
+  .kopf{background:#fff;border-bottom:3px solid var(--rot);padding:12px 16px}
+  .kopf .in{max-width:860px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap}
+  .kopf img{display:block;height:64px;width:auto;max-width:100%}
+  .kopf b{display:block;font-size:21px;color:var(--dunkel)}
+  @media(max-width:600px){ .kopf img{height:52px} .kopf b{font-size:19px} }
+  .wrap{max-width:860px;margin:0 auto;padding:16px}
+  .card{background:#fff;border:1px solid var(--border);border-radius:14px;box-shadow:0 2px 8px rgba(28,33,40,.05)}
+  .box{padding:16px 18px;margin-bottom:14px}
+  h1{font-size:19px;margin-bottom:6px}
+  p{margin:0 0 8px}
+  .muted{color:var(--grau);font-size:13px}
+  ol.schritte{margin:8px 0 0 20px;font-size:14px}
+  ol.schritte li{margin:3px 0}
+  .toolbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:36px;padding:0 14px;
+    border:1px solid var(--border);border-radius:10px;background:#fff;color:#3F4650;font:inherit;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;text-decoration:none}
+  .btn:hover{background:#F6F7F9}
+  .btn-primary{background:var(--rot);border-color:var(--rot);color:#fff}
+  .btn-primary:hover{background:var(--rot-dark)}
+  .btn-danger{color:var(--rot);border-color:var(--rot)}
+  input[type=date],input[type=text]{font:inherit;font-size:14px;padding:8px 10px;border:1px solid #D5DAE0;border-radius:10px;background:#fff;color:var(--dunkel)}
+  input[type=checkbox]{-webkit-appearance:none;appearance:none;width:22px;height:22px;min-width:22px;border:2px solid #C9CFD6;border-radius:5px;background:#fff;cursor:pointer;display:inline-grid;place-content:center}
+  input[type=checkbox]:checked{background:var(--rot);border-color:var(--rot)}
+  input[type=checkbox]:checked::after{content:"";width:11px;height:6px;border-left:2.5px solid #fff;border-bottom:2.5px solid #fff;transform:rotate(-45deg) translate(1px,-1px)}
+  input:focus{outline:none;border-color:var(--rot) !important;box-shadow:0 0 0 3px rgba(197,29,42,.18)}
+  input[disabled]{opacity:.55;cursor:default}
+  /* Speicher-Anzeige: bleibt beim Scrollen sichtbar */
+  #status{position:sticky;top:8px;z-index:5;display:none;padding:9px 14px;border-radius:10px;font-size:13.5px;font-weight:700;margin-bottom:12px;border:1px solid transparent}
+  #status.ok{display:block;background:#E4F4EA;color:#197341;border-color:#BFE3CC}
+  #status.warte{display:block;background:#EEF1F4;color:#535C67;border-color:#DFE3E8}
+  #status.warn{display:block;background:#FFF7E6;color:#8A5A00;border-color:#F5DDA6}
+  #status.fehler{display:block;background:#FBEAEC;color:#9F1722;border-color:#F1CDD1}
+  .meldung{background:#FBEAEC;color:#9F1722;border:1px solid #F1CDD1;border-radius:10px;padding:9px 12px;font-size:13.5px;margin-top:10px}
+  #toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:var(--dunkel);color:#fff;padding:10px 16px;border-radius:10px;font-size:13px;opacity:0;transition:opacity .2s;pointer-events:none}
+  #toast.show{opacity:1}
+  .fuss{font-size:12.5px;color:var(--grau);padding:4px 2px 24px}
+  .fuss a{color:var(--grau)}
+  @media(max-width:600px){
+    .wrap{padding:10px}
+    .bkr-row{flex-wrap:wrap}
+    .bkr-row input[type=date]{width:100% !important;flex:1 1 100% !important}
+    .bkr-ext input[type=date]{flex:1 1 100%}
+  }
+</style>
+</head>
+<body>
+  <div class="kopf"><div class="in"><a href="https://www.fahrschulteam.info" target="_blank" rel="noopener" title="Zur Internetseite des Fahrschulteams"><img src="logo-fahrschulteam.jpg?v=20261004" alt="Fahrschulteam – www.fahrschulteam.info" width="235" height="64"></a><b>Mein BKF-Stand</b></div></div>
+
+  <div class="wrap">
+    <!-- 1) Laden -->
+    <div class="card box" id="vLaden"><p class="muted">Ihre Daten werden geladen …</p></div>
+
+    <!-- 2) Link ungültig / Dienst nicht erreichbar -->
+    <div class="card box" id="vFehler" hidden>
+      <h1>Das hat leider nicht geklappt</h1>
+      <p id="fehlerText"></p>
+      <p class="muted">Wir helfen gern weiter: <b>0591 / 51403</b> oder <a href="mailto:lingen@fahrschulteam.info">lingen@fahrschulteam.info</a></p>
+    </div>
+
+    <!-- 3) Geburtsdatum abfragen -->
+    <div class="card box" id="vGeburt" hidden>
+      <h1 id="geburtTitel">Kurz bestätigen</h1>
+      <p>Damit nur Sie Ihre Daten sehen, geben Sie bitte Ihr Geburtsdatum ein.</p>
+      <form id="geburtForm" class="toolbar" style="margin-top:10px">
+        <input type="date" id="geburt" required aria-label="Geburtsdatum">
+        <button class="btn btn-primary" type="submit">Weiter</button>
+      </form>
+      <div class="meldung" id="geburtMeldung" hidden></div>
+    </div>
+
+    <!-- 4) Persönlicher BKF-Stand -->
+    <div id="vStand" hidden>
+      <div class="card box">
+        <h1 id="hallo">Hallo</h1>
+        <p>Hier sehen Sie, welche Module der BKF-Weiterbildung (Schlüsselzahl 95) Ihnen noch fehlen.</p>
+        <ol class="schritte">
+          <li>Module, die Sie <b>bei uns</b> besucht haben, sind schon eingetragen.</li>
+          <li>Waren Sie bei einem <b>anderen Anbieter</b>? Tragen Sie die Schulung unten ein. Auch <b>ADR</b> und <b>Tiertransport</b> zählen.</li>
+          <li>Darunter steht sofort, was noch fehlt – mit passenden Terminen zum Anmelden.</li>
+        </ol>
+      </div>
+
+      <div id="status" role="status"></div>
+      <div id="rechner"></div>
+
+      <div class="card box" style="margin-top:14px">
+        <p class="muted" style="margin:0"><b>Gut zu wissen:</b> Ihre Eingaben werden automatisch beim Fahrschulteam gespeichert, damit Sie sie beim nächsten Mal nicht neu eintragen müssen. Sie sind für das Fahrschulteam<span id="firmaHinweis"></span> sichtbar und als „vom Fahrer selbst eingetragen“ gekennzeichnet. Sie können Ihre Einträge hier jederzeit ändern oder löschen. Das Ergebnis ist eine unverbindliche Auskunft auf Grundlage Ihrer Angaben; über die Verlängerung entscheidet die Fahrerlaubnisbehörde anhand Ihrer Teilnahmebescheinigungen.</p>
+      </div>
+    </div>
+
+    <div class="fuss">Fahrschulteam Lingen · Rheiner Str. 158 · 49809 Lingen (Ems) · Tel. 0591 / 51403 · <a href="https://www.fahrschulteam.info" rel="noopener">www.fahrschulteam.info</a></div>
+  </div>
+  <div id="toast"></div>
+
+  <script>
+    function toast(t){ var e=document.getElementById('toast'); e.textContent=t; e.classList.add('show'); setTimeout(function(){e.classList.remove('show')},1800); }
+  </script>
+  <script src="bkf-rechner.js?v=20261006a"></script>
+  <script>
+  (function(){
+    "use strict";
+    var API="/.netlify/functions/mein-bkf";
+    var el=function(id){ return document.getElementById(id); };
+    var K=(new URLSearchParams(location.search).get("k")||"").trim().toLowerCase();
+    var geburt="";              // nur für diese Sitzung im Speicher
+    var zuletzt="";             // zuletzt gespeicherter Stand (zum Vergleichen)
+    var timer=null, laeuft=false, nochmal=false, bereit=false;
+
+    function zeige(id){
+      ["vLaden","vFehler","vGeburt","vStand"].forEach(function(v){ el(v).hidden=(v!==id); });
+    }
+    function fehler(t){ el("fehlerText").textContent=t; zeige("vFehler"); }
+    function status(art,t){ var s=el("status"); s.className=art; s.textContent=t; }
+    function heute(){ return new Date().toISOString().slice(0,10); }
+
+    async function ruf(extra){
+      var body=Object.assign({k:K, birth:geburt}, extra||{});
+      var r=await fetch(API,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(body)});
+      var j={}; try{ j=await r.json(); }catch(e){}
+      return j;
+    }
+
+    async function laden(){
+      if(!/^[a-z0-9]{16,40}$/.test(K)){
+        fehler("Dieser Link ist nicht vollständig. Bitte öffnen Sie den Link aus unserer E-Mail oder scannen Sie den QR-Code auf Ihrer Teilnahmebescheinigung.");
+        return;
+      }
+      var j;
+      try{ j=await ruf(); }
+      catch(e){ fehler("Die Seite ist gerade nicht erreichbar. Bitte prüfen Sie Ihre Internetverbindung und versuchen Sie es später noch einmal."); return; }
+
+      if(j.brauchtGeburt){
+        el("geburtTitel").textContent = j.vorname ? "Hallo "+j.vorname+", kurz bestätigen" : "Kurz bestätigen";
+        var m=el("geburtMeldung");
+        if(j.message){ m.textContent=j.message+" Bitte noch einmal versuchen."; m.hidden=false; } else m.hidden=true;
+        zeige("vGeburt");
+        try{ el("geburt").focus(); }catch(e){}
+        return;
+      }
+      if(!j.success){ fehler(j.message||"Die Daten konnten nicht geladen werden."); return; }
+      anzeigen(j.fahrer);
+    }
+
+    function anzeigen(f){
+      el("hallo").textContent="Hallo "+(f.name||"");
+      el("firmaHinweis").textContent = f.hatFirma ? " und Ihre Firma" : "";
+      zeige("vStand");
+      // Reihenfolge wichtig: erst im Fahrer-Modus zeichnen, dann vorbelegen
+      window.bkfRechnerRender(el("rechner"),{selbst:true, ablaufFest:!!f.ablaufFest, onChange:geaendert});
+      window.bkfRechnerVorbelegen({ name:f.name, ablauf:f.ablauf||"", art:f.art||"", eigene:f.eigene||[], ext:f.ext||[], altUe:f.altUe||0, stand:f.stand||"" });
+      zuletzt=JSON.stringify(sauber(window.bkfRechnerExport()).daten);
+      bereit=true;
+      geaendert();
+    }
+
+    // Nur vollständige Einträge werden gespeichert. Gibt zusätzlich an, was fehlt.
+    function sauber(d){
+      var h=heute(), fehlt=[];
+      var extern=(d.extern||[]).filter(function(x,i){
+        var nr="Schulung "+(i+1)+(x.titel?" ("+x.titel+")":"");
+        if(!x.datum){ fehlt.push(nr+": Datum fehlt"); return false; }
+        if(x.datum>h){ fehlt.push(nr+": Datum liegt in der Zukunft"); return false; }
+        if(!x.kb.length){ fehlt.push(nr+": Kenntnisbereiche ankreuzen"); return false; }
+        return true;
+      });
+      [["adr","ADR-Schulung"],["tier","Tiertransport"]].forEach(function(p){
+        var x=d[p[0]];
+        if(x.an && !x.datum) fehlt.push(p[1]+": Datum fehlt");
+        else if(x.an && x.datum>h) fehlt.push(p[1]+": Datum liegt in der Zukunft");
+      });
+      return { daten:{ art:d.art, ablauf:d.ablauf||"", adr:d.adr, tier:d.tier, extern:extern }, fehlt:fehlt };
+    }
+
+    function geaendert(){
+      if(!bereit) return;
+      var s=sauber(window.bkfRechnerExport());
+      var neu=JSON.stringify(s.daten);
+      if(neu===zuletzt){
+        if(s.fehlt.length) status("warn","Noch nicht gespeichert – "+s.fehlt.join(" · "));
+        else if(el("status").className==="warn") status("ok","✓ Alles gespeichert");
+        return;
+      }
+      status("warte","Wird gespeichert …");
+      clearTimeout(timer);
+      timer=setTimeout(speichern,900);
+    }
+
+    async function speichern(){
+      if(laeuft){ nochmal=true; return; }
+      laeuft=true;
+      var s=sauber(window.bkfRechnerExport());
+      var neu=JSON.stringify(s.daten);
+      try{
+        var j=await ruf({action:"speichern", daten:s.daten});
+        if(j.success){
+          zuletzt=neu;
+          if(s.fehlt.length) status("warn","Noch nicht gespeichert – "+s.fehlt.join(" · "));
+          else status("ok","✓ Alles gespeichert");
+        } else status("fehler",j.message||"Speichern hat nicht geklappt. Bitte später erneut versuchen.");
+      }catch(e){
+        status("fehler","Keine Verbindung – Ihre Eingaben sind noch nicht gespeichert.");
+      }
+      laeuft=false;
+      if(nochmal){ nochmal=false; geaendert(); }
+    }
+
+    el("geburtForm").addEventListener("submit",function(e){
+      e.preventDefault();
+      geburt=el("geburt").value||"";
+      if(!geburt) return;
+      zeige("vLaden");
+      laden();
+    });
+
+    laden();
+  })();
+  </script>
+</body>
+</html>

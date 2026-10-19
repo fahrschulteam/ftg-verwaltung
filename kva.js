@@ -36,6 +36,10 @@ window.renderKVA = function(){
   if (typeof sb !== 'undefined') window.KVA_sb = sb;
   // Firmadaten aus zentralen Einstellungen laden
   kvaLadeFirma();
+  // Zentrale Preisliste braucht die Einstellungen – falls noch nicht geladen, nachholen
+  if (!(window.einstState && window.einstState.loaded) && typeof window.ladeEinstellungen === 'function') {
+    window.ladeEinstellungen().then(function(){ try { kvaLadeFirma(); render(); } catch(e) {} });
+  }
 
   if (!KVA_initialized) {
     view.innerHTML = KVA_BODY_HTML;
@@ -324,6 +328,22 @@ function resetPrices(){
   renderPriceTable();
 }
 
+// Nur die Klassenpreise zentral sichern (Einstellungen → Preise). Der
+// Ausbildungsumfang bleibt unberührt. Gibt true oder eine Fehlermeldung zurück.
+async function kvaKlassenPreiseSpeichern(){
+  try{
+    var prices={};
+    CLS.forEach(function(c){
+      prices[c.id]={gb:c.gb,ust:c.ust,soP:c.soP,soN:c.soN,lm:c.lm,uw:c.uw,unt:c.unt||0,th:c.th,pr:c.pr,n:c.n};
+    });
+    persistPrices();
+    if(!window.KVA_sb) return "keine Verbindung zur Datenbank";
+    var res=await window.KVA_sb.from("kva_settings").upsert({id:"default",prices:prices,updated_at:new Date().toISOString()});
+    if(res&&res.error) return res.error.message||"Fehler";
+    return true;
+  }catch(e){ return (e&&e.message)||"Fehler"; }
+}
+
 // Einstellungen speichern/laden
 function saveSettings(){
   try{
@@ -448,7 +468,14 @@ var CLS=[
 ];
 var GROUPS=["PKW","Motorrad","LKW","Bus","Traktor","Sonstige"];
 // Schulungen: PKW-Klassen immer zuerst
-var COURSES=[
+// Schulungen im KVA: Sobald die zentrale Preisliste aktiv ist (Einstellungen →
+// Preise, siehe preisliste.js), kommen Lehrgänge UND Preise von dort. Die feste
+// Liste COURSES_ALT gilt nur noch, solange die Preisliste nie gespeichert wurde.
+function kvaKurse(){
+  try{ if(window.FTG_PREISE && window.FTG_PREISE.aktiv()) return window.FTG_PREISE.kvaKurse(); }catch(e){}
+  return COURSES_ALT;
+}
+var COURSES_ALT=[
   {id:"c1",l:"GGVS Basis",p:319},{id:"c2",l:"GGVS Tank",p:260},{id:"c3",l:"GGVS Basis+Tank",p:550},
   {id:"c4",l:"GGVS Fortbildung",p:249},{id:"c5",l:"Gabelstaplerschulung",p:199},{id:"c6",l:"Ladungssicherung",p:259},
   {id:"c7",l:"Ladekranausbildung",p:399},{id:"c8",l:"ASF (Aufbauseminar)",p:450},{id:"c9",l:"FES (p\u00e4dagogisch)",p:250},
@@ -598,7 +625,7 @@ function buildItems(){
     }
   });
   // Schulungen: PKW zuerst, dann weitere
-  var sortedCourses=COURSES.slice().sort(function(a,b){return (b.pkw?1:0)-(a.pkw?1:0);});
+  var sortedCourses=kvaKurse().slice().sort(function(a,b){return (b.pkw?1:0)-(a.pkw?1:0);});
   sortedCourses.forEach(function(c){if(S.courses[c.id]) items.push({l:c.l,p:c.p,cat:"Schulung",erw:0});});
   S.custom.forEach(function(cl){if(cl.l&&cl.p>0) items.push({l:cl.l,p:cl.p,cat:"Sonstiges",erw:0});});
   return items;
@@ -1405,7 +1432,7 @@ function rS1(){
   r+="<div class='dv'></div><div class='sec'>Schulungen &amp; Weiterbildungen</div>";
   r+="<div class='cg2'>";
   // PKW first, then rest
-  var sorted=COURSES.slice().sort(function(a,b){return (b.pkw?1:0)-(a.pkw?1:0);});
+  var sorted=kvaKurse().slice().sort(function(a,b){return (b.pkw?1:0)-(a.pkw?1:0);});
   sorted.forEach(function(c){
     var on=!!S.courses[c.id];
     r+="<button class='cb2"+(on?" on":"")+(c.pkw?" style='border-color:#C0001A;background:#fff5f5;'":"")+"' data-act='course' data-id='"+c.id+"'><span style='font-size:11px;font-weight:"+(c.pkw?800:600)+";color:"+(c.pkw?"#C0001A":"#333")+";line-height:1.3;'>"+esc(c.l)+"</span><span style='font-size:11px;color:#888;'>"+fmt(c.p)+"</span></button>";

@@ -123,6 +123,8 @@ window.renderEinstellungen = async function () {
       ${tabBtn('benutzer', EIC('person')+' Benutzer & Rechte')}
       ${tabBtn('firma', EIC('firma')+' Firmendaten')}
       ${tabBtn('schulung', EIC('hut')+' Schulungen')}
+      ${tabBtn('preise', '€ Preise')}
+      ${tabBtn('nachrichten', '✉ Automatische Nachrichten')}
       ${tabBtn('kva', EIC('liste')+' KVA')}
       ${tabBtn('qm', EIC('hakenkreis')+' QM')}
       ${tabBtn('backup', EIC('diskette')+' Backup')}
@@ -148,10 +150,236 @@ function renderEinstInhalt() {
   if (einstState.tab === 'benutzer')      host.innerHTML = viewBenutzer();
   else if (einstState.tab === 'firma')    { host.innerHTML = viewFirma(); ladeUnterschriftVorschau(); }
   else if (einstState.tab === 'schulung')  { host.innerHTML = viewSchulung(); ladeSchulungSettingsVorschau(); }
+  else if (einstState.tab === 'preise')   { host.innerHTML = viewPreise(); initPreise(); }
+  else if (einstState.tab === 'nachrichten') host.innerHTML = viewNachrichten();
   else if (einstState.tab === 'kva')      { host.innerHTML = viewKvaEinst(); initKvaEinst(); }
   else if (einstState.tab === 'qm')       { host.innerHTML = viewQmEinst(); initQmEinst(); }
   else if (einstState.tab === 'backup')   host.innerHTML = viewBackup();
   else if (einstState.tab === 'verlauf')  renderVerlauf(host);
+}
+
+// ── ABSCHNITT: PREISE (eine Preisliste für Rechnungen und KVA) ──────
+// Aufbau und Regeln stehen in preisliste.js. Hier nur die Eingabemaske.
+const fmtEur = n => (n == null ? '' : Number(n).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+
+function viewPreise() {
+  const P = window.FTG_PREISE;
+  if (!P) return '<div class="card">Die Preisliste konnte nicht geladen werden (preisliste.js fehlt).</div>';
+  const st = (einstState.firma || {}).preise || {};
+  const aktiv = P.aktiv();
+  const tax = P.steuer();
+
+  const zeile = (x, einheit) => {
+    const v = P.vorschlag(x);
+    const wert = aktiv ? (st[x.key] != null && st[x.key] !== '' ? st[x.key] : '') : (v.wert != null ? v.wert : '');
+    let hinweis = '';
+    if (!aktiv) {
+      const teile = [];
+      if (v.rechnungNetto != null) teile.push('Rechnung bisher: ' + fmtEur(v.rechnungNetto) + ' € netto' + (tax ? ' = ' + fmtEur(v.rechnungBrutto) + ' € brutto' : ''));
+      if (v.kvaAlt != null) teile.push('KVA bisher: ' + fmtEur(v.kvaAlt) + ' €');
+      const ungleich = v.rechnungBrutto != null && v.kvaAlt != null && Math.abs(v.rechnungBrutto - v.kvaAlt) > 0.005;
+      if (teile.length) hinweis = `<div style="font-size:11.5px;margin-top:2px;color:${ungleich ? '#9F1722' : 'var(--grau)'};font-weight:${ungleich ? 700 : 400}">${ungleich ? '⚠ unterschiedlich – ' : ''}${escEinst(teile.join(' · '))}</div>`;
+    }
+    return `
+    <div class="pr-zeile">
+      <div style="min-width:0;flex:1">
+        <div style="font-size:13.5px;font-weight:600;color:var(--dunkel)">${escEinst(x.label)}
+          ${x.kva ? '<span class="pr-marke" title="Erscheint auch im Kostenvoranschlag, sobald ein Preis eingetragen ist">KVA</span>' : ''}</div>
+        ${hinweis}
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;flex:none">
+        <span class="pr-netto" id="pr-netto-${escEinst(x.key)}"></span>
+        <input class="pr-feld" data-key="${escEinst(x.key)}" type="number" min="0" step="0.01" value="${escEinst(wert)}" placeholder="kein Preis" oninput="preisNettoAnzeigen(this)">
+        <span style="font-size:12px;color:var(--grau);min-width:42px">${einheit}</span>
+      </div>
+    </div>`;
+  };
+
+  return `
+    <style>
+      .pr-zeile{display:flex;align-items:center;gap:14px;padding:8px 0;border-bottom:1px solid var(--border)}
+      .pr-zeile:last-child{border-bottom:none}
+      .pr-feld{width:110px;padding:6px 9px;border:1px solid var(--border);border-radius:8px;font-size:13.5px;text-align:right}
+      .pr-feld:focus{outline:2px solid var(--blau);border-color:transparent}
+      .pr-marke{display:inline-block;margin-left:6px;font-size:10px;font-weight:700;padding:1px 6px;border-radius:999px;background:#eef4fa;color:#2A6CAE;vertical-align:middle}
+      .pr-netto{font-size:11.5px;color:var(--grau);white-space:nowrap}
+    </style>
+
+    ${aktiv ? '' : `
+    <div class="card" style="margin-bottom:16px;border:1px solid #F5DDA6;background:#FFF7E6">
+      <div style="font-size:14px;font-weight:700;color:#8A5A00">Preisliste noch nicht aktiv</div>
+      <p style="font-size:12.5px;color:#5c4200;margin:6px 0 0;line-height:1.5">Die Felder sind mit den bisherigen Preisen vorbelegt. Bitte einmal prüfen, anpassen und unten <b>speichern</b>.
+        Ab dann gilt diese Liste für Rechnungen <b>und</b> Kostenvoranschläge. Bis dahin rechnen beide wie bisher.
+        Wo Rechnung und KVA bisher unterschiedliche Preise hatten, steht ein roter Hinweis unter dem Lehrgang.</p>
+    </div>`}
+
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-titel">Lehrgänge</div>
+      <p style="font-size:12px;color:var(--grau);margin:4px 0 8px">Endpreise in Euro <b>inkl. MwSt.</b> je Teilnehmer.
+        ${tax ? 'Auf der Rechnung wird daraus der Nettobetrag berechnet (USt-Satz ' + String(tax).replace('.', ',') + ' %).' : 'USt-Satz ist 0 % – Rechnung und KVA zeigen denselben Betrag.'}
+        Lehrgänge mit der Marke <span class="pr-marke" style="margin:0">KVA</span> erscheinen auch im Kostenvoranschlag. Leeres Feld = kein Preis (erscheint nicht im KVA, Rechnung ohne Vorbelegung).</p>
+      ${P.LEHRGAENGE.map(x => zeile(x, '€')).join('')}
+    </div>
+
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-titel">Unterweisungen</div>
+      <p style="font-size:12px;color:var(--grau);margin:4px 0 8px">Endpreis je Teilnehmer und Unterweisung, inkl. MwSt.</p>
+      ${P.UNTERWEISUNGEN.map(x => zeile(x, '€ / TN')).join('')}
+    </div>
+
+    <div style="display:flex;justify-content:flex-end;margin:0 0 22px">
+      <button class="btn btn-primary" onclick="preiseSpeichern()">${EIC('diskette')} ${aktiv ? 'Preise speichern' : 'Preise speichern und Liste aktivieren'}</button>
+    </div>
+
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-titel">Führerscheinklassen (Kostenvoranschlag)</div>
+      <p style="font-size:12px;color:var(--grau);margin:4px 0 14px">
+        Grundbetrag, Übungsstunden, Sonderfahrten, Prüfungsgebühren – Endpreise inkl. MwSt. Alle Felder editierbar.</p>
+      <div id="pl-container" style="overflow-x:auto"></div>
+      <div style="display:flex;align-items:center;gap:12px;margin-top:10px;flex-wrap:wrap">
+        <button class="btn btn-outline" style="font-size:12px" onclick="resetPrices()">↻ Standardpreise wiederherstellen</button>
+        <span style="flex:1"></span>
+        <span id="set-saved" style="font-size:12px;color:#16a34a;display:none;font-weight:700">Gespeichert!</span>
+        <button class="btn btn-primary" onclick="klassenPreiseSpeichern()">${EIC('diskette')} Klassenpreise speichern</button>
+      </div>
+    </div>`;
+}
+
+// Zeigt neben dem Bruttopreis den daraus berechneten Nettobetrag (nur bei USt > 0)
+function preisNettoAnzeigen(el) {
+  const P = window.FTG_PREISE; if (!P || !el) return;
+  const ziel = document.getElementById('pr-netto-' + el.dataset.key); if (!ziel) return;
+  const tax = P.steuer(), n = parseFloat(el.value);
+  ziel.textContent = (tax && !isNaN(n) && n > 0) ? 'netto ' + fmtEur(P.runden(n / (1 + tax / 100))) + ' €' : '';
+}
+
+function initPreise() {
+  document.querySelectorAll('#einst-inhalt .pr-feld').forEach(preisNettoAnzeigen);
+  // Klassenpreise: Tabelle aus kva.js (global geladen)
+  try {
+    if (typeof sb !== 'undefined' && !window.KVA_sb) window.KVA_sb = sb;
+    if (typeof loadSettings === 'function') loadSettings();
+    if (typeof renderPriceTable === 'function') renderPriceTable();
+    setTimeout(() => { try { if (typeof renderPriceTable === 'function') renderPriceTable(); } catch (e) {} }, 1200);
+  } catch (e) { console.warn('Klassenpreise laden:', e); }
+}
+
+async function preiseSpeichern() {
+  const preise = { _brutto: true };
+  let fehler = '';
+  document.querySelectorAll('#einst-inhalt .pr-feld').forEach(el => {
+    const roh = String(el.value || '').trim();
+    if (roh === '') return;
+    const n = parseFloat(roh);
+    if (isNaN(n) || n < 0) { fehler = el.dataset.key; return; }
+    if (n > 0) preise[el.dataset.key] = Math.round(n * 100) / 100;
+  });
+  if (fehler) { toast('Bitte den Preis bei „' + fehler + '“ prüfen.', 'err'); return; }
+  const warAktiv = window.FTG_PREISE && window.FTG_PREISE.aktiv();
+  const { error } = await sb.from('firma').update({ preise, updated_at: new Date().toISOString() }).eq('id', 1);
+  if (error) { toast('Nicht gespeichert: ' + error.message, 'err'); return; }
+  einstState.firma = { ...(einstState.firma || {}), preise };
+  await logAenderung('firma', warAktiv ? 'Preisliste geändert' : 'Zentrale Preisliste aktiviert', null);
+  if (window.sendEinstellungenToSchulung) window.sendEinstellungenToSchulung();
+  toast(warAktiv ? 'Preise gespeichert' : 'Preisliste aktiviert – gilt jetzt für Rechnungen und KVA', 'ok');
+  renderEinstInhalt();
+}
+
+async function klassenPreiseSpeichern() {
+  if (typeof kvaKlassenPreiseSpeichern !== 'function') { toast('KVA-Modul nicht geladen.', 'err'); return; }
+  const erg = await kvaKlassenPreiseSpeichern();
+  if (erg === true) { toast('Klassenpreise gespeichert', 'ok'); await logAenderung('kva', 'Klassenpreise geändert', null); }
+  else toast('Nicht gespeichert: ' + erg, 'err');
+}
+
+// ── ABSCHNITT: AUTOMATISCHE NACHRICHTEN ─────────────────────────────
+// Ein-/Ausschalter für alle E-Mails, die ohne Knopfdruck an Teilnehmer gehen.
+// Gespeichert in firma.grundlagen.auto_mails (keine neue Tabelle nötig).
+// Fehlt ein Eintrag, gilt die Nachricht als EINGESCHALTET.
+// Gelesen wird das von: schulung.html (Bescheinigung), functions/bkf-erinnerung.js
+// und – über functions/auto-mail-status.js – vom Kurskalender (Campus AI).
+const AUTO_MAILS = [
+  { key: 'anmeldung', titel: 'Anmeldebestätigung',
+    wann: 'Sofort nach der Online-Anmeldung im Kurskalender oder per Klick im Firmenportal.',
+    info: 'Aus: Die Anmeldung kommt weiterhin bei euch an (Posteingang + E-Mail an das Büro), nur der Teilnehmer bekommt keine Bestätigung.' },
+  { key: 'kurserinnerung', titel: 'Kurserinnerung',
+    wann: '3 Tage vor Kursbeginn, einmalig – mit Termin, Ort, Parkhinweis und Absage-Link.',
+    info: 'Gilt für Online-Anmeldungen. Von Hand zugeordnete Teilnehmer bekommen diese E-Mail generell nicht.' },
+  { key: 'bescheinigung', titel: 'Teilnahmebescheinigung per E-Mail',
+    wann: 'BKF: mit der BQR-Meldung. Andere Lehrgänge: mit dem Vermerk „bestanden / teilgenommen“.',
+    info: 'Aus: Die Bescheinigung lässt sich weiterhin als PDF öffnen und drucken, sie wird nur nicht mehr automatisch verschickt.' },
+  { key: 'bkf_erinnerung', titel: 'BKF-Erinnerung',
+    wann: 'Einmalig 6 Monate vor Ablauf der Schlüsselzahl 95, wenn noch Module fehlen.',
+    info: 'Enthält den persönlichen Link „Mein BKF-Stand“.' },
+];
+
+function viewNachrichten() {
+  const am = ((einstState.firma || {}).grundlagen || {}).auto_mails || {};
+  const zeilen = AUTO_MAILS.map(m => {
+    const an = am[m.key] !== false;
+    return `
+    <div class="am-zeile">
+      <div style="min-width:0">
+        <div style="font-size:14px;font-weight:700;color:var(--dunkel)">${escEinst(m.titel)}</div>
+        <div style="font-size:12.5px;color:var(--dunkel);margin-top:2px">${escEinst(m.wann)}</div>
+        <div style="font-size:11.5px;color:var(--grau);margin-top:2px">${escEinst(m.info)}</div>
+      </div>
+      <label class="am-schalter" title="${an ? 'Eingeschaltet' : 'Ausgeschaltet'}">
+        <input type="checkbox" id="am-${m.key}" ${an ? 'checked' : ''} onchange="nachrichtenSpeichern('${m.key}')">
+        <span class="am-bahn"></span>
+        <span class="am-text">${an ? 'Ein' : 'Aus'}</span>
+      </label>
+    </div>`;
+  }).join('');
+  return `
+    <style>
+      .am-zeile{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:14px 0;border-bottom:1px solid var(--border)}
+      .am-zeile:last-child{border-bottom:none}
+      .am-schalter{display:inline-flex;align-items:center;gap:8px;cursor:pointer;flex:none;user-select:none}
+      .am-schalter input{position:absolute;opacity:0;width:1px;height:1px}
+      .am-bahn{position:relative;width:46px;height:26px;border-radius:13px;background:#C9CFD6;transition:background .15s}
+      .am-bahn::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.3);transition:left .15s}
+      .am-schalter input:checked + .am-bahn{background:#197341}
+      .am-schalter input:checked + .am-bahn::after{left:23px}
+      .am-schalter input:focus-visible + .am-bahn{outline:2px solid var(--blau);outline-offset:2px}
+      .am-text{font-size:13px;font-weight:700;min-width:26px;color:var(--dunkel)}
+    </style>
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-titel">Automatische Nachrichten an Teilnehmer</div>
+      <p style="font-size:12px;color:var(--grau);margin:4px 0 6px">Diese E-Mails gehen ohne Knopfdruck raus. Ein Klick auf den Schalter wird sofort gespeichert und gilt ab der nächsten Nachricht.</p>
+      ${zeilen}
+    </div>
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-titel">Nicht hier schaltbar</div>
+      <p style="font-size:12.5px;color:var(--dunkel);margin:6px 0 0;line-height:1.5">
+        <b>Newsletter-Bestätigung</b> (Double-Opt-in) und die <b>Nachfass-Serie zum Förder-Check</b> gehören zum Newsletter-Tool und werden dort gesteuert.<br>
+        Alles andere – Rechnungen, Zugangsdaten fürs Firmenportal, Meldungen an Behörden – geht nur auf Knopfdruck raus.</p>
+    </div>`;
+}
+
+async function nachrichtenSpeichern(key) {
+  const el = document.getElementById('am-' + key);
+  if (!el) return;
+  const an = !!el.checked;
+  try {
+    // Frisch lesen und nur diesen einen Schalter ändern (andere Daten bleiben)
+    const { data, error: e1 } = await sb.from('firma').select('grundlagen').eq('id', 1).single();
+    if (e1) throw e1;
+    const g = (data && data.grundlagen) || {};
+    g.auto_mails = { ...(g.auto_mails || {}), [key]: an };
+    const { error } = await sb.from('firma').update({ grundlagen: g }).eq('id', 1);
+    if (error) throw error;
+    einstState.firma = { ...(einstState.firma || {}), grundlagen: g };
+    const m = AUTO_MAILS.find(x => x.key === key);
+    await logAenderung('firma', 'Automatische Nachricht ' + (an ? 'eingeschaltet' : 'ausgeschaltet') + ': ' + (m ? m.titel : key), null);
+    if (window.sendEinstellungenToSchulung) window.sendEinstellungenToSchulung();
+    toast((m ? m.titel : 'Nachricht') + (an ? ' eingeschaltet' : ' ausgeschaltet'), 'ok');
+  } catch (err) {
+    el.checked = !an;   // Schalter zurückstellen – es wurde nichts gespeichert
+    toast('Nicht gespeichert: ' + ((err && err.message) || err), 'err');
+  }
+  const host = document.getElementById('einst-inhalt');
+  if (host && einstState.tab === 'nachrichten') host.innerHTML = viewNachrichten();
 }
 
 // ── ABSCHNITT: BENUTZER ─────────────────────────────────────────────
@@ -527,11 +755,9 @@ function viewKvaEinst() {
     </div>
 
     <div class="card" style="margin-bottom:16px">
-      <div class="card-titel">Preisliste je Führerscheinklasse</div>
-      <p style="font-size:12px;color:var(--grau);margin-bottom:14px">
-        Grundbetrag, Übungsstunden, Sonderfahrten, Prüfungsgebühren. Alle Felder editierbar.</p>
-      <div id="pl-container" style="overflow-x:auto"></div>
-      <button class="btn btn-outline" style="margin-top:10px;font-size:12px" onclick="resetPrices()">↻ Standardpreise wiederherstellen</button>
+      <div class="card-titel">Preise</div>
+      <p style="font-size:12.5px;color:var(--dunkel);margin:6px 0 0">Die Preise der Führerscheinklassen und Schulungen werden an einer Stelle gepflegt:
+        <a href="#" onclick="setEinstTab('preise');return false" style="color:var(--blau);font-weight:700">Einstellungen → Preise</a></p>
     </div>
 
     <div class="card" style="margin-bottom:16px">
@@ -866,26 +1092,6 @@ function viewSchulung() {
       <div style="font-size:11px;color:var(--grau);margin-top:2px">Eine Rechtsgrundlage pro Zeile. Leer = Standardtext.</div>
     </div>`).join('');
 
-  const preisLehrgaenge = SCH_KURSTYPEN.map(t => `
-    <div style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--border)">
-      <span style="flex:1;font-size:13px">${escEinst(t.label)}</span>
-      <div style="display:flex;align-items:center;gap:4px">
-        <input id="sch-preis-${escEinst(t.key)}" type="number" min="0" step="0.01" value="${escEinst(p[t.key]??'')}" placeholder="0.00"
-          style="width:100px;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:13px">
-        <span style="font-size:12px;color:var(--grau)">€</span>
-      </div>
-    </div>`).join('');
-
-  const preisUnterweisungen = SCH_UWTYPEN.map(t => `
-    <div style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--border)">
-      <span style="flex:1;font-size:13px">${escEinst(t.label)}</span>
-      <div style="display:flex;align-items:center;gap:4px">
-        <input id="sch-preis-uw-${escEinst(t.key)}" type="number" min="0" step="0.01" value="${escEinst(p['UW_'+t.key]??'')}" placeholder="0.00"
-          style="width:100px;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:13px">
-        <span style="font-size:12px;color:var(--grau)">€ / TN</span>
-      </div>
-    </div>`).join('');
-
   return `
     <div class="card" style="margin-bottom:16px">
       <div class="card-titel">Rechnungsangaben</div>
@@ -940,15 +1146,9 @@ function viewSchulung() {
     </div>
 
     <div class="card" style="margin-bottom:16px">
-      <div class="card-titel">Standardpreise Lehrgänge</div>
-      <p style="font-size:12px;color:var(--grau);margin-bottom:14px">Werden bei neuen Rechnungen vorausgefüllt – im Rechnungsdialog weiterhin anpassbar.</p>
-      ${preisLehrgaenge}
-    </div>
-
-    <div class="card" style="margin-bottom:16px">
-      <div class="card-titel">Standardpreise Unterweisungen</div>
-      <p style="font-size:12px;color:var(--grau);margin-bottom:10px">Preis je Teilnehmer pro Unterweisung.</p>
-      ${preisUnterweisungen}
+      <div class="card-titel">Preise</div>
+      <p style="font-size:12.5px;color:var(--dunkel);margin:6px 0 0">Lehrgangs- und Unterweisungspreise werden an einer Stelle gepflegt:
+        <a href="#" onclick="setEinstTab('preise');return false" style="color:var(--blau);font-weight:700">Einstellungen → Preise</a></p>
     </div>
 
     <div style="display:flex;justify-content:flex-end;margin-top:4px">
@@ -962,8 +1162,14 @@ async function schulungSpeichern() {
   const v = id => { const el = document.getElementById('sch-' + id); return el ? el.value.trim() : null; };
   const f = einstState.firma || {};
 
-  // Grundlagen einlesen
+  // Grundlagen einlesen. In firma.grundlagen liegen außerdem Zusatzdaten anderer
+  // Bereiche (z. B. ueberwachung, auto_mails) – die bleiben erhalten.
   const grundlagen = {};
+  try {
+    const { data: akt } = await sb.from('firma').select('grundlagen').eq('id', 1).single();
+    const kursKeys = SCH_KURSTYPEN.map(t => t.key);
+    Object.keys((akt && akt.grundlagen) || {}).forEach(k => { if (kursKeys.indexOf(k) === -1) grundlagen[k] = akt.grundlagen[k]; });
+  } catch (e) { toast('Einstellungen konnten nicht gelesen werden – bitte erneut versuchen.', 'err'); return; }
   SCH_KURSTYPEN.forEach(t => {
     const el = document.getElementById('sch-gl-' + t.key);
     if (!el) return;
@@ -971,16 +1177,7 @@ async function schulungSpeichern() {
     if (zeilen.length) grundlagen[t.key] = zeilen;
   });
 
-  // Preise einlesen
-  const preise = {};
-  SCH_KURSTYPEN.forEach(t => {
-    const el = document.getElementById('sch-preis-' + t.key);
-    if (el && el.value !== '') preise[t.key] = parseFloat(el.value) || 0;
-  });
-  SCH_UWTYPEN.forEach(t => {
-    const el = document.getElementById('sch-preis-uw-' + t.key);
-    if (el && el.value !== '') preise['UW_' + t.key] = parseFloat(el.value) || 0;
-  });
+  // Preise werden NICHT hier gespeichert – sie liegen zentral unter „Preise".
 
   const data = {
     id: 1,
@@ -1003,7 +1200,6 @@ async function schulungSpeichern() {
     // slice als zweite Sicherung, falls das maxlength im Browser umgangen wird
     bqr_sachbearbeiter: (v('bqr-sb') || BQR_SB_DEFAULT).slice(0, BQR_SB_MAXLEN),
     grundlagen,
-    preise,
     updated_at: new Date().toISOString(),
   };
 

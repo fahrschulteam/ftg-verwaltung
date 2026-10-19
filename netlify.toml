@@ -7,3 +7,7 @@
 
 [functions.ki]
   timeout = 26
+
+# BKF-Erinnerung: einmal taeglich um 07:00 UTC (= 8 bzw. 9 Uhr deutscher Zeit)
+[functions."bkf-erinnerung"]
+  schedule = "0 7 * * *"
