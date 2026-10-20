@@ -222,7 +222,7 @@ exports.handler = async (event) => {
           birth: p.birth || '', birthplace: p.birthplace || '',
           street: p.street || '', zip: p.zip || '', city: p.city || '',
           phone: p.phone || '', email: p.email || '',
-          fe: '', sz95: '', module: 0, fehlen: 5, bkf: {},
+          fe: '', sz95: '', module: 0, fehlen: 5, bkf: {}, standort: '', standortName: '',
         },
       });
     }
@@ -314,6 +314,11 @@ exports.handler = async (event) => {
     const fahrer = await supa(
       `schulung_participants?company_id=eq.${firma.id}&select=id,legacy_id,first_name,last_name,birth,birthplace,street,zip,city,phone,email,ext_dates&order=last_name.asc&limit=1000`,
     );
+    // Standorte (Betriebsstaetten) dieser Firma – nur die eigenen
+    let standorte = [];
+    try { standorte = await supa(`schulung_standorte?company_id=eq.${firma.id}&select=id,name&order=name.asc`); } catch { standorte = []; }
+    const stName = {};
+    (standorte || []).forEach((s) => { stName[s.id] = s.name; });
     // BKF-Kurse (klein genug, um sie einmal zu laden und je Fahrer zuzuordnen)
     let kurse = [];
     try { kurse = await supa(`schulung_courses?select=participant_id,participant_legacy,type,date_from,passed&type=like.BKF*`); } catch { kurse = []; }
@@ -359,8 +364,11 @@ exports.handler = async (event) => {
           fe: (p.ext_dates || {}).FE || '',
           sz95: s.sz95, module: s.module, fehlen: s.fehlen,
           bkf: bkfDetails(p, kurse),
+          standort: stName[(p.ext_dates || {}).STANDORT] ? (p.ext_dates || {}).STANDORT : '',
+          standortName: stName[(p.ext_dates || {}).STANDORT] || '',
         };
       }),
+      standorte: (standorte || []).map((s) => ({ id: s.id, name: s.name })),
       termine: (termine || []).filter((t) => (t.date || '') >= heute).slice(0, 12)
         .map((t) => ({ ...t, angemeldet: schonDrin[[t.date || '', t.type || '', t.location || ''].join('|')] || [] })),
       intern,

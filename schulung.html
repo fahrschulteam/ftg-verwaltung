@@ -40,6 +40,8 @@ window.onerror=function(msg,src,line,col,err){
 <title>Schulungsverwaltung – Fahrschulteam</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="datev-light.js?v=20261020"></script>
+<script src="datev-invoices-ui.js?v=20261020"></script>
 <script src="qrcode-generator.js?v=20261004a"></script>
 <script src="bkf-rechner.js?v=20261006a" defer></script>
 <style>
@@ -668,6 +670,7 @@ setTimeout(_hideLoader, 1500);
 
 <!-- INVOICES -->
 <section class="view" id="invoices">
+  <div class="card" id="datev-preparation-panel" style="margin-bottom:16px"></div>
   <div class="stat-grid" id="invKacheln" style="margin-bottom:18px"></div>
   <div class="search-bar">
     <input id="invSearch" placeholder="Suchen nach Nummer, Empfänger…" oninput="renderInvoices()">
@@ -2172,6 +2175,7 @@ window.addEventListener('message', e => {
     if (firma.warn_days != null) s.warn            = firma.warn_days;
     // Ein-/Ausschalter der automatischen Nachrichten (Einstellungen → Automatische Nachrichten)
     s.autoMails = (firma.grundlagen && firma.grundlagen.auto_mails) || {};
+    if (typeof renderDatevPreparation === 'function') setTimeout(renderDatevPreparation, 0);
     if (firma.instr_interval != null) s.interval   = firma.instr_interval;
     if (firma.grundlagen && Object.keys(firma.grundlagen).length) s.grundlagen = firma.grundlagen;
     if (firma.preise && Object.keys(firma.preise).length) s.preise = firma.preise;
@@ -2865,7 +2869,34 @@ function companyName(id){const c=state.companies.find(x=>x.id===id);return c?c.n
 
 // ---------- Companies CRUD ----------
 let coExpanded={};
+let coStandortFilter={};
+// Mitarbeiterliste einer Firma nach Standort gruppieren (Standort steht in ext_dates.STANDORT)
+function _coStandortGruppen(co,staff,itemHtml){
+  const liste=srtFor(co.id).slice().sort((a,b)=>String(a.name).localeCompare(String(b.name),'de'));
+  const byName=(a,b)=>String(a.name||'').localeCompare(String(b.name||''),'de');
+  if(!liste.length) return staff.slice().sort(byName).map(itemHtml).join('');
+  const ids=new Set(liste.map(s=>s.id));
+  const stVon=p=>{const s=p.extDates&&p.extDates.STANDORT;return ids.has(s)?s:'';};
+  const gruppen=liste.map(s=>({id:s.id,name:s.name})).concat([{id:'',name:'ohne Standort'}]);
+  const anz={};staff.forEach(p=>{const s=stVon(p);anz[s]=(anz[s]||0)+1;});
+  const fil=coStandortFilter[co.id]||'';
+  const opt=(v,txt)=>`<option value="${_esc(v)}"${fil===v?' selected':''}>${_esc(txt)}</option>`;
+  let h=`<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><label style="font-size:13px;font-weight:600">Standort:</label>
+    <select onchange="coStandortFilter['${co.id}']=this.value;renderCompanies()" style="max-width:300px">
+    ${opt('','Alle Standorte ('+staff.length+')')}
+    ${gruppen.filter(g=>anz[g.id]).map(g=>opt(g.id||'__ohne',g.name+' ('+anz[g.id]+')')).join('')}
+    </select></div>`;
+  gruppen.forEach(g=>{
+    if(fil&&fil!==(g.id||'__ohne'))return;
+    const ps=staff.filter(p=>stVon(p)===g.id).sort(byName);
+    if(!ps.length)return;
+    h+=`<div style="margin:12px 0 4px;padding-bottom:3px;border-bottom:2px solid #dfe3e8;font-size:13px;font-weight:700;color:var(--steel)">${_esc(g.name)} <span style="font-weight:400;color:var(--muted)">(${ps.length})</span></div>`;
+    h+=ps.map(itemHtml).join('');
+  });
+  return h;
+}
 function renderCompanies(){
+  if(_srtCache===null){srtLoad().then(()=>renderCompanies());}
   const q=(document.getElementById('coSearch').value||'').toLowerCase();
   const b=document.getElementById('coBody');
   const _coBkfIdx=_bkfIndex();
@@ -2897,7 +2928,7 @@ function renderCompanies(){
         <button class="btn danger sm" onclick="delCompany('${co.id}')" title="Löschen">${IC('muell')}</button>
       </td></tr>`;
     if(exp&&staff.length){
-      const dueRows=staff.map(p=>{
+      const dueRows=_coStandortGruppen(co,staff,p=>{
         const due=nextDue(p.id),s=dueStatus(due);
         const adr=adrExpiry(p.id),aS=adr?adrDueStatus(adr):null;
         const bs=_bkfStatusVon(p,_coBkfIdx.get(p.id)||[]);
@@ -2911,7 +2942,7 @@ function renderCompanies(){
             <button class="btn sm ghost" onclick="openParticipant('${p.id}')">✎</button>
           </span>
         </div>`;
-      }).join('');
+      });
       html+=`<tr class="co-expand-row"><td colspan="6">
         <div class="co-staff-list">
           <div style="font-size:13px;font-weight:700;color:var(--steel);margin-bottom:8px;text-transform:uppercase;letter-spacing:.04em">Mitarbeiter von ${co.name}</div>
@@ -11855,6 +11886,7 @@ function druckeOffenePosten(){
 }
 
 function renderInvoices(){
+  if (typeof renderDatevPreparation === 'function') renderDatevPreparation();
   const q=(document.getElementById('invSearch').value||'').toLowerCase();
   let rows=state.invoices.slice().sort((a,b)=>b.date.localeCompare(a.date)||b.seq-a.seq);
   rows=rows.filter(i=>(i.number+i.recipient+i.type).toLowerCase().includes(q));

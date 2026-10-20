@@ -33,6 +33,9 @@
   th{font-size:11.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);text-align:left;
     padding:8px 10px;border-bottom:2px solid var(--line)}
   td{padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:middle}
+  select.stf{padding:10px 12px;border:1px solid var(--line);border-radius:9px;font-size:15px;background:#fff;max-width:320px}
+  tr.grp td{background:#f4f6f8;font-weight:700;font-size:13px;color:#2a3540;border-bottom:2px solid var(--line);padding:9px 10px}
+  tr.grp td span{font-weight:400;color:var(--muted)}
   .tag{display:inline-block;font-size:11.5px;font-weight:700;border-radius:999px;padding:3px 9px;white-space:nowrap}
   .t-ok{background:var(--green-bg);color:var(--green)}
   .t-warn{background:var(--amber-bg);color:var(--amber)}
@@ -225,7 +228,10 @@
       </div>
       <p class="muted" style="margin:0 0 4px">Berufskraftfahrer m&uuml;ssen bis zum Stichtag 5 Tagesmodule (35 Std.) besuchen (&sect; 5 BKrFQG).
         Der Stichtag ist das Ablaufdatum der Schl&uuml;sselzahl 95 im F&uuml;hrerschein.</p>
-      <input id="suche" placeholder="Fahrer suchen …" oninput="renderFahrer()" style="margin:10px 0;max-width:320px">
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:10px 0">
+        <input id="suche" placeholder="Fahrer oder Standort suchen …" oninput="renderFahrer()" style="max-width:320px">
+        <select id="stFilter" class="stf" onchange="renderFahrer()" style="display:none" title="Nach Standort filtern"></select>
+      </div>
       <div style="overflow-x:auto">
       <table>
         <thead><tr><th>Name</th><th>Kontakt</th><th>BKF-Weiterbildung</th><th>Fahrerlaubnis</th><th></th></tr></thead>
@@ -438,9 +444,23 @@
     var q=(el("suche").value||"").toLowerCase();
     var b=el("fBody");
     rechnerParken(); // Rechner vor dem Neuzeichnen sichern (sonst ginge er verloren)
-    var rows=(daten.fahrer||[]).filter(function(f){ return (f.name+" "+f.email+" "+f.phone).toLowerCase().indexOf(q)!==-1; });
+    // Standorte: Auswahlfeld fuellen (nur wenn die Firma Standorte hat)
+    var stl=(daten.standorte||[]).slice().sort(function(a,b){ return String(a.name).localeCompare(String(b.name),"de"); });
+    var sel=el("stFilter"), fil=sel.value||"";
+    var alle=daten.fahrer||[];
+    var anz={}; alle.forEach(function(f){ var s=f.standort||""; anz[s]=(anz[s]||0)+1; });
+    var gruppen=stl.map(function(s){ return {id:s.id,name:s.name}; }).concat([{id:"",name:"ohne Standort"}]);
+    if(stl.length){
+      sel.style.display="";
+      sel.innerHTML='<option value="">Alle Standorte ('+alle.length+')</option>'+gruppen.filter(function(g){ return anz[g.id]; })
+        .map(function(g){ var v=g.id||"__ohne"; return '<option value="'+esc(v)+'"'+(fil===v?' selected':'')+'>'+esc(g.name)+' ('+anz[g.id]+')</option>'; }).join("");
+      if(sel.value!==fil) fil=sel.value||"";
+    } else { sel.style.display="none"; fil=""; }
+    var rows=alle.filter(function(f){
+      if(fil && (f.standort||"__ohne")!==fil) return false;
+      return (f.name+" "+f.email+" "+f.phone+" "+(f.standortName||"")).toLowerCase().indexOf(q)!==-1; });
     if(!rows.length){ b.innerHTML='<tr><td colspan="5" class="muted">Keine Fahrer gefunden.</td></tr>'; return; }
-    b.innerHTML=rows.map(function(f){
+    var zeile=function(f){
       // Einheitlicher Aufbau: Zeile 1 Balken + "x von 5 Modulen",
       // Zeile 2 Stichtag mit Restzeit (oder "Stichtag fehlt · eintragen"), dann Knopf
       var mods=Math.max(0,Math.min(5,+f.module||0)), stufe, z2;
@@ -473,7 +493,18 @@
         +'<td style="font-size:12.5px">'+esc(kontakt||"—")+(f.phone?'<div class="muted">'+esc(f.phone)+'</div>':'')+(f.email?'<div class="muted">'+esc(f.email)+'</div>':'')+'</td>'
         +'<td>'+bkf+'</td><td>'+fe+'</td>'
         +'<td><button class="btn ghost sm" onclick="bearbeiten(\''+f.id+'\')" title="Kontaktdaten ändern">✎</button></td></tr>';
-    }).join("");
+    };
+    if(!stl.length){ b.innerHTML=rows.map(zeile).join(""); rechnerEinhaengen(); return; }
+    // nach Standort gruppiert, innerhalb des Standorts alphabetisch
+    var html="";
+    gruppen.forEach(function(g){
+      var ps=rows.filter(function(f){ return (f.standort||"")===g.id; })
+        .sort(function(a,b){ return a.name.localeCompare(b.name,"de"); });
+      if(!ps.length) return;
+      html+='<tr class="grp"><td colspan="5">'+esc(g.name)+' <span>('+ps.length+(ps.length===1?' Fahrer':' Fahrer')+')</span></td></tr>';
+      html+=ps.map(zeile).join("");
+    });
+    b.innerHTML=html;
     rechnerEinhaengen();
   };
 
@@ -538,11 +569,11 @@
     var k=(daten.intern||[]).find(function(x){return x.key===zKey;}); if(!k) return;
     var drin=new Set(k.fahrer||[]);
     var q=(el("zSuche").value||"").toLowerCase();
-    var rows=(daten.fahrer||[]).filter(function(f){ return f.name.toLowerCase().indexOf(q)!==-1; });
+    var rows=(daten.fahrer||[]).filter(function(f){ return (f.name+" "+(f.standortName||"")).toLowerCase().indexOf(q)!==-1; });
     if(!rows.length){ el("zListe").innerHTML='<p class="muted" style="padding:12px">Keine Fahrer gefunden. Legen Sie unten einen neuen Fahrer an.</p>'; return; }
     el("zListe").innerHTML=rows.map(function(f){
       if(drin.has(f.id)) return '<label class="drin"><input type="checkbox" disabled checked>'+esc(f.name)+' · bereits eingetragen</label>';
-      return '<label><input type="checkbox" value="'+f.id+'">'+esc(f.name)+(f.birth?' · geb. '+de(f.birth):'')+'</label>';
+      return '<label><input type="checkbox" value="'+f.id+'">'+esc(f.name)+(f.birth?' · geb. '+de(f.birth):'')+(f.standortName?' · '+esc(f.standortName):'')+'</label>';
     }).join("");
   };
 
@@ -643,11 +674,11 @@
     var merk=new Set(aGewaehlt());
     var drin=new Set(k.angemeldet||[]);
     var q=(el("aSuche").value||"").toLowerCase();
-    var rows=(daten.fahrer||[]).filter(function(f){ return f.name.toLowerCase().indexOf(q)!==-1; });
+    var rows=(daten.fahrer||[]).filter(function(f){ return (f.name+" "+(f.standortName||"")).toLowerCase().indexOf(q)!==-1; });
     if(!rows.length){ el("aWahl").innerHTML='<p class="muted" style="padding:12px">Keine Fahrer gefunden. Legen Sie unten einen neuen Fahrer an.</p>'; aGrenze(); return; }
     el("aWahl").innerHTML=rows.map(function(f){
       if(drin.has(f.id)) return '<label class="drin"><input type="checkbox" data-drin="1" disabled checked>'+esc(f.name)+' · bereits angemeldet</label>';
-      return '<label><input type="checkbox" value="'+esc(f.id)+'"'+(merk.has(f.id)?' checked':'')+' onchange="aGrenzeCb()">'+esc(f.name)+(f.birth?' · geb. '+de(f.birth):'')+'</label>';
+      return '<label><input type="checkbox" value="'+esc(f.id)+'"'+(merk.has(f.id)?' checked':'')+' onchange="aGrenzeCb()">'+esc(f.name)+(f.birth?' · geb. '+de(f.birth):'')+(f.standortName?' · '+esc(f.standortName):'')+'</label>';
     }).join("");
     aGrenze();
   };

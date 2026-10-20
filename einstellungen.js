@@ -125,6 +125,7 @@ window.renderEinstellungen = async function () {
       ${tabBtn('schulung', EIC('hut')+' Schulungen')}
       ${tabBtn('preise', '€ Preise')}
       ${tabBtn('nachrichten', '✉ Automatische Nachrichten')}
+      ${tabBtn('datev', EIC('doc')+' DATEV Light')}
       ${tabBtn('kva', EIC('liste')+' KVA')}
       ${tabBtn('qm', EIC('hakenkreis')+' QM')}
       ${tabBtn('backup', EIC('diskette')+' Backup')}
@@ -152,6 +153,7 @@ function renderEinstInhalt() {
   else if (einstState.tab === 'schulung')  { host.innerHTML = viewSchulung(); ladeSchulungSettingsVorschau(); }
   else if (einstState.tab === 'preise')   { host.innerHTML = viewPreise(); initPreise(); }
   else if (einstState.tab === 'nachrichten') host.innerHTML = viewNachrichten();
+  else if (einstState.tab === 'datev') renderDatevEinstellungen(host);
   else if (einstState.tab === 'kva')      { host.innerHTML = viewKvaEinst(); initKvaEinst(); }
   else if (einstState.tab === 'qm')       { host.innerHTML = viewQmEinst(); initQmEinst(); }
   else if (einstState.tab === 'backup')   host.innerHTML = viewBackup();
