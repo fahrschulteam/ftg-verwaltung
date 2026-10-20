@@ -556,7 +556,7 @@
       }).join("");
       return '<div class="terminrow" style="display:block">'
         +'<div style="display:flex;gap:10px;justify-content:space-between;align-items:center;flex-wrap:wrap">'
-        +'<span><b>'+esc(k.type)+'</b> · '+esc(zeitraum(k))+(k.location?' · '+esc(k.location):'')+'</span>'
+        +'<span><b>'+esc(k.type)+'</b> · '+esc(zeitraum(k))+(k.location?'<br><span class="muted">Austragungsort: '+esc(k.location)+'</span>':'')+'</span>'
         +'<span style="display:flex;gap:8px;align-items:center">'+tag
         +'<button class="btn blau sm" onclick="zOeffnen(\''+esc(k.key)+'\')">Fahrer eintragen</button></span></div>'
         +(eingetragen?'<ul class="fliste">'+eingetragen+'</ul>':'<p class="muted" style="margin:6px 0 0">Noch niemand eingetragen.</p>')

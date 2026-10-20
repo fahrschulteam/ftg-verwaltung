@@ -1380,6 +1380,37 @@ function _firmaBadge(g){
 }
 // Auswahlliste der Firmen fuer den Lehrgangs-Dialog.
 // Leerer Wert = oeffentlicher Kurs (erscheint im Kurskalender).
+// Austragungsort fuer firmeninterne Termine: Hat die gewaehlte Firma Standorte,
+// kann einer davon als Ort uebernommen werden (z. B. Abnahme in Westerstede).
+// Der Text landet im normalen Ortsfeld und ist so auch im Firmenportal sichtbar.
+function _standortOrtText(s){
+  const co=(state.companies||[]).find(c=>(c._dbId||c.id)===s.company_id);
+  const adr=String(s.addr||'').split('\n').map(x=>x.trim()).filter(Boolean).join(', ');
+  return (co?co.name+' \u2013 ':'')+s.name+(adr?', '+adr:'');
+}
+async function _firmaOrtUpdate(){
+  const box=document.getElementById('m_firmaOrt');
+  const sel=document.getElementById('m_firma');
+  const loc=document.getElementById('m_loc');
+  if(!box||!sel||!loc) return;
+  await srtLoad();
+  const liste=srtFor(sel.value).slice().sort((a,b)=>String(a.name).localeCompare(String(b.name),'de'));
+  if(!sel.value||!liste.length){ box.innerHTML=''; return; }
+  const akt=loc.value||'';
+  const opts=liste.map(s=>{const txt=_standortOrtText(s);return '<option value="'+_esc(s.id)+'"'+(akt===txt?' selected':'')+'>'+_esc(s.name)+(s.addr?'':' (ohne Adresse)')+'</option>';}).join('');
+  box.innerHTML='<div style="margin-top:8px;padding:8px 10px;background:#f7f8fa;border:1px solid var(--border);border-radius:8px">'
+    +'<label style="font-size:12.5px">Austragungsort</label>'
+    +'<select id="m_firmaOrtSel" onchange="_firmaOrtSetzen(this.value)">'
+    +'<option value="">Bei uns ('+_esc(defLoc())+')</option>'+opts+'</select>'
+    +'<div class="hint" style="margin-top:4px">Übernimmt den Standort der Firma als Schulungsort – sichtbar im Firmenportal. Die Adresse eines Standorts pflegst du im Firmen-Dialog.</div></div>';
+}
+function _firmaOrtSetzen(id){
+  const loc=document.getElementById('m_loc'); if(!loc) return;
+  if(!id){ loc.value=defLoc(); return; }
+  const s=(_srtCache||[]).find(x=>x.id===id);
+  if(s) loc.value=_standortOrtText(s);
+}
+
 function _firmaOpts(aktiv){
   const esc=t=>String(t==null?'':t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
   const firmen=(state.companies||[]).slice().sort((a,b)=>String(a.name||'').localeCompare(String(b.name||''),'de'));
@@ -7983,6 +8014,7 @@ async function srtRenderManage(companyId){
       +   srtZugangHtml(s)
       + '</div>'
       + '<button type="button" class="btn ghost sm" onclick="srtRename(\'' + s.id + '\')">Umbenennen</button>'
+      + '<button type="button" class="btn ghost sm" onclick="srtAdresse(\'' + s.id + '\')">Adresse</button>'
       + '<button type="button" class="btn ghost sm" style="color:#C0001A;border-color:#C0001A" onclick="srtDelete(\'' + s.id + '\',\'' + companyId + '\')">L\u00f6schen</button>'
       + '</div>';
   }).join('') : '<div class="hint">Noch keine Standorte angelegt.</div>';
@@ -8068,6 +8100,23 @@ function srtRename(id){
       srtRenderManage(s.company_id);
     })
     .catch(function(e){ console.warn('Standort umbenennen', e); toast('Fehler beim Umbenennen'); });
+}
+
+function srtAdresse(id){
+  const s = (_srtCache || []).find(function(x){ return x.id === id; });
+  if (!s) return;
+  const alt = String(s.addr || '').split('\n').map(function(x){ return x.trim(); }).filter(Boolean).join(', ');
+  const neu = prompt('Adresse des Standorts (z. B. Musterstr. 1, 26655 Westerstede):', alt);
+  if (neu === null) return;
+  const wert = neu.split(',').map(function(x){ return x.trim(); }).filter(Boolean).join('\n');
+  fetch(MAIN_URL + '/rest/v1/schulung_standorte?id=eq.' + id,
+    { method:'PATCH', headers:_srtKopf(), body: JSON.stringify({ addr: wert || null }) })
+    .then(function(r){
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      toast('Adresse gespeichert');
+      srtRenderManage(s.company_id);
+    })
+    .catch(function(e){ console.warn('Standort-Adresse', e); toast('Fehler beim Speichern'); });
 }
 
 function srtDelete(id, companyId){
@@ -8517,7 +8566,7 @@ function openCourse(id){
       <div class="field"><label>Schulungsort Praxis <span style="font-weight:400;color:#888">(falls abweichend)</span></label><input id="m_locPraxis" value="${cc.locationPraxis||''}" placeholder="z.B. Betriebshof Kunde"></div>
     </div>
     <div class="grid grid-2">
-      <div class="field"><label>Firma (firmeninterner Termin)</label><select id="m_firma">${_firmaOpts(cc.firmaId||'')}</select><div class="hint" style="margin-top:4px">Leer = im Kurskalender sichtbar</div></div>
+      <div class="field"><label>Firma (firmeninterner Termin)</label><select id="m_firma" onchange="_firmaOrtUpdate()">${_firmaOpts(cc.firmaId||'')}</select><div class="hint" style="margin-top:4px">Leer = im Kurskalender sichtbar</div><div id="m_firmaOrt"></div></div>
       <div class="field"><label>Durchführender Dozent</label><select id="m_dozent">${dozOpts}</select>
         ${state.dozenten.length?'':'<div class="hint" style="margin-top:4px">Dozenten unter Einstellungen anlegen.</div>'}
       </div>
@@ -8553,7 +8602,7 @@ function openCourse(id){
       <button class="btn ghost" onclick="closeModal()">Abbrechen</button>
       <button class="btn primary" onclick="saveCourse('${id||''}')">Speichern</button>
     </div>`;
-  showModal();
+  showModal(); setTimeout(_firmaOrtUpdate,0);
   // Standard-Themen und BGQ-Felder initialisieren
   const defaultThemes = cc.themes&&cc.themes.length ? cc.themes : ctype(cc.type).themes||[];
   courseThemes(defaultThemes);
@@ -9434,7 +9483,8 @@ function openCourseGroup(g){
       <div class="field"><label>Durchführender Dozent</label><select id="m_dozent">${dozOpts}</select></div>
     </div>
     <div class="field"><label>Firma (firmeninterner Termin)</label>
-      <select id="m_firma">${_firmaOpts(refEntry.firmaId||'')}</select>
+      <select id="m_firma" onchange="_firmaOrtUpdate()">${_firmaOpts(refEntry.firmaId||'')}</select>
+      <div id="m_firmaOrt"></div>
       <div class="hint" style="margin-top:4px">Wird eine Firma gewählt, erscheint der Termin <b>nicht</b> im öffentlichen Kurskalender, sondern nur im Firmenportal dieser Firma.</div>
     </div>
     ${ffzFormBlock(refEntry)}
@@ -9465,7 +9515,7 @@ function openCourseGroup(g){
       <button class="btn ghost" onclick="closeModal()">Abbrechen</button>
       <button class="btn primary" onclick="saveCourseGroup('${g.entries.map(e=>e.id).join(',')}')">Speichern</button>
     </div>`;
-  showModal();
+  showModal(); setTimeout(_firmaOrtUpdate,0);
   
   // Kursplan-Auswahl im Gruppendialog
   groupKursplanInit(refEntry);
