@@ -143,11 +143,24 @@ exports.handler = async (event) => {
 
   try {
     // Firma über den Code finden – der Code ist der einzige Schlüssel.
-    const firmen = await supa(`schulung_companies?portal_code=eq.${encodeURIComponent(code)}&select=id,name,addr,contact,email,invoice_email,phone`);
+    let firmen = await supa(`schulung_companies?portal_code=eq.${encodeURIComponent(code)}&select=id,name,addr,contact,email,invoice_email,phone`);
+    // Optionaler Standortleiter-Zugang: Code gehoert zu einem Standort.
+    // Dann sind nur die Fahrer DIESES Standorts sichtbar/aenderbar.
+    let scope = null;
+    if (!Array.isArray(firmen) || !firmen.length) {
+      let st = [];
+      try { st = await supa(`schulung_standorte?portal_code=eq.${encodeURIComponent(code)}&select=id,name,company_id`); } catch { st = []; }
+      if (Array.isArray(st) && st.length && st[0].company_id) {
+        scope = st[0];
+        firmen = await supa(`schulung_companies?id=eq.${scope.company_id}&select=id,name,addr,contact,email,invoice_email,phone`);
+      }
+    }
     if (!Array.isArray(firmen) || !firmen.length) {
       return antwort(401, { success: false, message: 'Dieser Zugangscode ist nicht gültig.' });
     }
     const firma = firmen[0];
+    // Zusatzfilter fuer alle Fahrer-Abfragen (leer beim Firmen-Zugang)
+    const scopeFilter = scope ? `&ext_dates->>STANDORT=eq.${scope.id}` : '';
 
     // ── Kontaktdaten eines eigenen Fahrers ändern ──────────────────────
     if (body.action === 'update') {
@@ -162,7 +175,7 @@ exports.handler = async (event) => {
       if (sz) {
         const jahr = +sz.slice(0, 4);
         if (!istDatum(sz) || jahr < 2000 || jahr > 2100) return antwort(400, { success: false, message: 'Bitte ein gültiges Datum für den Stichtag eintragen.' });
-        const akt = await supa(`schulung_participants?id=eq.${encodeURIComponent(body.id || '')}&company_id=eq.${firma.id}&select=ext_dates`);
+        const akt = await supa(`schulung_participants?id=eq.${encodeURIComponent(body.id || '')}&company_id=eq.${firma.id}${scopeFilter}&select=ext_dates`);
         if (!Array.isArray(akt) || !akt.length) return antwort(403, { success: false, message: 'Dieser Fahrer gehört nicht zu Ihrer Firma.' });
         erlaubt.ext_dates = { ...(akt[0].ext_dates || {}), SZ95: sz, SZ95_PORTAL: heute };
       }
@@ -170,7 +183,7 @@ exports.handler = async (event) => {
       erlaubt.updated_at = jetzt;
       // company_id-Filter stellt sicher: nur eigene Fahrer sind änderbar.
       const r = await fetch(
-        `${SUPA_URL}/rest/v1/schulung_participants?id=eq.${encodeURIComponent(body.id)}&company_id=eq.${firma.id}`,
+        `${SUPA_URL}/rest/v1/schulung_participants?id=eq.${encodeURIComponent(body.id)}&company_id=eq.${firma.id}${scopeFilter}`,
         { method: 'PATCH', headers: { ...HEAD, Prefer: 'return=representation' }, body: JSON.stringify(erlaubt) },
       );
       const rows = r.ok ? await r.json() : [];
@@ -200,7 +213,7 @@ exports.handler = async (event) => {
         legacy_id: neueLegacyId(),
         created_at: jetzt,
         updated_at: jetzt,
-        ext_dates: { PORTAL_NEU: heute },
+        ext_dates: scope ? { PORTAL_NEU: heute, STANDORT: scope.id } : { PORTAL_NEU: heute },
       };
       if (istDatum(f.birth)) neu.birth = f.birth;
       for (const feld of ['birthplace', 'street', 'zip', 'city', 'phone', 'email']) {
@@ -222,7 +235,7 @@ exports.handler = async (event) => {
           birth: p.birth || '', birthplace: p.birthplace || '',
           street: p.street || '', zip: p.zip || '', city: p.city || '',
           phone: p.phone || '', email: p.email || '',
-          fe: '', sz95: '', module: 0, fehlen: 5, bkf: {}, standort: '', standortName: '',
+          fe: '', sz95: '', module: 0, fehlen: 5, bkf: {}, standort: scope ? scope.id : '', standortName: scope ? scope.name : '',
         },
       });
     }
@@ -244,7 +257,7 @@ exports.handler = async (event) => {
       const schonDrin = new Set(treffer.filter((r) => r.participant_id).map((r) => r.participant_id));
 
       // Nur Fahrer der eigenen Firma – Prüfung serverseitig, nicht im Browser.
-      const eigene = await supa(`schulung_participants?company_id=eq.${firma.id}&select=id,legacy_id&limit=2000`);
+      const eigene = await supa(`schulung_participants?company_id=eq.${firma.id}${scopeFilter}&select=id,legacy_id&limit=2000`);
       const erlaubteIds = new Set((eigene || []).map((x) => x.id));
       const legacyVon = {};
       (eigene || []).forEach((x) => { legacyVon[x.id] = x.legacy_id || x.id; });
@@ -299,6 +312,10 @@ exports.handler = async (event) => {
       const zeilen = await interneZeilen(firma.id, heute);
       const zeile = (zeilen || []).find((r) => terminKey(r) === key && r.participant_id === id);
       if (!zeile) return antwort(404, { success: false, message: 'Dieser Eintrag wurde nicht gefunden.' });
+      if (scope) {
+        const meins = await supa(`schulung_participants?id=eq.${encodeURIComponent(id)}&company_id=eq.${firma.id}${scopeFilter}&select=id`);
+        if (!Array.isArray(meins) || !meins.length) return antwort(403, { success: false, message: 'Dieser Fahrer gehört nicht zu Ihrem Standort.' });
+      }
       if (zeile.passed) return antwort(403, { success: false, message: 'Dieser Kurs ist bereits abgeschlossen und kann nicht geändert werden.' });
 
       // firma_id-Filter im Löschbefehl: fremde Zeilen sind nicht erreichbar.
@@ -312,11 +329,12 @@ exports.handler = async (event) => {
 
     // ── Übersicht: eigene Fahrer + Kurstermine ─────────────────────────
     const fahrer = await supa(
-      `schulung_participants?company_id=eq.${firma.id}&select=id,legacy_id,first_name,last_name,birth,birthplace,street,zip,city,phone,email,ext_dates&order=last_name.asc&limit=1000`,
+      `schulung_participants?company_id=eq.${firma.id}${scopeFilter}&select=id,legacy_id,first_name,last_name,birth,birthplace,street,zip,city,phone,email,ext_dates&order=last_name.asc&limit=2000`,
     );
     // Standorte (Betriebsstaetten) dieser Firma – nur die eigenen
     let standorte = [];
     try { standorte = await supa(`schulung_standorte?company_id=eq.${firma.id}&select=id,name&order=name.asc`); } catch { standorte = []; }
+    if (scope) standorte = (standorte || []).filter((s) => s.id === scope.id);
     const stName = {};
     (standorte || []).forEach((s) => { stName[s.id] = s.name; });
     // BKF-Kurse (klein genug, um sie einmal zu laden und je Fahrer zuzuordnen)
@@ -340,6 +358,8 @@ exports.handler = async (event) => {
     // Firmeninterne Termine – nur für diese Firma sichtbar
     let intern = [];
     try { intern = zuTerminen(await interneZeilen(firma.id, heute)); } catch { intern = []; }
+    // Nur eigene Fahrer namentlich zeigen (Standortleiter sieht nur seinen Standort)
+    intern.forEach((k) => { k.fahrer = (k.fahrer || []).filter((id) => eigeneIds.has(id)); });
 
     return antwort(200, {
       success: true,
@@ -347,6 +367,7 @@ exports.handler = async (event) => {
       // Bestaetigungs-E-Mail) – nur die Daten der angemeldeten Firma.
       firma: {
         name: firma.name,
+        standort: scope ? scope.name : '',
         addr: firma.addr || '',
         contact: firma.contact || '',
         email: firma.invoice_email || firma.email || '',
@@ -368,7 +389,7 @@ exports.handler = async (event) => {
           standortName: stName[(p.ext_dates || {}).STANDORT] || '',
         };
       }),
-      standorte: (standorte || []).map((s) => ({ id: s.id, name: s.name })),
+      standorte: scope ? [] : (standorte || []).map((s) => ({ id: s.id, name: s.name })),
       termine: (termine || []).filter((t) => (t.date || '') >= heute).slice(0, 12)
         .map((t) => ({ ...t, angemeldet: schonDrin[[t.date || '', t.type || '', t.location || ''].join('|')] || [] })),
       intern,

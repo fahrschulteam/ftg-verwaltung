@@ -3048,7 +3048,7 @@ function openCompany(id){
     ${id?`<div class="field" style="margin-top:14px">
       <div style="font-size:13px;font-weight:700;color:var(--steel);margin-bottom:6px;padding-bottom:5px;border-bottom:1px solid var(--border)">Standorte</div>
       <div id="co_standorte"><div class="hint">wird geladen …</div></div>
-      <div class="hint" style="margin-top:5px">Standorte sind Betriebsstätten dieser Firma. Rechnungen gehen weiterhin an die Firma; im Teilnehmer-Dialog lässt sich jedem Fahrer ein Standort zuweisen.</div>
+      <div class="hint" style="margin-top:5px">Standorte sind Betriebsstätten dieser Firma. Rechnungen gehen weiterhin an die Firma; im Teilnehmer-Dialog lässt sich jedem Fahrer ein Standort zuweisen. Optional kann jeder Standort einen eigenen Zugangscode bekommen – damit sieht der Standortleiter im Firmenportal nur die Fahrer seines Standorts.</div>
     </div>`:''}
     ${co.portalCode?`<div class="field" style="margin-top:14px">
       <div style="font-size:13px;font-weight:700;color:var(--steel);margin-bottom:6px;padding-bottom:5px;border-bottom:1px solid var(--border)">Firmenportal-Zugang</div>
@@ -7980,6 +7980,7 @@ async function srtRenderManage(companyId){
       + '<div style="flex:1;min-width:0">'
       +   '<div style="font-weight:600;font-size:14px">' + _esc(s.name) + '</div>'
       +   '<div style="font-size:12px;color:var(--muted)">' + _esc([ort, s.contact, s.phone].filter(Boolean).join(' \u00b7 ')) + '</div>'
+      +   srtZugangHtml(s)
       + '</div>'
       + '<button type="button" class="btn ghost sm" onclick="srtRename(\'' + s.id + '\')">Umbenennen</button>'
       + '<button type="button" class="btn ghost sm" style="color:#C0001A;border-color:#C0001A" onclick="srtDelete(\'' + s.id + '\',\'' + companyId + '\')">L\u00f6schen</button>'
@@ -7991,6 +7992,51 @@ async function srtRenderManage(companyId){
     +   '<input id="srt_neu" placeholder="Name des Standorts" style="flex:1">'
     +   '<button type="button" class="btn sm" onclick="srtAdd(\'' + companyId + '\')">Hinzuf\u00fcgen</button>'
     + '</div>';
+}
+
+// ---- Optionaler Standortleiter-Zugang fuers Firmenportal ----
+// Hat ein Standort einen eigenen Code, sieht der Standortleiter im Portal
+// nur die Fahrer dieses Standorts. Ohne Code: nur der Firmen-Zugang.
+function srtZugangHtml(s){
+  if (!s.portal_code){
+    return '<div style="margin-top:4px"><button type="button" class="btn ghost sm" onclick="srtZugangErzeugen(\'' + s.id + '\')">+ Standortleiter-Zugang (optional)</button></div>';
+  }
+  return '<div style="margin-top:4px;display:flex;gap:6px;align-items:center;flex-wrap:wrap;font-size:12px">'
+    + '<span style="color:var(--muted)">Standortleiter-Zugang:</span>'
+    + '<code style="background:var(--sand);border:1px solid var(--border);border-radius:6px;padding:2px 8px;font-weight:700;letter-spacing:.08em">' + _esc(s.portal_code) + '</code>'
+    + '<button type="button" class="btn ghost sm" onclick="navigator.clipboard.writeText(\'' + _esc(s.portal_code) + '\').then(function(){toast(\'Zugangscode kopiert\')})">Kopieren</button>'
+    + '<button type="button" class="btn ghost sm" style="color:#C0001A;border-color:#C0001A" onclick="srtZugangEntfernen(\'' + s.id + '\')">Zugang entfernen</button>'
+    + '</div>';
+}
+function _srtNeuerCode(){
+  const belegt = new Set([].concat(
+    (state.companies || []).map(function(c){ return c.portalCode; }),
+    (_srtCache || []).map(function(x){ return x.portal_code; })).filter(Boolean));
+  let code = '';
+  do {
+    const b = new Uint8Array(4); crypto.getRandomValues(b);
+    code = Array.prototype.map.call(b, function(x){ return ('0' + x.toString(16)).slice(-2); }).join('').toUpperCase();
+  } while (belegt.has(code));
+  return code;
+}
+async function _srtCodeSetzen(id, code, meldung){
+  const s = (_srtCache || []).find(function(x){ return x.id === id; });
+  try{
+    const r = await fetch(MAIN_URL + '/rest/v1/schulung_standorte?id=eq.' + id,
+      { method:'PATCH', headers:_srtKopf(), body: JSON.stringify({ portal_code: code }) });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    toast(meldung);
+    if (s) srtRenderManage(s.company_id);
+  }catch(e){ console.warn('Standort-Zugang', e); toast('Fehler beim Speichern des Zugangs'); }
+}
+function srtZugangErzeugen(id){
+  _srtCodeSetzen(id, _srtNeuerCode(), 'Standortleiter-Zugang erzeugt');
+}
+function srtZugangEntfernen(id){
+  const s = (_srtCache || []).find(function(x){ return x.id === id; });
+  askConfirm('Standortleiter-Zugang f\u00fcr \u201e' + (s ? s.name : '?') + '\u201c entfernen?\n\nDer Code funktioniert danach nicht mehr. Der Firmen-Zugang bleibt unver\u00e4ndert.', function(){
+    _srtCodeSetzen(id, null, 'Standortleiter-Zugang entfernt');
+  });
 }
 
 async function srtAdd(companyId){

@@ -428,7 +428,7 @@
       try{ sessionStorage.setItem("ftg-portal-code",code); }catch(e){}
       el("loginCard").style.display="none";
       el("app").style.display="";
-      el("firmaName").textContent=d.firma.name;
+      el("firmaName").textContent=d.firma.name+(d.firma.standort?" \u00b7 Standort "+d.firma.standort:"");
       renderFahrer(); renderTermine(); renderIntern(); rechnerStart();
     }catch(e){ err.textContent="Der Dienst ist gerade nicht erreichbar."; }
     finally{ el("loginBtn").disabled=false; }
