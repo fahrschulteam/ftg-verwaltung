@@ -127,6 +127,9 @@
   .trow .t-dat{font-weight:700;white-space:nowrap}
   .trow .t-name{font-weight:700;line-height:1.3}
   .trow .t-ort{color:var(--muted);font-size:12.5px;margin-top:2px}
+  .t-namen{margin:4px 0 0;padding-left:18px;font-size:13px;color:var(--ink)}
+  .t-namen li{margin:1px 0}
+  .t-namen span{color:var(--muted);font-size:12px}
   .trow .t-platz{text-align:center}
   .trow .t-platz .tag{min-width:110px;text-align:center}
   .trow .t-akt .btn{width:100%;text-align:center}
@@ -508,6 +511,13 @@
     rechnerEinhaengen();
   };
 
+  // Namen der eigenen angemeldeten Fahrer (alphabetisch, mit Standort)
+  function namenListe(ids){
+    var byId={}; (daten.fahrer||[]).forEach(function(f){ byId[f.id]=f; });
+    return (ids||[]).map(function(id){ return byId[id]; }).filter(Boolean)
+      .sort(function(a,b){ return a.name.localeCompare(b.name,"de"); })
+      .map(function(f){ return '<li>'+esc(anzeigeName(f.name))+(f.standortName?' <span>· '+esc(f.standortName)+'</span>':'')+'</li>'; }).join("");
+  }
   window.renderTermine=function(){
     var e=el("termine");
     var t=daten.termine||[];
@@ -521,7 +531,8 @@
         +'<div class="t-dat">'+esc(termin)+'</div>'
         +'<div><div class="t-name">'+esc(kursName(k.type))+'</div>'
         +(k.location?'<div class="t-ort">'+esc(k.location)+'</div>':'')
-        +(drin?'<div class="t-ort" style="color:#1f7a3d;font-weight:700">'+drin+' Ihrer Fahrer angemeldet</div>':'')+'</div>'
+        +(drin?'<div class="t-ort" style="color:#1f7a3d;font-weight:700">'+drin+' Ihrer Fahrer angemeldet:'+'</div>'
+          +'<ul class="t-namen">'+namenListe(k.angemeldet)+'</ul>':'')+'</div>'
         +'<div class="t-platz"><span class="tag '+(frei>0?"t-ok":"t-crit")+'">'+(frei>0?frei+(frei===1?" Platz frei":" Plätze frei"):"ausgebucht")+'</span></div>'
         +'<div class="t-akt">'+(frei>0?'<button class="btn blau sm" onclick="aOeffnen('+i+')">Fahrer anmelden</button>':'')+'</div>'
         +'</div>';
